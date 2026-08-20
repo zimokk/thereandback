@@ -1,0 +1,17 @@
+version: 2
+updates:
+  # Keeps the workflow's own actions (checkout, flutter-action, etc.) patched.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  # Enable once Phase 0 (flutter create) lands and pubspec.yaml exists —
+  # see docs/implementation-plan.md. Until then there's nothing to update.
+  # - package-ecosystem: "pub"
+  #   directory: "/"
+  #   schedule:
+  #     interval: "weekly"
