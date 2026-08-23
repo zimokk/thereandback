@@ -22,8 +22,13 @@ first — see the in-memory caveat below.
    missing — each with a button that drives the next step (§7: never a
    dead end).
 4. `sync()` fetches the delta since the selected quest's `lastSyncedAt`,
-   resolves it to meters via `stride.dart`, and writes the new total into
+   checks it against `stride.isImplausiblePace` (§5.2 — flagged, not
+   dropped, so the credited distance is unaffected), resolves it to
+   meters via `stride.dart`, and writes the new total into
    `selectedJourneyProvider` (see [`journey.md`](journey.md)).
+5. If that check flagged the interval, `StepsPermissionGate` shows a small
+   buttonless notice on the next build (`_FlaggedPaceNotice`) — purely
+   informational, it doesn't block or undo the credited distance.
 
 ## Foreground only — background sync is explicitly out of scope here
 
@@ -38,7 +43,7 @@ the tab" is the only trigger.
 
 | File | Layer | Responsibility |
 |---|---|---|
-| `steps/domain/stride.dart` | domain (pure Dart) | `stepsToMeters`, `resolveDistanceMeters` (platform distance beats steps×stride, §5.1), `clampNonDecreasing` (monotonic progress), `isImplausiblePace` (>250 steps/min flag, §5.2) |
+| `steps/domain/stride.dart` | domain (pure Dart) | `stepsToMeters`, `resolveDistanceMeters` (platform distance beats steps×stride, §5.1), `clampNonDecreasing` (monotonic progress), `isImplausiblePace` (>250 steps/min flag, §5.2 — called from `StepsSync.sync()`, not just unit-tested in isolation) |
 | `steps/data/health_adapter.dart` | data | `HealthAdapter` interface + `HealthPackageAdapter` wrapping the `health` package (HealthKit/Health Connect) |
 | `steps/presentation/steps_sync_state.dart` | presentation | `StepsPermissionStatus` enum + `StepsSyncState` (freezed) |
 | `steps/presentation/steps_providers.dart` | presentation | `healthAdapterProvider`, `StepsSync` notifier (permission flow + `sync()`) |
@@ -49,7 +54,7 @@ the tab" is the only trigger.
 | Provider | Shape | Notes |
 |---|---|---|
 | `healthAdapterProvider` | `HealthAdapter` | Defaults to `HealthPackageAdapter()`. **Always override with a fake in tests** — never the real plugin in a widget test (`testing` skill). |
-| `stepsSyncProvider` | `StepsSyncState` (Notifier) | `permissionStatus` + `isSyncing`. |
+| `stepsSyncProvider` | `StepsSyncState` (Notifier) | `permissionStatus` + `isSyncing` + `lastSyncFlagged` (§5.2 pace check result — surfaced by `_FlaggedPaceNotice`, doesn't affect crediting). |
 
 ## The idempotency caveat (§5.2) — read before assuming this is durable
 
@@ -97,7 +102,7 @@ criterion (an integration test passing on at least one real platform) is
 `stepsPermissionAllow`, `stepsPermissionDeniedTitle`,
 `stepsPermissionDeniedBody`, `stepsPermissionRetry`,
 `stepsHealthConnectMissingTitle`, `stepsHealthConnectMissingBody`,
-`stepsHealthConnectInstall`.
+`stepsHealthConnectInstall`, `stepsFlaggedPaceNotice`.
 
 ## Tests
 
@@ -105,6 +110,13 @@ Domain: `test/features/steps/domain/stride_test.dart` — the full §12
 mandatory list for this module (platform-distance preference, monotonic
 clamp on a negative delta, >250 steps/min flagged not dropped, threshold
 boundary).
+
+Provider-level: `test/features/steps/presentation/steps_providers_test.dart`
+exercises `StepsSync.sync()` end to end against a mocked `HealthAdapter` —
+a realistic pace leaves `lastSyncFlagged` false, an implausible one (a huge
+step count over a short `lastSyncedAt`-to-now window) sets it true, and
+**either way the distance is credited to `selectedJourneyProvider`** —
+this is the test that would have caught `isImplausiblePace` being unwired.
 
 No widget test exists solely for `permission_gate.dart` in isolation today
 — its three states are exercised through

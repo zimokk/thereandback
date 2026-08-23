@@ -45,6 +45,18 @@ owns no provider of its own.
 - `estimateArrival`, and indirectly `paceMetersPerDay` (`domain/quest_progress.dart`, §5.3).
 - `formatDistance`, `formatDate`, `formatEtaDate` (`core/formatters.dart`, §5.4).
 
+### Known simplification: pace is a whole-quest average, not a 7-day window
+
+§5.3 specifies pace as a rolling mean over the last 7 calendar days,
+falling back to the whole-quest average under 3 days of data.
+`paceMetersPerDay` always computes the whole-quest average — the
+7-day-window branch needs a persisted per-day history that doesn't exist
+yet (Phase 3). The **Estimated Arrival** date on this screen inherits that
+simplification: it reacts slower to a recent pace change than §5.3
+describes, until Phase 3 lands. This is disclosed in the function's own
+doc comment in `quest_progress.dart`; noted here too since this screen is
+where the difference is actually visible to a user.
+
 ## l10n keys
 
 `questStatsToLabel` (`{pointB}`), `questStatsStartedLabel`,
