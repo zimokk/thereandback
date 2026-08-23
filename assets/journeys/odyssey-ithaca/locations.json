@@ -1,0 +1,1128 @@
+{
+  "$schemaNote": "Draft content for There and Back — Journey catalog. NOT final: map.json pixel coordinates, l10n keys and human narrative polish still pending. See CLAUDE.md §4/§6.2 for target schema.",
+  "journey": {
+    "id": "odyssey-ithaca",
+    "name": "The Odyssey: Troy to Ithaca",
+    "pointA": "Troy",
+    "pointB": "Ithaca",
+    "totalMeters": 2850000,
+    "source": "Homer's Odyssey — public domain (composed c. 8th century BCE; not protected by copyright or trademark anywhere)",
+    "landmarkCount": 120
+  },
+  "segments": [
+    {
+      "id": "troy-departure",
+      "name": "Troy — The Departure",
+      "biome": "ruined_city_coast",
+      "fromMeters": 0,
+      "toMeters": 71250,
+      "landmarkCount": 3
+    },
+    {
+      "id": "cicones-ismarus",
+      "name": "Ismarus — Land of the Cicones",
+      "biome": "raider_coast",
+      "fromMeters": 71250,
+      "toMeters": 190000,
+      "landmarkCount": 5
+    },
+    {
+      "id": "storm-cape-malea",
+      "name": "The Storm off Cape Malea",
+      "biome": "storm_sea",
+      "fromMeters": 190000,
+      "toMeters": 261250,
+      "landmarkCount": 3
+    },
+    {
+      "id": "lotus-eaters-shore",
+      "name": "The Land of the Lotus-Eaters",
+      "biome": "dreaming_dunes",
+      "fromMeters": 261250,
+      "toMeters": 356250,
+      "landmarkCount": 4
+    },
+    {
+      "id": "cyclops-island",
+      "name": "The Island of the Cyclopes",
+      "biome": "volcanic_crag",
+      "fromMeters": 356250,
+      "toMeters": 593750,
+      "landmarkCount": 10
+    },
+    {
+      "id": "aeolia-isle",
+      "name": "Aeolia — Isle of the Winds",
+      "biome": "floating_isle",
+      "fromMeters": 593750,
+      "toMeters": 736250,
+      "landmarkCount": 6
+    },
+    {
+      "id": "laestrygonian-fjord",
+      "name": "The Laestrygonian Fjord",
+      "biome": "giant_fjord",
+      "fromMeters": 736250,
+      "toMeters": 878750,
+      "landmarkCount": 6
+    },
+    {
+      "id": "aeaea-circe",
+      "name": "Aeaea — Circe's Isle (First Stay)",
+      "biome": "enchanted_forest",
+      "fromMeters": 878750,
+      "toMeters": 1116250,
+      "landmarkCount": 10
+    },
+    {
+      "id": "underworld-shore",
+      "name": "The Shore of the Dead",
+      "biome": "underworld",
+      "fromMeters": 1116250,
+      "toMeters": 1353750,
+      "landmarkCount": 10
+    },
+    {
+      "id": "aeaea-return",
+      "name": "Aeaea — The Return",
+      "biome": "enchanted_forest",
+      "fromMeters": 1353750,
+      "toMeters": 1425000,
+      "landmarkCount": 3
+    },
+    {
+      "id": "sirens-strait",
+      "name": "The Sirens' Rock",
+      "biome": "siren_reef",
+      "fromMeters": 1425000,
+      "toMeters": 1520000,
+      "landmarkCount": 4
+    },
+    {
+      "id": "scylla-charybdis",
+      "name": "The Strait of Scylla and Charybdis",
+      "biome": "narrow_strait",
+      "fromMeters": 1520000,
+      "toMeters": 1662500,
+      "landmarkCount": 6
+    },
+    {
+      "id": "thrinacia-pastures",
+      "name": "Thrinacia — Pastures of the Sun",
+      "biome": "sacred_pasture",
+      "fromMeters": 1662500,
+      "toMeters": 1852500,
+      "landmarkCount": 8
+    },
+    {
+      "id": "adrift-alone",
+      "name": "Adrift Alone",
+      "biome": "open_sea",
+      "fromMeters": 1852500,
+      "toMeters": 1947500,
+      "landmarkCount": 4
+    },
+    {
+      "id": "ogygia-calypso",
+      "name": "Ogygia — Calypso's Isle",
+      "biome": "grotto_isle",
+      "fromMeters": 1947500,
+      "toMeters": 2137500,
+      "landmarkCount": 8
+    },
+    {
+      "id": "raft-storm",
+      "name": "The Raft and Poseidon's Storm",
+      "biome": "storm_sea",
+      "fromMeters": 2137500,
+      "toMeters": 2232500,
+      "landmarkCount": 4
+    },
+    {
+      "id": "scheria-phaeacia",
+      "name": "Scheria — Land of the Phaeacians",
+      "biome": "garden_harbor",
+      "fromMeters": 2232500,
+      "toMeters": 2517500,
+      "landmarkCount": 12
+    },
+    {
+      "id": "night-passage-home",
+      "name": "The Night Passage Home",
+      "biome": "moonlit_sea",
+      "fromMeters": 2517500,
+      "toMeters": 2565000,
+      "landmarkCount": 2
+    },
+    {
+      "id": "ithaca-homecoming",
+      "name": "Ithaca — The Homecoming",
+      "biome": "homeland_coast",
+      "fromMeters": 2565000,
+      "toMeters": 2850000,
+      "landmarkCount": 12
+    }
+  ],
+  "landmarks": [
+    {
+      "id": "001-the-smoking-walls-of-troy",
+      "order": 1,
+      "name": "The Smoking Walls of Troy",
+      "meters": 11875,
+      "segmentId": "troy-departure",
+      "narrative": "Smoke still curls above the broken towers as the ships push off."
+    },
+    {
+      "id": "002-the-harbor-of-a-thousand-ships",
+      "order": 2,
+      "name": "The Harbor of a Thousand Ships",
+      "meters": 35625,
+      "segmentId": "troy-departure",
+      "narrative": "Counted the empty berths where the fleet once rode at anchor."
+    },
+    {
+      "id": "003-the-last-sight-of-the-trojan-shore",
+      "order": 3,
+      "name": "The Last Sight of the Trojan Shore",
+      "meters": 59375,
+      "segmentId": "troy-departure",
+      "narrative": "Watched the coastline shrink to a grey line on the horizon."
+    },
+    {
+      "id": "004-the-walls-of-ismarus",
+      "order": 4,
+      "name": "The Walls of Ismarus",
+      "meters": 83125,
+      "segmentId": "cicones-ismarus",
+      "narrative": "Raided the granaries before the Cicones could raise the alarm."
+    },
+    {
+      "id": "005-the-vineyard-slopes-above-the-town",
+      "order": 5,
+      "name": "The Vineyard Slopes Above the Town",
+      "meters": 106875,
+      "segmentId": "cicones-ismarus",
+      "narrative": "Filled the water-skins with dark wine taken from the hillside."
+    },
+    {
+      "id": "006-the-cicones-muster-field",
+      "order": 6,
+      "name": "The Cicones' Muster Field",
+      "meters": 130625,
+      "segmentId": "cicones-ismarus",
+      "narrative": "Watched dust rise on the inland road — reinforcements are coming."
+    },
+    {
+      "id": "007-the-retreat-to-the-ships",
+      "order": 7,
+      "name": "The Retreat to the Ships",
+      "meters": 154375,
+      "segmentId": "cicones-ismarus",
+      "narrative": "Fought a rearguard action back across the open beach."
+    },
+    {
+      "id": "008-the-bloodied-sands-of-ismarus",
+      "order": 8,
+      "name": "The Bloodied Sands of Ismarus",
+      "meters": 178125,
+      "segmentId": "cicones-ismarus",
+      "narrative": "Counted six men lost from every ship before the last oar bit water."
+    },
+    {
+      "id": "009-the-turn-at-cape-malea",
+      "order": 9,
+      "name": "The Turn at Cape Malea",
+      "meters": 201875,
+      "segmentId": "storm-cape-malea",
+      "narrative": "The current seized the ships the moment we rounded the cape."
+    },
+    {
+      "id": "010-nine-days-before-the-north-wind",
+      "order": 10,
+      "name": "Nine Days Before the North Wind",
+      "meters": 225625,
+      "segmentId": "storm-cape-malea",
+      "narrative": "Lost all sense of east and west under the driving gale."
+    },
+    {
+      "id": "011-the-uncharted-swell",
+      "order": 11,
+      "name": "The Uncharted Swell",
+      "meters": 249375,
+      "segmentId": "storm-cape-malea",
+      "narrative": "The known sea-lanes are gone; nothing ahead looks familiar."
+    },
+    {
+      "id": "012-the-lotus-eaters-shore",
+      "order": 12,
+      "name": "The Lotus-Eaters' Shore",
+      "meters": 273125,
+      "segmentId": "lotus-eaters-shore",
+      "narrative": "A strange sweetness hangs in the air the moment we land."
+    },
+    {
+      "id": "013-the-grove-of-the-honeyed-fruit",
+      "order": 13,
+      "name": "The Grove of the Honeyed Fruit",
+      "meters": 296875,
+      "segmentId": "lotus-eaters-shore",
+      "narrative": "Three scouts sent inland; only two remember why they came."
+    },
+    {
+      "id": "014-dragging-the-dreamers-back",
+      "order": 14,
+      "name": "Dragging the Dreamers Back",
+      "meters": 320625,
+      "segmentId": "lotus-eaters-shore",
+      "narrative": "Bound a lotus-eater to his bench to keep him from the shore."
+    },
+    {
+      "id": "015-rowing-away-from-forgetting",
+      "order": 15,
+      "name": "Rowing Away From Forgetting",
+      "meters": 344375,
+      "segmentId": "lotus-eaters-shore",
+      "narrative": "Pulled hard for open water before the sweetness took the rest of us."
+    },
+    {
+      "id": "016-the-goat-island-offshore",
+      "order": 16,
+      "name": "The Goat Island Offshore",
+      "meters": 368125,
+      "segmentId": "cyclops-island",
+      "narrative": "Anchored on the small island across from the cave-dweller's coast."
+    },
+    {
+      "id": "017-the-cliffside-cave-mouth",
+      "order": 17,
+      "name": "The Cliffside Cave Mouth",
+      "meters": 391875,
+      "segmentId": "cyclops-island",
+      "narrative": "A cave big enough for a giant's flock, sealed with a single boulder."
+    },
+    {
+      "id": "018-the-cheese-racks-in-the-dark",
+      "order": 18,
+      "name": "The Cheese-Racks in the Dark",
+      "meters": 415625,
+      "segmentId": "cyclops-island",
+      "narrative": "Found the shelves stacked with cheeses and pens crowded with lambs."
+    },
+    {
+      "id": "019-polyphemuss-hearthstone",
+      "order": 19,
+      "name": "Polyphemus's Hearthstone",
+      "meters": 439375,
+      "segmentId": "cyclops-island",
+      "narrative": "The giant returned and rolled a stone no ten men could move."
+    },
+    {
+      "id": "020-the-sharpened-olive-stake",
+      "order": 20,
+      "name": "The Sharpened Olive Stake",
+      "meters": 463125,
+      "segmentId": "cyclops-island",
+      "narrative": "Hardened the point in the embers while the giant slept off the wine."
+    },
+    {
+      "id": "021-the-blinding-of-the-cyclops",
+      "order": 21,
+      "name": "The Blinding of the Cyclops",
+      "meters": 486875,
+      "segmentId": "cyclops-island",
+      "narrative": "Drove the stake home; his roar shook dust from the cave roof."
+    },
+    {
+      "id": "022-beneath-the-rams-bellies",
+      "order": 22,
+      "name": "Beneath the Rams' Bellies",
+      "meters": 510625,
+      "segmentId": "cyclops-island",
+      "narrative": "Lashed under the fleece of the biggest rams to slip past his groping hands."
+    },
+    {
+      "id": "023-the-boulder-throw-shallows",
+      "order": 23,
+      "name": "The Boulder-Throw Shallows",
+      "meters": 534375,
+      "segmentId": "cyclops-island",
+      "narrative": "Torn rock splashed close enough to swamp the stern."
+    },
+    {
+      "id": "024-shouting-a-name-across-the-water",
+      "order": 24,
+      "name": "Shouting a Name Across the Water",
+      "meters": 558125,
+      "segmentId": "cyclops-island",
+      "narrative": "A boast thrown back at the shore that we may come to regret."
+    },
+    {
+      "id": "025-clear-of-the-cyclops-coast",
+      "order": 25,
+      "name": "Clear of the Cyclops' Coast",
+      "meters": 581875,
+      "segmentId": "cyclops-island",
+      "narrative": "Rowed until the giant's cries were just an echo on the wind."
+    },
+    {
+      "id": "026-the-floating-walls-of-aeolia",
+      "order": 26,
+      "name": "The Floating Walls of Aeolia",
+      "meters": 605625,
+      "segmentId": "aeolia-isle",
+      "narrative": "An island ringed by unbroken bronze, adrift on a sea of its own."
+    },
+    {
+      "id": "027-the-hall-of-the-wind-king",
+      "order": 27,
+      "name": "The Hall of the Wind-King",
+      "meters": 629375,
+      "segmentId": "aeolia-isle",
+      "narrative": "Feasted a full month as guest of the keeper of the winds."
+    },
+    {
+      "id": "028-the-ox-hide-sack-of-storms",
+      "order": 28,
+      "name": "The Ox-Hide Sack of Storms",
+      "meters": 653125,
+      "segmentId": "aeolia-isle",
+      "narrative": "Given every contrary wind bound tight in a sack of ox-hide."
+    },
+    {
+      "id": "029-sighting-ithacas-smoke",
+      "order": 29,
+      "name": "Sighting Ithaca's Smoke",
+      "meters": 676875,
+      "segmentId": "aeolia-isle",
+      "narrative": "Home fires were visible on the horizon before curiosity ruined it."
+    },
+    {
+      "id": "030-the-sack-torn-open-by-greed",
+      "order": 30,
+      "name": "The Sack Torn Open by Greed",
+      "meters": 700625,
+      "segmentId": "aeolia-isle",
+      "narrative": "The crew loosed the bindings, certain it held hidden gold."
+    },
+    {
+      "id": "031-blown-back-to-where-we-started",
+      "order": 31,
+      "name": "Blown Back to Where We Started",
+      "meters": 724375,
+      "segmentId": "aeolia-isle",
+      "narrative": "Every mile of the voyage undone in a single gale."
+    },
+    {
+      "id": "032-the-narrow-fjord-harbor",
+      "order": 32,
+      "name": "The Narrow Fjord Harbor",
+      "meters": 748125,
+      "segmentId": "laestrygonian-fjord",
+      "narrative": "Steep cliffs on both sides, water too still to trust."
+    },
+    {
+      "id": "033-the-giant-queens-doorway",
+      "order": 33,
+      "name": "The Giant Queen's Doorway",
+      "meters": 771875,
+      "segmentId": "laestrygonian-fjord",
+      "narrative": "Sent scouts to the king's hall; only the horror of it returned."
+    },
+    {
+      "id": "034-the-boulders-from-the-cliffs-above",
+      "order": 34,
+      "name": "The Boulders From the Cliffs Above",
+      "meters": 795625,
+      "segmentId": "laestrygonian-fjord",
+      "narrative": "Rocks the size of ships crashed down on the fleet at anchor."
+    },
+    {
+      "id": "035-the-speared-catch",
+      "order": 35,
+      "name": "The Speared Catch",
+      "meters": 819375,
+      "segmentId": "laestrygonian-fjord",
+      "narrative": "Watched crewmen gathered up on giant spears like fish on a line."
+    },
+    {
+      "id": "036-the-one-ship-that-cleared-the-strait",
+      "order": 36,
+      "name": "The One Ship That Cleared the Strait",
+      "meters": 843125,
+      "segmentId": "laestrygonian-fjord",
+      "narrative": "Cut the mooring line rather than wait for the tide."
+    },
+    {
+      "id": "037-counting-what-the-fjord-took",
+      "order": 37,
+      "name": "Counting What the Fjord Took",
+      "meters": 866875,
+      "segmentId": "laestrygonian-fjord",
+      "narrative": "Eleven ships lost in the time it takes to draw one breath."
+    },
+    {
+      "id": "038-the-smoke-above-aeaea",
+      "order": 38,
+      "name": "The Smoke Above Aeaea",
+      "meters": 890625,
+      "segmentId": "aeaea-circe",
+      "narrative": "A single thread of hearth-smoke rising from an island of dense oak."
+    },
+    {
+      "id": "039-the-wolves-that-do-not-bite",
+      "order": 39,
+      "name": "The Wolves That Do Not Bite",
+      "meters": 914375,
+      "segmentId": "aeaea-circe",
+      "narrative": "Lions and wolves circled the scouting party like tame hounds."
+    },
+    {
+      "id": "040-circes-loom-song",
+      "order": 40,
+      "name": "Circe's Loom Song",
+      "meters": 938125,
+      "segmentId": "aeaea-circe",
+      "narrative": "Heard weaving and singing through the open doorway of a fine house."
+    },
+    {
+      "id": "041-the-cup-of-forgetting",
+      "order": 41,
+      "name": "The Cup of Forgetting",
+      "meters": 961875,
+      "segmentId": "aeaea-circe",
+      "narrative": "Watched half the crew take the offered wine without a second thought."
+    },
+    {
+      "id": "042-the-sty-behind-the-house",
+      "order": 42,
+      "name": "The Sty Behind the House",
+      "meters": 985625,
+      "segmentId": "aeaea-circe",
+      "narrative": "Found the missing men penned as swine, still weeping with human eyes."
+    },
+    {
+      "id": "043-the-moly-root-at-the-crossroads",
+      "order": 43,
+      "name": "The Moly Root at the Crossroads",
+      "meters": 1009375,
+      "segmentId": "aeaea-circe",
+      "narrative": "A grey-and-white herb, pressed into hand, said to turn a curse aside."
+    },
+    {
+      "id": "044-the-untouched-cup",
+      "order": 44,
+      "name": "The Untouched Cup",
+      "meters": 1033125,
+      "segmentId": "aeaea-circe",
+      "narrative": "Drank the wine and did not fall; the witch's spell had no purchase."
+    },
+    {
+      "id": "045-the-bargain-on-circes-threshold",
+      "order": 45,
+      "name": "The Bargain on Circe's Threshold",
+      "meters": 1056875,
+      "segmentId": "aeaea-circe",
+      "narrative": "A blade at her throat bought a year's welcome instead of a curse."
+    },
+    {
+      "id": "046-the-swine-restored-to-men",
+      "order": 46,
+      "name": "The Swine Restored to Men",
+      "meters": 1080625,
+      "segmentId": "aeaea-circe",
+      "narrative": "Watched bristles fall away and old faces return, more grieved than glad."
+    },
+    {
+      "id": "047-a-year-at-aeaeas-table",
+      "order": 47,
+      "name": "A Year at Aeaea's Table",
+      "meters": 1104375,
+      "segmentId": "aeaea-circe",
+      "narrative": "Twelve months of feasting while the ships sit idle on the sand."
+    },
+    {
+      "id": "048-the-edge-of-oceans-stream",
+      "order": 48,
+      "name": "The Edge of Ocean's Stream",
+      "meters": 1128125,
+      "segmentId": "underworld-shore",
+      "narrative": "Sailed past the sunless edge of the world into fog that never lifts."
+    },
+    {
+      "id": "049-the-grove-of-persephone",
+      "order": 49,
+      "name": "The Grove of Persephone",
+      "meters": 1151875,
+      "segmentId": "underworld-shore",
+      "narrative": "Black poplars and dead willows mark the entrance to the House of the Dead."
+    },
+    {
+      "id": "050-the-trench-of-dark-blood",
+      "order": 50,
+      "name": "The Trench of Dark Blood",
+      "meters": 1175625,
+      "segmentId": "underworld-shore",
+      "narrative": "Dug a pit and filled it with offerings to call the shades to speech."
+    },
+    {
+      "id": "051-the-shade-of-elpenor-unburied",
+      "order": 51,
+      "name": "The Shade of Elpenor, Unburied",
+      "meters": 1199375,
+      "segmentId": "underworld-shore",
+      "narrative": "A crewman's ghost begs for a grave he does not yet know he needs."
+    },
+    {
+      "id": "052-the-blind-prophets-warning",
+      "order": 52,
+      "name": "The Blind Prophet's Warning",
+      "meters": 1223125,
+      "segmentId": "underworld-shore",
+      "narrative": "Tiresias speaks of a homecoming bought at the price of every companion."
+    },
+    {
+      "id": "053-my-mothers-shade-among-the-dead",
+      "order": 53,
+      "name": "My Mother's Shade Among the Dead",
+      "meters": 1246875,
+      "segmentId": "underworld-shore",
+      "narrative": "Reached three times to embrace her; three times the shade slipped through."
+    },
+    {
+      "id": "054-the-judgment-hall-of-minos",
+      "order": 54,
+      "name": "The Judgment Hall of Minos",
+      "meters": 1270625,
+      "segmentId": "underworld-shore",
+      "narrative": "Watched the dead lining up for a verdict none of the living can hear."
+    },
+    {
+      "id": "055-orions-endless-hunt",
+      "order": 55,
+      "name": "Orion's Endless Hunt",
+      "meters": 1294375,
+      "segmentId": "underworld-shore",
+      "narrative": "A hunter's shade still drives ghostly beasts across the asphodel field."
+    },
+    {
+      "id": "056-the-weight-sisyphus-cannot-set-down",
+      "order": 56,
+      "name": "The Weight Sisyphus Cannot Set Down",
+      "meters": 1318125,
+      "segmentId": "underworld-shore",
+      "narrative": "A boulder, a slope, and a curse with no end in sight."
+    },
+    {
+      "id": "057-the-retreat-from-the-house-of-the-dead",
+      "order": 57,
+      "name": "The Retreat From the House of the Dead",
+      "meters": 1341875,
+      "segmentId": "underworld-shore",
+      "narrative": "Ran for the ship before the countless dead pressed too close."
+    },
+    {
+      "id": "058-elpenors-barrow-on-the-shore",
+      "order": 58,
+      "name": "Elpenor's Barrow on the Shore",
+      "meters": 1365625,
+      "segmentId": "aeaea-return",
+      "narrative": "Raised a mound and planted an oar where the fallen crewman rests."
+    },
+    {
+      "id": "059-circes-chart-of-dangers-ahead",
+      "order": 59,
+      "name": "Circe's Chart of Dangers Ahead",
+      "meters": 1389375,
+      "segmentId": "aeaea-return",
+      "narrative": "Warned in careful detail of every horror still waiting on the route home."
+    },
+    {
+      "id": "060-the-wax-and-the-mast-ropes",
+      "order": 60,
+      "name": "The Wax and the Mast Ropes",
+      "meters": 1413125,
+      "segmentId": "aeaea-return",
+      "narrative": "Prepared beeswax for the ears and rope enough to bind a man fast."
+    },
+    {
+      "id": "061-the-becalmed-approach-to-the-sirens",
+      "order": 61,
+      "name": "The Becalmed Approach to the Sirens",
+      "meters": 1436875,
+      "segmentId": "sirens-strait",
+      "narrative": "Not a breath of wind stirs as the fatal coast comes into view."
+    },
+    {
+      "id": "062-ears-sealed-with-wax",
+      "order": 62,
+      "name": "Ears Sealed With Wax",
+      "meters": 1460625,
+      "segmentId": "sirens-strait",
+      "narrative": "Watched the rowers' faces go blank and calm as the wax set."
+    },
+    {
+      "id": "063-bound-to-the-mast",
+      "order": 63,
+      "name": "Bound to the Mast",
+      "meters": 1484375,
+      "segmentId": "sirens-strait",
+      "narrative": "Lashed tight at my own order, straining against ropes I begged for."
+    },
+    {
+      "id": "064-the-field-of-bones-below-the-rocks",
+      "order": 64,
+      "name": "The Field of Bones Below the Rocks",
+      "meters": 1508125,
+      "segmentId": "sirens-strait",
+      "narrative": "White bones catch the light on the meadow beneath the singing cliff."
+    },
+    {
+      "id": "065-the-smoking-whirlpool",
+      "order": 65,
+      "name": "The Smoking Whirlpool",
+      "meters": 1531875,
+      "segmentId": "scylla-charybdis",
+      "narrative": "Charybdis swallows the sea itself three times a day."
+    },
+    {
+      "id": "066-the-cliff-with-no-handhold",
+      "order": 66,
+      "name": "The Cliff With No Handhold",
+      "meters": 1555625,
+      "segmentId": "scylla-charybdis",
+      "narrative": "A sheer rock face, and somewhere in its caves, six mouths waiting."
+    },
+    {
+      "id": "067-the-choice-of-losses",
+      "order": 67,
+      "name": "The Choice of Losses",
+      "meters": 1579375,
+      "segmentId": "scylla-charybdis",
+      "narrative": "Steer wide of the whirlpool and pay the narrow strait its price instead."
+    },
+    {
+      "id": "068-scyllas-reach",
+      "order": 68,
+      "name": "Scylla's Reach",
+      "meters": 1603125,
+      "segmentId": "scylla-charybdis",
+      "narrative": "Six men snatched from the deck before the ship had fully passed."
+    },
+    {
+      "id": "069-their-cries-above-the-water",
+      "order": 69,
+      "name": "Their Cries Above the Water",
+      "meters": 1626875,
+      "segmentId": "scylla-charybdis",
+      "narrative": "Called my name as the current pulled the ship onward, out of reach."
+    },
+    {
+      "id": "070-clear-water-past-the-narrows",
+      "order": 70,
+      "name": "Clear Water Past the Narrows",
+      "meters": 1650625,
+      "segmentId": "scylla-charybdis",
+      "narrative": "The strait widens; the screaming fades faster than it should."
+    },
+    {
+      "id": "071-the-sun-gods-green-island",
+      "order": 71,
+      "name": "The Sun God's Green Island",
+      "meters": 1674375,
+      "segmentId": "thrinacia-pastures",
+      "narrative": "Cattle graze in herds too perfect to be ordinary livestock."
+    },
+    {
+      "id": "072-the-oath-sworn-on-the-beach",
+      "order": 72,
+      "name": "The Oath Sworn on the Beach",
+      "meters": 1698125,
+      "segmentId": "thrinacia-pastures",
+      "narrative": "Every man swears not to touch a single one of the sacred herd."
+    },
+    {
+      "id": "073-a-month-pinned-by-contrary-winds",
+      "order": 73,
+      "name": "A Month Pinned by Contrary Winds",
+      "meters": 1721875,
+      "segmentId": "thrinacia-pastures",
+      "narrative": "No wind fit for sailing; the stores run thinner every day."
+    },
+    {
+      "id": "074-the-last-of-the-ships-bread",
+      "order": 74,
+      "name": "The Last of the Ship's Bread",
+      "meters": 1745625,
+      "segmentId": "thrinacia-pastures",
+      "narrative": "Hunger starts to argue louder than any oath sworn on a beach."
+    },
+    {
+      "id": "075-the-slaughter-of-the-sacred-cattle",
+      "order": 75,
+      "name": "The Slaughter of the Sacred Cattle",
+      "meters": 1769375,
+      "segmentId": "thrinacia-pastures",
+      "narrative": "Smoke from a forbidden fire rises while I sleep on the headland."
+    },
+    {
+      "id": "076-the-hides-that-crawled-at-night",
+      "order": 76,
+      "name": "The Hides That Crawled at Night",
+      "meters": 1793125,
+      "segmentId": "thrinacia-pastures",
+      "narrative": "Flayed skins seen moving, and the roasting meat groaning like a living thing."
+    },
+    {
+      "id": "077-a-clear-sky-that-brings-no-comfort",
+      "order": 77,
+      "name": "A Clear Sky That Brings No Comfort",
+      "meters": 1816875,
+      "segmentId": "thrinacia-pastures",
+      "narrative": "The wind finally turns fair — too late to undo what was eaten."
+    },
+    {
+      "id": "078-the-lightning-bolt-offshore",
+      "order": 78,
+      "name": "The Lightning Bolt Offshore",
+      "meters": 1840625,
+      "segmentId": "thrinacia-pastures",
+      "narrative": "Zeus splits the mast the moment the ship clears the sacred coast."
+    },
+    {
+      "id": "079-the-wreck-where-the-crew-was-lost",
+      "order": 79,
+      "name": "The Wreck Where the Crew Was Lost",
+      "meters": 1864375,
+      "segmentId": "adrift-alone",
+      "narrative": "Every companion gone in a single strike; only planking remains."
+    },
+    {
+      "id": "080-riding-the-mast-alone",
+      "order": 80,
+      "name": "Riding the Mast Alone",
+      "meters": 1888125,
+      "segmentId": "adrift-alone",
+      "narrative": "Lashed keel to broken mast and let the current choose the course."
+    },
+    {
+      "id": "081-back-through-charybdis-somehow",
+      "order": 81,
+      "name": "Back Through Charybdis, Somehow",
+      "meters": 1911875,
+      "segmentId": "adrift-alone",
+      "narrative": "The same whirlpool that ate a fleet spares one man clinging to driftwood."
+    },
+    {
+      "id": "082-nine-days-on-open-water",
+      "order": 82,
+      "name": "Nine Days on Open Water",
+      "meters": 1935625,
+      "segmentId": "adrift-alone",
+      "narrative": "No land, no ship, no crew — just current and a fig tree remembered too well."
+    },
+    {
+      "id": "083-washed-up-on-ogygias-sand",
+      "order": 83,
+      "name": "Washed Up on Ogygia's Sand",
+      "meters": 1959375,
+      "segmentId": "ogygia-calypso",
+      "narrative": "A nymph's hidden island, further from home than any place yet."
+    },
+    {
+      "id": "084-calypsos-grotto-fire",
+      "order": 84,
+      "name": "Calypso's Grotto Fire",
+      "meters": 1983125,
+      "segmentId": "ogygia-calypso",
+      "narrative": "Cedar and citrus smoke drift from a cave mouth wreathed in vines."
+    },
+    {
+      "id": "085-the-offer-of-forever",
+      "order": 85,
+      "name": "The Offer of Forever",
+      "meters": 2006875,
+      "segmentId": "ogygia-calypso",
+      "narrative": "Immortality offered in exchange for never seeing Ithaca again."
+    },
+    {
+      "id": "086-the-loom-by-the-cave-entrance",
+      "order": 86,
+      "name": "The Loom by the Cave Entrance",
+      "meters": 2030625,
+      "segmentId": "ogygia-calypso",
+      "narrative": "Days measured out in weaving, waiting, and watching an empty horizon."
+    },
+    {
+      "id": "087-seven-years-counted-in-tides",
+      "order": 87,
+      "name": "Seven Years Counted in Tides",
+      "meters": 2054375,
+      "segmentId": "ogygia-calypso",
+      "narrative": "The seasons on Ogygia repeat with no calendar but the surf."
+    },
+    {
+      "id": "088-hermes-on-the-sea-bright-path",
+      "order": 88,
+      "name": "Hermes on the Sea-Bright Path",
+      "meters": 2078125,
+      "segmentId": "ogygia-calypso",
+      "narrative": "A messenger sandaled in wind arrives at Calypso's door, unannounced."
+    },
+    {
+      "id": "089-the-order-from-olympus",
+      "order": 89,
+      "name": "The Order From Olympus",
+      "meters": 2101875,
+      "segmentId": "ogygia-calypso",
+      "narrative": "Reluctantly, the nymph agrees to let her guest build a raft and leave."
+    },
+    {
+      "id": "090-felling-timber-for-the-raft",
+      "order": 90,
+      "name": "Felling Timber for the Raft",
+      "meters": 2125625,
+      "segmentId": "ogygia-calypso",
+      "narrative": "Twenty trees cut, trimmed, and lashed with the last tools she'll lend."
+    },
+    {
+      "id": "091-eighteen-days-by-the-stars",
+      "order": 91,
+      "name": "Eighteen Days by the Stars",
+      "meters": 2149375,
+      "segmentId": "raft-storm",
+      "narrative": "Kept the Great Bear on the left hand, exactly as instructed."
+    },
+    {
+      "id": "092-poseidons-sighting-from-afar",
+      "order": 92,
+      "name": "Poseidon's Sighting From Afar",
+      "meters": 2173125,
+      "segmentId": "raft-storm",
+      "narrative": "A god still furious over a blinded son notices the raft too late to ignore."
+    },
+    {
+      "id": "093-the-wave-that-broke-the-mast",
+      "order": 93,
+      "name": "The Wave That Broke the Mast",
+      "meters": 2196875,
+      "segmentId": "raft-storm",
+      "narrative": "One strike from the sea-god's trident undoes eighteen days of careful sailing."
+    },
+    {
+      "id": "094-clinging-to-a-single-plank",
+      "order": 94,
+      "name": "Clinging to a Single Plank",
+      "meters": 2220625,
+      "segmentId": "raft-storm",
+      "narrative": "Ino's veil, tied at the waist, is the only thing between here and drowning."
+    },
+    {
+      "id": "095-the-river-mouth-of-salvation",
+      "order": 95,
+      "name": "The River Mouth of Salvation",
+      "meters": 2244375,
+      "segmentId": "scheria-phaeacia",
+      "narrative": "A gentle current, unlike any other on this voyage, finally welcomes rather than fights."
+    },
+    {
+      "id": "096-sleeping-in-a-bed-of-leaves",
+      "order": 96,
+      "name": "Sleeping in a Bed of Leaves",
+      "meters": 2268125,
+      "segmentId": "scheria-phaeacia",
+      "narrative": "Two olive trees grown together make the first safe shelter in weeks."
+    },
+    {
+      "id": "097-nausicaas-washing-day",
+      "order": 97,
+      "name": "Nausicaa's Washing Day",
+      "meters": 2291875,
+      "segmentId": "scheria-phaeacia",
+      "narrative": "A princess and her maids find a castaway asleep among the driftwood."
+    },
+    {
+      "id": "098-the-gift-of-oil-and-linen",
+      "order": 98,
+      "name": "The Gift of Oil and Linen",
+      "meters": 2315625,
+      "segmentId": "scheria-phaeacia",
+      "narrative": "Clean clothes and oil for aching limbs, offered without a single question."
+    },
+    {
+      "id": "099-the-road-into-the-phaeacian-city",
+      "order": 99,
+      "name": "The Road Into the Phaeacian City",
+      "meters": 2339375,
+      "segmentId": "scheria-phaeacia",
+      "narrative": "Advised to enter alone and unnoticed, and to beg the queen, not the king."
+    },
+    {
+      "id": "100-athenas-mist-along-the-streets",
+      "order": 100,
+      "name": "Athena's Mist Along the Streets",
+      "meters": 2363125,
+      "segmentId": "scheria-phaeacia",
+      "narrative": "Walked through the market unseen, cloaked in a goddess's favor."
+    },
+    {
+      "id": "101-the-queens-hearth",
+      "order": 101,
+      "name": "The Queen's Hearth",
+      "meters": 2386875,
+      "segmentId": "scheria-phaeacia",
+      "narrative": "Knelt at Arete's feet before a single word of welcome was offered."
+    },
+    {
+      "id": "102-the-feast-in-king-alcinouss-hall",
+      "order": 102,
+      "name": "The Feast in King Alcinous's Hall",
+      "meters": 2410625,
+      "segmentId": "scheria-phaeacia",
+      "narrative": "Bread, wine, and a full accounting of the story so far, demanded by curious hosts."
+    },
+    {
+      "id": "103-the-blind-singers-song-of-troy",
+      "order": 103,
+      "name": "The Blind Singer's Song of Troy",
+      "meters": 2434375,
+      "segmentId": "scheria-phaeacia",
+      "narrative": "A bard sings the fall of Troy, and the guest weeps without meaning to."
+    },
+    {
+      "id": "104-the-games-on-the-practice-field",
+      "order": 104,
+      "name": "The Games on the Practice Field",
+      "meters": 2458125,
+      "segmentId": "scheria-phaeacia",
+      "narrative": "A discus throw settles an insult before it becomes a feud."
+    },
+    {
+      "id": "105-demodocus-sings-the-wooden-horse",
+      "order": 105,
+      "name": "Demodocus Sings the Wooden Horse",
+      "meters": 2481875,
+      "segmentId": "scheria-phaeacia",
+      "narrative": "The whole hall falls silent at the story only one listener truly lived."
+    },
+    {
+      "id": "106-naming-the-castaway-at-last",
+      "order": 106,
+      "name": "Naming the Castaway at Last",
+      "meters": 2505625,
+      "segmentId": "scheria-phaeacia",
+      "narrative": "After days of silence, the guest finally gives his name to the hall."
+    },
+    {
+      "id": "107-the-magic-ship-made-ready",
+      "order": 107,
+      "name": "The Magic Ship Made Ready",
+      "meters": 2529375,
+      "segmentId": "night-passage-home",
+      "narrative": "A Phaeacian galley loaded with gifts greater than anything brought from Troy."
+    },
+    {
+      "id": "108-asleep-for-the-last-crossing",
+      "order": 108,
+      "name": "Asleep for the Last Crossing",
+      "meters": 2553125,
+      "segmentId": "night-passage-home",
+      "narrative": "Slept through the whole voyage; the ship needs no hand on the oar."
+    },
+    {
+      "id": "109-waking-on-an-unfamiliar-shore",
+      "order": 109,
+      "name": "Waking on an Unfamiliar Shore",
+      "meters": 2576875,
+      "segmentId": "ithaca-homecoming",
+      "narrative": "Twenty years gone; even home looks like a stranger's coastline."
+    },
+    {
+      "id": "110-the-harbor-of-the-old-sea-god-phorcys",
+      "order": 110,
+      "name": "The Harbor of the Old Sea-God Phorcys",
+      "meters": 2600625,
+      "segmentId": "ithaca-homecoming",
+      "narrative": "A hidden cove ringed with olive trees, exactly as the stories described it."
+    },
+    {
+      "id": "111-the-cave-of-the-nymphs",
+      "order": 111,
+      "name": "The Cave of the Nymphs",
+      "meters": 2624375,
+      "segmentId": "ithaca-homecoming",
+      "narrative": "Stone looms and stone jars inside a cave no mortal built."
+    },
+    {
+      "id": "112-athenas-disguise-on-the-beach",
+      "order": 112,
+      "name": "Athena's Disguise on the Beach",
+      "meters": 2648125,
+      "segmentId": "ithaca-homecoming",
+      "narrative": "Advice from a shepherd who is clearly no shepherd at all."
+    },
+    {
+      "id": "113-hiding-the-phaeacian-gold",
+      "order": 113,
+      "name": "Hiding the Phaeacian Gold",
+      "meters": 2671875,
+      "segmentId": "ithaca-homecoming",
+      "narrative": "Treasure buried in the cave before a single step is taken inland."
+    },
+    {
+      "id": "114-the-swineherds-hut-on-the-ridge",
+      "order": 114,
+      "name": "The Swineherd's Hut on the Ridge",
+      "meters": 2695625,
+      "segmentId": "ithaca-homecoming",
+      "narrative": "Smoke rising from Eumaeus's hut, the first honest welcome in twenty years."
+    },
+    {
+      "id": "115-a-beggar-at-his-own-door",
+      "order": 115,
+      "name": "A Beggar at His Own Door",
+      "meters": 2719375,
+      "segmentId": "ithaca-homecoming",
+      "narrative": "Disguised past recognition, even by the dogs that once knew him."
+    },
+    {
+      "id": "116-the-old-dog-on-the-dung-heap",
+      "order": 116,
+      "name": "The Old Dog on the Dung Heap",
+      "meters": 2743125,
+      "segmentId": "ithaca-homecoming",
+      "narrative": "Argos lifts his head once, at a scent no one else in the yard notices."
+    },
+    {
+      "id": "117-counting-the-suitors-in-the-hall",
+      "order": 117,
+      "name": "Counting the Suitors in the Hall",
+      "meters": 2766875,
+      "segmentId": "ithaca-homecoming",
+      "narrative": "More than a hundred men living off another man's house and patience."
+    },
+    {
+      "id": "118-the-bow-that-only-one-man-can-string",
+      "order": 118,
+      "name": "The Bow That Only One Man Can String",
+      "meters": 2790625,
+      "segmentId": "ithaca-homecoming",
+      "narrative": "A contest set for a queen's hand that no suitor can complete."
+    },
+    {
+      "id": "119-the-hall-barred-from-the-inside",
+      "order": 119,
+      "name": "The Hall Barred From the Inside",
+      "meters": 2814375,
+      "segmentId": "ithaca-homecoming",
+      "narrative": "Doors sealed, weapons gathered, twenty years of debt about to be called in."
+    },
+    {
+      "id": "120-ithaca-truly-home",
+      "order": 120,
+      "name": "Ithaca, Truly Home",
+      "meters": 2838125,
+      "segmentId": "ithaca-homecoming",
+      "narrative": "The last suitor falls, and the house finally belongs to the man who built it."
+    }
+  ]
+}
