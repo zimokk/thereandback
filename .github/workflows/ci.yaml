@@ -4,32 +4,115 @@ on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel superseded runs on the same branch/PR to save CI minutes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least-privilege default; jobs opt into more only if they need it.
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: "3.47.x"
+  FLUTTER_CHANNEL: "stable"
 
 jobs:
-  analyze-and-test:
+  # The Flutter app hasn't been scaffolded yet (see docs/implementation-plan.md,
+  # Phase 0). This job lets the pipeline stay meaningful before and after that
+  # lands, instead of either doing nothing or hard-failing every commit.
+  detect:
+    name: Detect project state
+    runs-on: ubuntu-latest
+    outputs:
+      flutter_project: ${{ steps.check.outputs.exists }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: |
+          if [ -f pubspec.yaml ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No pubspec.yaml yet — skipping Flutter jobs until Phase 0 (see docs/implementation-plan.md)."
+          fi
+
+  validate-content:
+    name: Validate journey content
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Check JSON files parse
+        run: |
+          set -euo pipefail
+          status=0
+          while IFS= read -r -d '' file; do
+            if ! node -e "JSON.parse(require('fs').readFileSync(process.argv[1], 'utf8'))" "$file"; then
+              echo "::error file=$file::invalid JSON"
+              status=1
+            fi
+          done < <(find assets -name '*.json' -print0)
+          exit "$status"
 
+  format-analyze:
+    name: Format & analyze
+    needs: detect
+    if: needs.detect.outputs.flutter_project == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: "3.47.1"
-          channel: stable
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Generate code (freezed / riverpod_generator / json_serializable)
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get
+      - name: Generated code up to date
         run: dart run build_runner build --delete-conflicting-outputs
-
-      - name: Generate localizations
-        run: flutter gen-l10n
-
-      - name: Check formatting
+      - name: dart format
         run: dart format --output=none --set-exit-if-changed .
+      - name: flutter analyze
+        run: flutter analyze --fatal-infos
 
-      - name: Analyze
-        run: flutter analyze
+  test:
+    name: Unit & widget tests
+    needs: [detect, format-analyze]
+    if: needs.detect.outputs.flutter_project == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: ${{ env.FLUTTER_CHANNEL }}
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: flutter pub get
+      - run: dart run build_runner build --delete-conflicting-outputs
+      - run: flutter test --coverage
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-lcov
+          path: coverage/lcov.info
+          retention-days: 14
 
-      - name: Test
-        run: flutter test
+  # Single required status for branch protection — flip on once Phase 0 lands
+  # so "flutter_project == false" doesn't count as a free pass forever.
+  ci-summary:
+    name: CI summary
+    if: always()
+    needs: [validate-content, format-analyze, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          if [ "${{ needs.validate-content.result }}" != "success" ] || \
+             [ "${{ needs.format-analyze.result }}" == "failure" ] || \
+             [ "${{ needs.test.result }}" == "failure" ]; then
+            echo "::error::CI failed — see failed jobs above."
+            exit 1
+          fi
+          echo "CI passed."
