@@ -1,6 +1,11 @@
+import 'dart:async';
+
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../app/database_provider.dart';
+import '../../../core/local_owner.dart';
 import '../data/journey_catalog.dart';
+import '../data/progress_repository.dart';
 import '../domain/journey.dart';
 import '../domain/quest_selection.dart';
 
@@ -12,13 +17,37 @@ part 'journey_providers.g.dart';
 @riverpod
 List<Journey> journeyCatalogEntries(Ref ref) => journeyCatalog;
 
+/// The drift-backed store for the active quest (§5.2, §8). Overridden with
+/// an in-memory `AppDatabase` in tests via `appDatabaseProvider`
+/// (`testing` skill).
+@riverpod
+ProgressRepository progressRepository(Ref ref) =>
+    DriftProgressRepository(ref.watch(appDatabaseProvider));
+
 /// The currently selected/started quest, or `null` before the user picks
-/// one. **In-memory only** — resets on app restart. Phase 3 (drift) is the
-/// planned, durable replacement; see `docs/screens/journey.md`.
+/// one, or before the persisted quest (if any) has finished loading.
+///
+/// Durable since Phase 3: [start] and [applySyncedProgress] write through
+/// [progressRepositoryProvider], and [build] restores whatever was
+/// persisted — a killed-and-restarted app no longer loses `lastSyncedAt`
+/// or `progressMeters` (see `docs/screens/steps-sync.md`).
 @riverpod
 class SelectedJourney extends _$SelectedJourney {
   @override
-  SelectedQuest? build() => null;
+  SelectedQuest? build() {
+    // Same "fire an async check from a sync build()" idiom as
+    // `StepsSync.build()` (steps/presentation/steps_providers.dart) — the
+    // widget renders `null` for one frame until this resolves.
+    unawaited(_restore());
+    return null;
+  }
+
+  Future<void> _restore() async {
+    final restored = await ref
+        .read(progressRepositoryProvider)
+        .loadSelectedQuest(localOwnerId);
+    if (restored != null) state = restored;
+  }
 
   /// Starts a quest. `lastSyncedAt` seeds to the start of the local
   /// calendar day (§5.2), not the exact moment, so steps already taken
@@ -30,10 +59,21 @@ class SelectedJourney extends _$SelectedJourney {
       lastSyncedAt: DateTime(now.year, now.month, now.day),
       progressMeters: 0,
     );
+    unawaited(
+      ref
+          .read(progressRepositoryProvider)
+          .startQuest(localOwnerId, journeyId: journeyId, startedAt: now),
+    );
   }
 
   /// Applies a synced progress total. Called by `steps/presentation`'s sync
   /// controller once it has resolved a delta through `stride.dart`.
+  ///
+  /// In-memory only — no persistence write here. The durable, idempotent
+  /// record was already written by `StepsSync.sync()` via
+  /// `stepSampleRepositoryProvider` *before* this is called; progress is
+  /// derived from that log, not stored as its own mutable total (§5.2, see
+  /// `progress_repository.dart`), so there is nothing left to persist.
   void applySyncedProgress({
     required int progressMeters,
     required DateTime syncedAt,

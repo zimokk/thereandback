@@ -40,7 +40,8 @@ change shape when that happens.
 | Provider | Shape | Notes |
 |---|---|---|
 | `journeyCatalogEntriesProvider` | `List<Journey>` | Static list today (`journey_catalog.dart`); Phase 8 swaps in cached Firestore metadata, same shape. |
-| `selectedJourneyProvider` | `SelectedQuest?` (Notifier) | **In-memory only — resets on app restart.** Phase 3 (drift) is the durable replacement; the shape (`journeyId`, `startedAt`, `lastSyncedAt`, `progressMeters`) is designed to carry over unchanged. |
+| `selectedJourneyProvider` | `SelectedQuest?` (Notifier) | **Durable since Phase 3.** `build()` restores whatever was persisted via `progressRepositoryProvider`; `start()` writes through it. See [`steps-sync.md`](steps-sync.md#phase-3--durable-persistence-drift) for how `progressMeters`/`lastSyncedAt` are derived from the drift-backed interval log rather than stored as their own mutable fields. |
+| `progressRepositoryProvider` | `ProgressRepository` | Drift-backed. Overridden with an in-memory `AppDatabase` in tests (`testing` skill). |
 | `selectedJourneyDetailsProvider` | `Journey?` | Catalog lookup for the currently selected quest. |
 
 `SelectedQuest.progressMeters` is written by

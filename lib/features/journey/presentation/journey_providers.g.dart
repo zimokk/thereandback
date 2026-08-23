@@ -61,21 +61,92 @@ final class JourneyCatalogEntriesProvider
 String _$journeyCatalogEntriesHash() =>
     r'15d45c76e847d5a6133dadc260c18ee4444fd102';
 
+/// The drift-backed store for the active quest (§5.2, §8). Overridden with
+/// an in-memory `AppDatabase` in tests via `appDatabaseProvider`
+/// (`testing` skill).
+
+@ProviderFor(progressRepository)
+final progressRepositoryProvider = ProgressRepositoryProvider._();
+
+/// The drift-backed store for the active quest (§5.2, §8). Overridden with
+/// an in-memory `AppDatabase` in tests via `appDatabaseProvider`
+/// (`testing` skill).
+
+final class ProgressRepositoryProvider
+    extends
+        $FunctionalProvider<
+          ProgressRepository,
+          ProgressRepository,
+          ProgressRepository
+        >
+    with $Provider<ProgressRepository> {
+  /// The drift-backed store for the active quest (§5.2, §8). Overridden with
+  /// an in-memory `AppDatabase` in tests via `appDatabaseProvider`
+  /// (`testing` skill).
+  ProgressRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'progressRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$progressRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<ProgressRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ProgressRepository create(Ref ref) {
+    return progressRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ProgressRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ProgressRepository>(value),
+    );
+  }
+}
+
+String _$progressRepositoryHash() =>
+    r'38ea6184c71b13fed3c863d0acfa58eeb1503f71';
+
 /// The currently selected/started quest, or `null` before the user picks
-/// one. **In-memory only** — resets on app restart. Phase 3 (drift) is the
-/// planned, durable replacement; see `docs/screens/journey.md`.
+/// one, or before the persisted quest (if any) has finished loading.
+///
+/// Durable since Phase 3: [start] and [applySyncedProgress] write through
+/// [progressRepositoryProvider], and [build] restores whatever was
+/// persisted — a killed-and-restarted app no longer loses `lastSyncedAt`
+/// or `progressMeters` (see `docs/screens/steps-sync.md`).
 
 @ProviderFor(SelectedJourney)
 final selectedJourneyProvider = SelectedJourneyProvider._();
 
 /// The currently selected/started quest, or `null` before the user picks
-/// one. **In-memory only** — resets on app restart. Phase 3 (drift) is the
-/// planned, durable replacement; see `docs/screens/journey.md`.
+/// one, or before the persisted quest (if any) has finished loading.
+///
+/// Durable since Phase 3: [start] and [applySyncedProgress] write through
+/// [progressRepositoryProvider], and [build] restores whatever was
+/// persisted — a killed-and-restarted app no longer loses `lastSyncedAt`
+/// or `progressMeters` (see `docs/screens/steps-sync.md`).
 final class SelectedJourneyProvider
     extends $NotifierProvider<SelectedJourney, SelectedQuest?> {
   /// The currently selected/started quest, or `null` before the user picks
-  /// one. **In-memory only** — resets on app restart. Phase 3 (drift) is the
-  /// planned, durable replacement; see `docs/screens/journey.md`.
+  /// one, or before the persisted quest (if any) has finished loading.
+  ///
+  /// Durable since Phase 3: [start] and [applySyncedProgress] write through
+  /// [progressRepositoryProvider], and [build] restores whatever was
+  /// persisted — a killed-and-restarted app no longer loses `lastSyncedAt`
+  /// or `progressMeters` (see `docs/screens/steps-sync.md`).
   SelectedJourneyProvider._()
     : super(
         from: null,
@@ -103,11 +174,15 @@ final class SelectedJourneyProvider
   }
 }
 
-String _$selectedJourneyHash() => r'9a5b3ae85645d60ed3ce9ce0498b4d7ff9f837fa';
+String _$selectedJourneyHash() => r'869d6bc69d6bc3f8f99ae616d7b86712dcac9309';
 
 /// The currently selected/started quest, or `null` before the user picks
-/// one. **In-memory only** — resets on app restart. Phase 3 (drift) is the
-/// planned, durable replacement; see `docs/screens/journey.md`.
+/// one, or before the persisted quest (if any) has finished loading.
+///
+/// Durable since Phase 3: [start] and [applySyncedProgress] write through
+/// [progressRepositoryProvider], and [build] restores whatever was
+/// persisted — a killed-and-restarted app no longer loses `lastSyncedAt`
+/// or `progressMeters` (see `docs/screens/steps-sync.md`).
 
 abstract class _$SelectedJourney extends $Notifier<SelectedQuest?> {
   SelectedQuest? build();

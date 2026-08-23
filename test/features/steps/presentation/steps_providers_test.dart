@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:thereandback/app/database_provider.dart';
+import 'package:thereandback/core/local_owner.dart';
+import 'package:thereandback/data/drift/database.dart';
 import 'package:thereandback/features/journey/presentation/journey_providers.dart';
 import 'package:thereandback/features/steps/data/health_adapter.dart';
 import 'package:thereandback/features/steps/presentation/steps_providers.dart';
@@ -28,6 +31,8 @@ void main() {
       overrides: [
         healthAdapterProvider.overrideWithValue(adapter),
         stepsSyncProvider.overrideWith(() => _GrantedStepsSync()),
+        // `testing` skill: never a real drift database in a test.
+        appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
       ],
     );
     addTearDown(container.dispose);
@@ -95,5 +100,34 @@ void main() {
 
     verifyNever(() => adapter.fetchDelta(any(), any()));
     expect(container.read(selectedJourneyProvider), isNull);
+  });
+
+  test('Phase 3: a credited sync is durable — reloading from the repository '
+      '(what a restarted app does in `SelectedJourney.build()`) matches what '
+      'was just credited in memory', () async {
+    when(() => adapter.fetchDelta(any(), any()))
+        .thenAnswer((_) async => const StepsDelta(steps: 100));
+
+    container
+        .read(selectedJourneyProvider.notifier)
+        .start('odyssey-ithaca', now: DateTime.now());
+    container
+        .read(selectedJourneyProvider.notifier)
+        .applySyncedProgress(
+          progressMeters: 0,
+          syncedAt: DateTime.now().subtract(const Duration(minutes: 10)),
+        );
+
+    await container.read(stepsSyncProvider.notifier).sync();
+    final credited = container.read(selectedJourneyProvider)!;
+    expect(credited.progressMeters, greaterThan(0));
+
+    final reloaded = await container
+        .read(progressRepositoryProvider)
+        .loadSelectedQuest(localOwnerId);
+
+    expect(reloaded, isNotNull);
+    expect(reloaded!.progressMeters, credited.progressMeters);
+    expect(reloaded.lastSyncedAt, credited.lastSyncedAt);
   });
 }

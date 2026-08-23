@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:thereandback/app/database_provider.dart';
 import 'package:thereandback/app/theme.dart';
+import 'package:thereandback/data/drift/database.dart';
 import 'package:thereandback/features/journey/presentation/journey_providers.dart';
 import 'package:thereandback/features/journey/presentation/journey_tab.dart';
 import 'package:thereandback/features/steps/presentation/steps_providers.dart';
@@ -35,7 +37,14 @@ void main() {
   testWidgets('shows the quest catalog when no quest is selected', (
     tester,
   ) async {
-    await tester.pumpWidget(ProviderScope(child: _app(const JourneyTab())));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+        ],
+        child: _app(const JourneyTab()),
+      ),
+    );
     await tester.pump();
 
     expect(find.text('Choose your quest'), findsOneWidget);
@@ -46,6 +55,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
           stepsSyncProvider.overrideWith(
             () => _FixedStepsSync(
               const StepsSyncState(
@@ -77,6 +87,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
           stepsSyncProvider.overrideWith(
             () => _FixedStepsSync(
               const StepsSyncState(

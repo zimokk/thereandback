@@ -1,0 +1,1427 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'database.dart';
+
+// ignore_for_file: type=lint
+class $SelectedQuestRowsTable extends SelectedQuestRows
+    with TableInfo<$SelectedQuestRowsTable, SelectedQuestRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SelectedQuestRowsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _ownerIdMeta = const VerificationMeta(
+    'ownerId',
+  );
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+    'owner_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _journeyIdMeta = const VerificationMeta(
+    'journeyId',
+  );
+  @override
+  late final GeneratedColumn<String> journeyId = GeneratedColumn<String>(
+    'journey_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _startedAtMeta = const VerificationMeta(
+    'startedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> startedAt = GeneratedColumn<DateTime>(
+    'started_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [ownerId, journeyId, startedAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'selected_quest_rows';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SelectedQuestRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('owner_id')) {
+      context.handle(
+        _ownerIdMeta,
+        ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ownerIdMeta);
+    }
+    if (data.containsKey('journey_id')) {
+      context.handle(
+        _journeyIdMeta,
+        journeyId.isAcceptableOrUnknown(data['journey_id']!, _journeyIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_journeyIdMeta);
+    }
+    if (data.containsKey('started_at')) {
+      context.handle(
+        _startedAtMeta,
+        startedAt.isAcceptableOrUnknown(data['started_at']!, _startedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_startedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {ownerId};
+  @override
+  SelectedQuestRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SelectedQuestRow(
+      ownerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_id'],
+      )!,
+      journeyId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}journey_id'],
+      )!,
+      startedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}started_at'],
+      )!,
+    );
+  }
+
+  @override
+  $SelectedQuestRowsTable createAlias(String alias) {
+    return $SelectedQuestRowsTable(attachedDatabase, alias);
+  }
+}
+
+class SelectedQuestRow extends DataClass
+    implements Insertable<SelectedQuestRow> {
+  final String ownerId;
+  final String journeyId;
+  final DateTime startedAt;
+  const SelectedQuestRow({
+    required this.ownerId,
+    required this.journeyId,
+    required this.startedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['owner_id'] = Variable<String>(ownerId);
+    map['journey_id'] = Variable<String>(journeyId);
+    map['started_at'] = Variable<DateTime>(startedAt);
+    return map;
+  }
+
+  SelectedQuestRowsCompanion toCompanion(bool nullToAbsent) {
+    return SelectedQuestRowsCompanion(
+      ownerId: Value(ownerId),
+      journeyId: Value(journeyId),
+      startedAt: Value(startedAt),
+    );
+  }
+
+  factory SelectedQuestRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SelectedQuestRow(
+      ownerId: serializer.fromJson<String>(json['ownerId']),
+      journeyId: serializer.fromJson<String>(json['journeyId']),
+      startedAt: serializer.fromJson<DateTime>(json['startedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'ownerId': serializer.toJson<String>(ownerId),
+      'journeyId': serializer.toJson<String>(journeyId),
+      'startedAt': serializer.toJson<DateTime>(startedAt),
+    };
+  }
+
+  SelectedQuestRow copyWith({
+    String? ownerId,
+    String? journeyId,
+    DateTime? startedAt,
+  }) => SelectedQuestRow(
+    ownerId: ownerId ?? this.ownerId,
+    journeyId: journeyId ?? this.journeyId,
+    startedAt: startedAt ?? this.startedAt,
+  );
+  SelectedQuestRow copyWithCompanion(SelectedQuestRowsCompanion data) {
+    return SelectedQuestRow(
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      journeyId: data.journeyId.present ? data.journeyId.value : this.journeyId,
+      startedAt: data.startedAt.present ? data.startedAt.value : this.startedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SelectedQuestRow(')
+          ..write('ownerId: $ownerId, ')
+          ..write('journeyId: $journeyId, ')
+          ..write('startedAt: $startedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(ownerId, journeyId, startedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SelectedQuestRow &&
+          other.ownerId == this.ownerId &&
+          other.journeyId == this.journeyId &&
+          other.startedAt == this.startedAt);
+}
+
+class SelectedQuestRowsCompanion extends UpdateCompanion<SelectedQuestRow> {
+  final Value<String> ownerId;
+  final Value<String> journeyId;
+  final Value<DateTime> startedAt;
+  final Value<int> rowid;
+  const SelectedQuestRowsCompanion({
+    this.ownerId = const Value.absent(),
+    this.journeyId = const Value.absent(),
+    this.startedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SelectedQuestRowsCompanion.insert({
+    required String ownerId,
+    required String journeyId,
+    required DateTime startedAt,
+    this.rowid = const Value.absent(),
+  }) : ownerId = Value(ownerId),
+       journeyId = Value(journeyId),
+       startedAt = Value(startedAt);
+  static Insertable<SelectedQuestRow> custom({
+    Expression<String>? ownerId,
+    Expression<String>? journeyId,
+    Expression<DateTime>? startedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (ownerId != null) 'owner_id': ownerId,
+      if (journeyId != null) 'journey_id': journeyId,
+      if (startedAt != null) 'started_at': startedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SelectedQuestRowsCompanion copyWith({
+    Value<String>? ownerId,
+    Value<String>? journeyId,
+    Value<DateTime>? startedAt,
+    Value<int>? rowid,
+  }) {
+    return SelectedQuestRowsCompanion(
+      ownerId: ownerId ?? this.ownerId,
+      journeyId: journeyId ?? this.journeyId,
+      startedAt: startedAt ?? this.startedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (journeyId.present) {
+      map['journey_id'] = Variable<String>(journeyId.value);
+    }
+    if (startedAt.present) {
+      map['started_at'] = Variable<DateTime>(startedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SelectedQuestRowsCompanion(')
+          ..write('ownerId: $ownerId, ')
+          ..write('journeyId: $journeyId, ')
+          ..write('startedAt: $startedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $StepIntervalRecordsTable extends StepIntervalRecords
+    with TableInfo<$StepIntervalRecordsTable, StepIntervalRecord> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $StepIntervalRecordsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _ownerIdMeta = const VerificationMeta(
+    'ownerId',
+  );
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+    'owner_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _journeyIdMeta = const VerificationMeta(
+    'journeyId',
+  );
+  @override
+  late final GeneratedColumn<String> journeyId = GeneratedColumn<String>(
+    'journey_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _intervalStartMeta = const VerificationMeta(
+    'intervalStart',
+  );
+  @override
+  late final GeneratedColumn<DateTime> intervalStart =
+      GeneratedColumn<DateTime>(
+        'interval_start',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _intervalEndMeta = const VerificationMeta(
+    'intervalEnd',
+  );
+  @override
+  late final GeneratedColumn<DateTime> intervalEnd = GeneratedColumn<DateTime>(
+    'interval_end',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _stepsMeta = const VerificationMeta('steps');
+  @override
+  late final GeneratedColumn<int> steps = GeneratedColumn<int>(
+    'steps',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _walkingDistanceMetersMeta =
+      const VerificationMeta('walkingDistanceMeters');
+  @override
+  late final GeneratedColumn<int> walkingDistanceMeters = GeneratedColumn<int>(
+    'walking_distance_meters',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _resolvedMetersMeta = const VerificationMeta(
+    'resolvedMeters',
+  );
+  @override
+  late final GeneratedColumn<int> resolvedMeters = GeneratedColumn<int>(
+    'resolved_meters',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _flaggedPaceMeta = const VerificationMeta(
+    'flaggedPace',
+  );
+  @override
+  late final GeneratedColumn<bool> flaggedPace = GeneratedColumn<bool>(
+    'flagged_pace',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("flagged_pace" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _syncedAtMeta = const VerificationMeta(
+    'syncedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> syncedAt = GeneratedColumn<DateTime>(
+    'synced_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    ownerId,
+    journeyId,
+    intervalStart,
+    intervalEnd,
+    steps,
+    walkingDistanceMeters,
+    resolvedMeters,
+    flaggedPace,
+    syncedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'step_interval_records';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<StepIntervalRecord> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('owner_id')) {
+      context.handle(
+        _ownerIdMeta,
+        ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ownerIdMeta);
+    }
+    if (data.containsKey('journey_id')) {
+      context.handle(
+        _journeyIdMeta,
+        journeyId.isAcceptableOrUnknown(data['journey_id']!, _journeyIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_journeyIdMeta);
+    }
+    if (data.containsKey('interval_start')) {
+      context.handle(
+        _intervalStartMeta,
+        intervalStart.isAcceptableOrUnknown(
+          data['interval_start']!,
+          _intervalStartMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_intervalStartMeta);
+    }
+    if (data.containsKey('interval_end')) {
+      context.handle(
+        _intervalEndMeta,
+        intervalEnd.isAcceptableOrUnknown(
+          data['interval_end']!,
+          _intervalEndMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_intervalEndMeta);
+    }
+    if (data.containsKey('steps')) {
+      context.handle(
+        _stepsMeta,
+        steps.isAcceptableOrUnknown(data['steps']!, _stepsMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_stepsMeta);
+    }
+    if (data.containsKey('walking_distance_meters')) {
+      context.handle(
+        _walkingDistanceMetersMeta,
+        walkingDistanceMeters.isAcceptableOrUnknown(
+          data['walking_distance_meters']!,
+          _walkingDistanceMetersMeta,
+        ),
+      );
+    }
+    if (data.containsKey('resolved_meters')) {
+      context.handle(
+        _resolvedMetersMeta,
+        resolvedMeters.isAcceptableOrUnknown(
+          data['resolved_meters']!,
+          _resolvedMetersMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_resolvedMetersMeta);
+    }
+    if (data.containsKey('flagged_pace')) {
+      context.handle(
+        _flaggedPaceMeta,
+        flaggedPace.isAcceptableOrUnknown(
+          data['flagged_pace']!,
+          _flaggedPaceMeta,
+        ),
+      );
+    }
+    if (data.containsKey('synced_at')) {
+      context.handle(
+        _syncedAtMeta,
+        syncedAt.isAcceptableOrUnknown(data['synced_at']!, _syncedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_syncedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  List<Set<GeneratedColumn>> get uniqueKeys => [
+    {ownerId, journeyId, intervalStart},
+  ];
+  @override
+  StepIntervalRecord map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return StepIntervalRecord(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      ownerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_id'],
+      )!,
+      journeyId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}journey_id'],
+      )!,
+      intervalStart: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}interval_start'],
+      )!,
+      intervalEnd: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}interval_end'],
+      )!,
+      steps: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}steps'],
+      )!,
+      walkingDistanceMeters: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}walking_distance_meters'],
+      ),
+      resolvedMeters: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}resolved_meters'],
+      )!,
+      flaggedPace: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}flagged_pace'],
+      )!,
+      syncedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}synced_at'],
+      )!,
+    );
+  }
+
+  @override
+  $StepIntervalRecordsTable createAlias(String alias) {
+    return $StepIntervalRecordsTable(attachedDatabase, alias);
+  }
+}
+
+class StepIntervalRecord extends DataClass
+    implements Insertable<StepIntervalRecord> {
+  final int id;
+  final String ownerId;
+  final String journeyId;
+  final DateTime intervalStart;
+  final DateTime intervalEnd;
+  final int steps;
+  final int? walkingDistanceMeters;
+  final int resolvedMeters;
+  final bool flaggedPace;
+  final DateTime syncedAt;
+  const StepIntervalRecord({
+    required this.id,
+    required this.ownerId,
+    required this.journeyId,
+    required this.intervalStart,
+    required this.intervalEnd,
+    required this.steps,
+    this.walkingDistanceMeters,
+    required this.resolvedMeters,
+    required this.flaggedPace,
+    required this.syncedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['owner_id'] = Variable<String>(ownerId);
+    map['journey_id'] = Variable<String>(journeyId);
+    map['interval_start'] = Variable<DateTime>(intervalStart);
+    map['interval_end'] = Variable<DateTime>(intervalEnd);
+    map['steps'] = Variable<int>(steps);
+    if (!nullToAbsent || walkingDistanceMeters != null) {
+      map['walking_distance_meters'] = Variable<int>(walkingDistanceMeters);
+    }
+    map['resolved_meters'] = Variable<int>(resolvedMeters);
+    map['flagged_pace'] = Variable<bool>(flaggedPace);
+    map['synced_at'] = Variable<DateTime>(syncedAt);
+    return map;
+  }
+
+  StepIntervalRecordsCompanion toCompanion(bool nullToAbsent) {
+    return StepIntervalRecordsCompanion(
+      id: Value(id),
+      ownerId: Value(ownerId),
+      journeyId: Value(journeyId),
+      intervalStart: Value(intervalStart),
+      intervalEnd: Value(intervalEnd),
+      steps: Value(steps),
+      walkingDistanceMeters: walkingDistanceMeters == null && nullToAbsent
+          ? const Value.absent()
+          : Value(walkingDistanceMeters),
+      resolvedMeters: Value(resolvedMeters),
+      flaggedPace: Value(flaggedPace),
+      syncedAt: Value(syncedAt),
+    );
+  }
+
+  factory StepIntervalRecord.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return StepIntervalRecord(
+      id: serializer.fromJson<int>(json['id']),
+      ownerId: serializer.fromJson<String>(json['ownerId']),
+      journeyId: serializer.fromJson<String>(json['journeyId']),
+      intervalStart: serializer.fromJson<DateTime>(json['intervalStart']),
+      intervalEnd: serializer.fromJson<DateTime>(json['intervalEnd']),
+      steps: serializer.fromJson<int>(json['steps']),
+      walkingDistanceMeters: serializer.fromJson<int?>(
+        json['walkingDistanceMeters'],
+      ),
+      resolvedMeters: serializer.fromJson<int>(json['resolvedMeters']),
+      flaggedPace: serializer.fromJson<bool>(json['flaggedPace']),
+      syncedAt: serializer.fromJson<DateTime>(json['syncedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'ownerId': serializer.toJson<String>(ownerId),
+      'journeyId': serializer.toJson<String>(journeyId),
+      'intervalStart': serializer.toJson<DateTime>(intervalStart),
+      'intervalEnd': serializer.toJson<DateTime>(intervalEnd),
+      'steps': serializer.toJson<int>(steps),
+      'walkingDistanceMeters': serializer.toJson<int?>(walkingDistanceMeters),
+      'resolvedMeters': serializer.toJson<int>(resolvedMeters),
+      'flaggedPace': serializer.toJson<bool>(flaggedPace),
+      'syncedAt': serializer.toJson<DateTime>(syncedAt),
+    };
+  }
+
+  StepIntervalRecord copyWith({
+    int? id,
+    String? ownerId,
+    String? journeyId,
+    DateTime? intervalStart,
+    DateTime? intervalEnd,
+    int? steps,
+    Value<int?> walkingDistanceMeters = const Value.absent(),
+    int? resolvedMeters,
+    bool? flaggedPace,
+    DateTime? syncedAt,
+  }) => StepIntervalRecord(
+    id: id ?? this.id,
+    ownerId: ownerId ?? this.ownerId,
+    journeyId: journeyId ?? this.journeyId,
+    intervalStart: intervalStart ?? this.intervalStart,
+    intervalEnd: intervalEnd ?? this.intervalEnd,
+    steps: steps ?? this.steps,
+    walkingDistanceMeters: walkingDistanceMeters.present
+        ? walkingDistanceMeters.value
+        : this.walkingDistanceMeters,
+    resolvedMeters: resolvedMeters ?? this.resolvedMeters,
+    flaggedPace: flaggedPace ?? this.flaggedPace,
+    syncedAt: syncedAt ?? this.syncedAt,
+  );
+  StepIntervalRecord copyWithCompanion(StepIntervalRecordsCompanion data) {
+    return StepIntervalRecord(
+      id: data.id.present ? data.id.value : this.id,
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      journeyId: data.journeyId.present ? data.journeyId.value : this.journeyId,
+      intervalStart: data.intervalStart.present
+          ? data.intervalStart.value
+          : this.intervalStart,
+      intervalEnd: data.intervalEnd.present
+          ? data.intervalEnd.value
+          : this.intervalEnd,
+      steps: data.steps.present ? data.steps.value : this.steps,
+      walkingDistanceMeters: data.walkingDistanceMeters.present
+          ? data.walkingDistanceMeters.value
+          : this.walkingDistanceMeters,
+      resolvedMeters: data.resolvedMeters.present
+          ? data.resolvedMeters.value
+          : this.resolvedMeters,
+      flaggedPace: data.flaggedPace.present
+          ? data.flaggedPace.value
+          : this.flaggedPace,
+      syncedAt: data.syncedAt.present ? data.syncedAt.value : this.syncedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StepIntervalRecord(')
+          ..write('id: $id, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('journeyId: $journeyId, ')
+          ..write('intervalStart: $intervalStart, ')
+          ..write('intervalEnd: $intervalEnd, ')
+          ..write('steps: $steps, ')
+          ..write('walkingDistanceMeters: $walkingDistanceMeters, ')
+          ..write('resolvedMeters: $resolvedMeters, ')
+          ..write('flaggedPace: $flaggedPace, ')
+          ..write('syncedAt: $syncedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    ownerId,
+    journeyId,
+    intervalStart,
+    intervalEnd,
+    steps,
+    walkingDistanceMeters,
+    resolvedMeters,
+    flaggedPace,
+    syncedAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is StepIntervalRecord &&
+          other.id == this.id &&
+          other.ownerId == this.ownerId &&
+          other.journeyId == this.journeyId &&
+          other.intervalStart == this.intervalStart &&
+          other.intervalEnd == this.intervalEnd &&
+          other.steps == this.steps &&
+          other.walkingDistanceMeters == this.walkingDistanceMeters &&
+          other.resolvedMeters == this.resolvedMeters &&
+          other.flaggedPace == this.flaggedPace &&
+          other.syncedAt == this.syncedAt);
+}
+
+class StepIntervalRecordsCompanion extends UpdateCompanion<StepIntervalRecord> {
+  final Value<int> id;
+  final Value<String> ownerId;
+  final Value<String> journeyId;
+  final Value<DateTime> intervalStart;
+  final Value<DateTime> intervalEnd;
+  final Value<int> steps;
+  final Value<int?> walkingDistanceMeters;
+  final Value<int> resolvedMeters;
+  final Value<bool> flaggedPace;
+  final Value<DateTime> syncedAt;
+  const StepIntervalRecordsCompanion({
+    this.id = const Value.absent(),
+    this.ownerId = const Value.absent(),
+    this.journeyId = const Value.absent(),
+    this.intervalStart = const Value.absent(),
+    this.intervalEnd = const Value.absent(),
+    this.steps = const Value.absent(),
+    this.walkingDistanceMeters = const Value.absent(),
+    this.resolvedMeters = const Value.absent(),
+    this.flaggedPace = const Value.absent(),
+    this.syncedAt = const Value.absent(),
+  });
+  StepIntervalRecordsCompanion.insert({
+    this.id = const Value.absent(),
+    required String ownerId,
+    required String journeyId,
+    required DateTime intervalStart,
+    required DateTime intervalEnd,
+    required int steps,
+    this.walkingDistanceMeters = const Value.absent(),
+    required int resolvedMeters,
+    this.flaggedPace = const Value.absent(),
+    required DateTime syncedAt,
+  }) : ownerId = Value(ownerId),
+       journeyId = Value(journeyId),
+       intervalStart = Value(intervalStart),
+       intervalEnd = Value(intervalEnd),
+       steps = Value(steps),
+       resolvedMeters = Value(resolvedMeters),
+       syncedAt = Value(syncedAt);
+  static Insertable<StepIntervalRecord> custom({
+    Expression<int>? id,
+    Expression<String>? ownerId,
+    Expression<String>? journeyId,
+    Expression<DateTime>? intervalStart,
+    Expression<DateTime>? intervalEnd,
+    Expression<int>? steps,
+    Expression<int>? walkingDistanceMeters,
+    Expression<int>? resolvedMeters,
+    Expression<bool>? flaggedPace,
+    Expression<DateTime>? syncedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (ownerId != null) 'owner_id': ownerId,
+      if (journeyId != null) 'journey_id': journeyId,
+      if (intervalStart != null) 'interval_start': intervalStart,
+      if (intervalEnd != null) 'interval_end': intervalEnd,
+      if (steps != null) 'steps': steps,
+      if (walkingDistanceMeters != null)
+        'walking_distance_meters': walkingDistanceMeters,
+      if (resolvedMeters != null) 'resolved_meters': resolvedMeters,
+      if (flaggedPace != null) 'flagged_pace': flaggedPace,
+      if (syncedAt != null) 'synced_at': syncedAt,
+    });
+  }
+
+  StepIntervalRecordsCompanion copyWith({
+    Value<int>? id,
+    Value<String>? ownerId,
+    Value<String>? journeyId,
+    Value<DateTime>? intervalStart,
+    Value<DateTime>? intervalEnd,
+    Value<int>? steps,
+    Value<int?>? walkingDistanceMeters,
+    Value<int>? resolvedMeters,
+    Value<bool>? flaggedPace,
+    Value<DateTime>? syncedAt,
+  }) {
+    return StepIntervalRecordsCompanion(
+      id: id ?? this.id,
+      ownerId: ownerId ?? this.ownerId,
+      journeyId: journeyId ?? this.journeyId,
+      intervalStart: intervalStart ?? this.intervalStart,
+      intervalEnd: intervalEnd ?? this.intervalEnd,
+      steps: steps ?? this.steps,
+      walkingDistanceMeters:
+          walkingDistanceMeters ?? this.walkingDistanceMeters,
+      resolvedMeters: resolvedMeters ?? this.resolvedMeters,
+      flaggedPace: flaggedPace ?? this.flaggedPace,
+      syncedAt: syncedAt ?? this.syncedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (journeyId.present) {
+      map['journey_id'] = Variable<String>(journeyId.value);
+    }
+    if (intervalStart.present) {
+      map['interval_start'] = Variable<DateTime>(intervalStart.value);
+    }
+    if (intervalEnd.present) {
+      map['interval_end'] = Variable<DateTime>(intervalEnd.value);
+    }
+    if (steps.present) {
+      map['steps'] = Variable<int>(steps.value);
+    }
+    if (walkingDistanceMeters.present) {
+      map['walking_distance_meters'] = Variable<int>(
+        walkingDistanceMeters.value,
+      );
+    }
+    if (resolvedMeters.present) {
+      map['resolved_meters'] = Variable<int>(resolvedMeters.value);
+    }
+    if (flaggedPace.present) {
+      map['flagged_pace'] = Variable<bool>(flaggedPace.value);
+    }
+    if (syncedAt.present) {
+      map['synced_at'] = Variable<DateTime>(syncedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('StepIntervalRecordsCompanion(')
+          ..write('id: $id, ')
+          ..write('ownerId: $ownerId, ')
+          ..write('journeyId: $journeyId, ')
+          ..write('intervalStart: $intervalStart, ')
+          ..write('intervalEnd: $intervalEnd, ')
+          ..write('steps: $steps, ')
+          ..write('walkingDistanceMeters: $walkingDistanceMeters, ')
+          ..write('resolvedMeters: $resolvedMeters, ')
+          ..write('flaggedPace: $flaggedPace, ')
+          ..write('syncedAt: $syncedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+abstract class _$AppDatabase extends GeneratedDatabase {
+  _$AppDatabase(QueryExecutor e) : super(e);
+  $AppDatabaseManager get managers => $AppDatabaseManager(this);
+  late final $SelectedQuestRowsTable selectedQuestRows =
+      $SelectedQuestRowsTable(this);
+  late final $StepIntervalRecordsTable stepIntervalRecords =
+      $StepIntervalRecordsTable(this);
+  @override
+  Iterable<TableInfo<Table, Object?>> get allTables =>
+      allSchemaEntities.whereType<TableInfo<Table, Object?>>();
+  @override
+  List<DatabaseSchemaEntity> get allSchemaEntities => [
+    selectedQuestRows,
+    stepIntervalRecords,
+  ];
+}
+
+typedef $$SelectedQuestRowsTableCreateCompanionBuilder =
+    SelectedQuestRowsCompanion Function({
+      required String ownerId,
+      required String journeyId,
+      required DateTime startedAt,
+      Value<int> rowid,
+    });
+typedef $$SelectedQuestRowsTableUpdateCompanionBuilder =
+    SelectedQuestRowsCompanion Function({
+      Value<String> ownerId,
+      Value<String> journeyId,
+      Value<DateTime> startedAt,
+      Value<int> rowid,
+    });
+
+class $$SelectedQuestRowsTableFilterComposer
+    extends Composer<_$AppDatabase, $SelectedQuestRowsTable> {
+  $$SelectedQuestRowsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get journeyId => $composableBuilder(
+    column: $table.journeyId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SelectedQuestRowsTableOrderingComposer
+    extends Composer<_$AppDatabase, $SelectedQuestRowsTable> {
+  $$SelectedQuestRowsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get journeyId => $composableBuilder(
+    column: $table.journeyId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get startedAt => $composableBuilder(
+    column: $table.startedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SelectedQuestRowsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SelectedQuestRowsTable> {
+  $$SelectedQuestRowsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+
+  GeneratedColumn<String> get journeyId =>
+      $composableBuilder(column: $table.journeyId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get startedAt =>
+      $composableBuilder(column: $table.startedAt, builder: (column) => column);
+}
+
+class $$SelectedQuestRowsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SelectedQuestRowsTable,
+          SelectedQuestRow,
+          $$SelectedQuestRowsTableFilterComposer,
+          $$SelectedQuestRowsTableOrderingComposer,
+          $$SelectedQuestRowsTableAnnotationComposer,
+          $$SelectedQuestRowsTableCreateCompanionBuilder,
+          $$SelectedQuestRowsTableUpdateCompanionBuilder,
+          (
+            SelectedQuestRow,
+            BaseReferences<
+              _$AppDatabase,
+              $SelectedQuestRowsTable,
+              SelectedQuestRow
+            >,
+          ),
+          SelectedQuestRow,
+          PrefetchHooks Function()
+        > {
+  $$SelectedQuestRowsTableTableManager(
+    _$AppDatabase db,
+    $SelectedQuestRowsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SelectedQuestRowsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SelectedQuestRowsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SelectedQuestRowsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> ownerId = const Value.absent(),
+                Value<String> journeyId = const Value.absent(),
+                Value<DateTime> startedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SelectedQuestRowsCompanion(
+                ownerId: ownerId,
+                journeyId: journeyId,
+                startedAt: startedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String ownerId,
+                required String journeyId,
+                required DateTime startedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => SelectedQuestRowsCompanion.insert(
+                ownerId: ownerId,
+                journeyId: journeyId,
+                startedAt: startedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SelectedQuestRowsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SelectedQuestRowsTable,
+      SelectedQuestRow,
+      $$SelectedQuestRowsTableFilterComposer,
+      $$SelectedQuestRowsTableOrderingComposer,
+      $$SelectedQuestRowsTableAnnotationComposer,
+      $$SelectedQuestRowsTableCreateCompanionBuilder,
+      $$SelectedQuestRowsTableUpdateCompanionBuilder,
+      (
+        SelectedQuestRow,
+        BaseReferences<
+          _$AppDatabase,
+          $SelectedQuestRowsTable,
+          SelectedQuestRow
+        >,
+      ),
+      SelectedQuestRow,
+      PrefetchHooks Function()
+    >;
+typedef $$StepIntervalRecordsTableCreateCompanionBuilder =
+    StepIntervalRecordsCompanion Function({
+      Value<int> id,
+      required String ownerId,
+      required String journeyId,
+      required DateTime intervalStart,
+      required DateTime intervalEnd,
+      required int steps,
+      Value<int?> walkingDistanceMeters,
+      required int resolvedMeters,
+      Value<bool> flaggedPace,
+      required DateTime syncedAt,
+    });
+typedef $$StepIntervalRecordsTableUpdateCompanionBuilder =
+    StepIntervalRecordsCompanion Function({
+      Value<int> id,
+      Value<String> ownerId,
+      Value<String> journeyId,
+      Value<DateTime> intervalStart,
+      Value<DateTime> intervalEnd,
+      Value<int> steps,
+      Value<int?> walkingDistanceMeters,
+      Value<int> resolvedMeters,
+      Value<bool> flaggedPace,
+      Value<DateTime> syncedAt,
+    });
+
+class $$StepIntervalRecordsTableFilterComposer
+    extends Composer<_$AppDatabase, $StepIntervalRecordsTable> {
+  $$StepIntervalRecordsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get journeyId => $composableBuilder(
+    column: $table.journeyId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get intervalStart => $composableBuilder(
+    column: $table.intervalStart,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get intervalEnd => $composableBuilder(
+    column: $table.intervalEnd,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get steps => $composableBuilder(
+    column: $table.steps,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get walkingDistanceMeters => $composableBuilder(
+    column: $table.walkingDistanceMeters,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get resolvedMeters => $composableBuilder(
+    column: $table.resolvedMeters,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get flaggedPace => $composableBuilder(
+    column: $table.flaggedPace,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get syncedAt => $composableBuilder(
+    column: $table.syncedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$StepIntervalRecordsTableOrderingComposer
+    extends Composer<_$AppDatabase, $StepIntervalRecordsTable> {
+  $$StepIntervalRecordsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get journeyId => $composableBuilder(
+    column: $table.journeyId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get intervalStart => $composableBuilder(
+    column: $table.intervalStart,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get intervalEnd => $composableBuilder(
+    column: $table.intervalEnd,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get steps => $composableBuilder(
+    column: $table.steps,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get walkingDistanceMeters => $composableBuilder(
+    column: $table.walkingDistanceMeters,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get resolvedMeters => $composableBuilder(
+    column: $table.resolvedMeters,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get flaggedPace => $composableBuilder(
+    column: $table.flaggedPace,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get syncedAt => $composableBuilder(
+    column: $table.syncedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$StepIntervalRecordsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $StepIntervalRecordsTable> {
+  $$StepIntervalRecordsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+
+  GeneratedColumn<String> get journeyId =>
+      $composableBuilder(column: $table.journeyId, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get intervalStart => $composableBuilder(
+    column: $table.intervalStart,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get intervalEnd => $composableBuilder(
+    column: $table.intervalEnd,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get steps =>
+      $composableBuilder(column: $table.steps, builder: (column) => column);
+
+  GeneratedColumn<int> get walkingDistanceMeters => $composableBuilder(
+    column: $table.walkingDistanceMeters,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get resolvedMeters => $composableBuilder(
+    column: $table.resolvedMeters,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get flaggedPace => $composableBuilder(
+    column: $table.flaggedPace,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get syncedAt =>
+      $composableBuilder(column: $table.syncedAt, builder: (column) => column);
+}
+
+class $$StepIntervalRecordsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $StepIntervalRecordsTable,
+          StepIntervalRecord,
+          $$StepIntervalRecordsTableFilterComposer,
+          $$StepIntervalRecordsTableOrderingComposer,
+          $$StepIntervalRecordsTableAnnotationComposer,
+          $$StepIntervalRecordsTableCreateCompanionBuilder,
+          $$StepIntervalRecordsTableUpdateCompanionBuilder,
+          (
+            StepIntervalRecord,
+            BaseReferences<
+              _$AppDatabase,
+              $StepIntervalRecordsTable,
+              StepIntervalRecord
+            >,
+          ),
+          StepIntervalRecord,
+          PrefetchHooks Function()
+        > {
+  $$StepIntervalRecordsTableTableManager(
+    _$AppDatabase db,
+    $StepIntervalRecordsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$StepIntervalRecordsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$StepIntervalRecordsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$StepIntervalRecordsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> ownerId = const Value.absent(),
+                Value<String> journeyId = const Value.absent(),
+                Value<DateTime> intervalStart = const Value.absent(),
+                Value<DateTime> intervalEnd = const Value.absent(),
+                Value<int> steps = const Value.absent(),
+                Value<int?> walkingDistanceMeters = const Value.absent(),
+                Value<int> resolvedMeters = const Value.absent(),
+                Value<bool> flaggedPace = const Value.absent(),
+                Value<DateTime> syncedAt = const Value.absent(),
+              }) => StepIntervalRecordsCompanion(
+                id: id,
+                ownerId: ownerId,
+                journeyId: journeyId,
+                intervalStart: intervalStart,
+                intervalEnd: intervalEnd,
+                steps: steps,
+                walkingDistanceMeters: walkingDistanceMeters,
+                resolvedMeters: resolvedMeters,
+                flaggedPace: flaggedPace,
+                syncedAt: syncedAt,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required String ownerId,
+                required String journeyId,
+                required DateTime intervalStart,
+                required DateTime intervalEnd,
+                required int steps,
+                Value<int?> walkingDistanceMeters = const Value.absent(),
+                required int resolvedMeters,
+                Value<bool> flaggedPace = const Value.absent(),
+                required DateTime syncedAt,
+              }) => StepIntervalRecordsCompanion.insert(
+                id: id,
+                ownerId: ownerId,
+                journeyId: journeyId,
+                intervalStart: intervalStart,
+                intervalEnd: intervalEnd,
+                steps: steps,
+                walkingDistanceMeters: walkingDistanceMeters,
+                resolvedMeters: resolvedMeters,
+                flaggedPace: flaggedPace,
+                syncedAt: syncedAt,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$StepIntervalRecordsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $StepIntervalRecordsTable,
+      StepIntervalRecord,
+      $$StepIntervalRecordsTableFilterComposer,
+      $$StepIntervalRecordsTableOrderingComposer,
+      $$StepIntervalRecordsTableAnnotationComposer,
+      $$StepIntervalRecordsTableCreateCompanionBuilder,
+      $$StepIntervalRecordsTableUpdateCompanionBuilder,
+      (
+        StepIntervalRecord,
+        BaseReferences<
+          _$AppDatabase,
+          $StepIntervalRecordsTable,
+          StepIntervalRecord
+        >,
+      ),
+      StepIntervalRecord,
+      PrefetchHooks Function()
+    >;
+
+class $AppDatabaseManager {
+  final _$AppDatabase _db;
+  $AppDatabaseManager(this._db);
+  $$SelectedQuestRowsTableTableManager get selectedQuestRows =>
+      $$SelectedQuestRowsTableTableManager(_db, _db.selectedQuestRows);
+  $$StepIntervalRecordsTableTableManager get stepIntervalRecords =>
+      $$StepIntervalRecordsTableTableManager(_db, _db.stepIntervalRecords);
+}
