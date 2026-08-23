@@ -23,6 +23,7 @@
   "stepsHealthConnectMissingTitle": "Нужен Health Connect",
   "stepsHealthConnectMissingBody": "Установите Health Connect, чтобы шаги двигали вашего путника.",
   "stepsHealthConnectInstall": "Установить Health Connect",
+  "stepsFlaggedPaceNotice": "В последней синхронизации был необычно быстрый отрезок — он всё равно засчитан, просто помечен для проверки.",
 
   "questStatsToLabel": "До {pointB}",
   "questStatsStartedLabel": "Поход начат",

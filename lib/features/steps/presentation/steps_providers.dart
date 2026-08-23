@@ -79,6 +79,10 @@ class StepsSync extends _$StepsSync {
   /// it to meters via `stride.dart`, and writes the new total back into
   /// `selectedJourneyProvider`. A no-op if no quest is selected or
   /// permission is not currently granted.
+  ///
+  /// Also runs the §5.2 realistic-pace check on the raw step count and
+  /// records the result in [StepsSyncState.lastSyncFlagged] — flagged, not
+  /// dropped, so the credited distance is unaffected either way.
   Future<void> sync() async {
     final selected = ref.read(selectedJourneyProvider);
     if (selected == null) return;
@@ -88,7 +92,13 @@ class StepsSync extends _$StepsSync {
     try {
       final adapter = ref.read(healthAdapterProvider);
       final now = DateTime.now();
+      final interval = now.difference(selected.lastSyncedAt);
       final delta = await adapter.fetchDelta(selected.lastSyncedAt, now);
+
+      // §5.2: an interval above the realistic-pace threshold is flagged,
+      // never silently dropped — the distance below is still credited.
+      final flagged = isImplausiblePace(steps: delta.steps, interval: interval);
+
       final deltaMeters = resolveDistanceMeters(
         stepCount: delta.steps,
         walkingDistanceMeters: delta.walkingDistanceMeters,
@@ -100,6 +110,7 @@ class StepsSync extends _$StepsSync {
       ref
           .read(selectedJourneyProvider.notifier)
           .applySyncedProgress(progressMeters: candidate, syncedAt: now);
+      state = state.copyWith(lastSyncFlagged: flagged);
     } finally {
       state = state.copyWith(isSyncing: false);
     }

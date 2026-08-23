@@ -22,8 +22,14 @@ class StepsPermissionGate extends ConsumerWidget {
 
     switch (state.permissionStatus) {
       case StepsPermissionStatus.unknown:
-      case StepsPermissionStatus.granted:
         return const SizedBox.shrink();
+
+      case StepsPermissionStatus.granted:
+        // §5.2: an implausible-pace interval is flagged, never dropped —
+        // the distance is already credited, this is just the notice.
+        return state.lastSyncFlagged
+            ? _FlaggedPaceNotice(text: l10n.stepsFlaggedPaceNotice)
+            : const SizedBox.shrink();
 
       case StepsPermissionStatus.notRequested:
         return _GateCard(
@@ -55,6 +61,34 @@ class StepsPermissionGate extends ConsumerWidget {
               ref.read(stepsSyncProvider.notifier).openHealthConnectInstall(),
         );
     }
+  }
+}
+
+/// A light, buttonless notice — unlike [_GateCard] this isn't asking for
+/// anything, just surfacing that the last sync's pace looked unrealistic
+/// (§5.2) so the flag isn't silently invisible to the user.
+class _FlaggedPaceNotice extends StatelessWidget {
+  const _FlaggedPaceNotice({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.sm),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline, color: AppColors.gold, size: 18),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(child: Text(text, style: AppTypography.bodySecondary)),
+        ],
+      ),
+    );
   }
 }
 

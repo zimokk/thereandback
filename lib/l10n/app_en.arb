@@ -53,6 +53,8 @@
   "@stepsHealthConnectMissingBody": {"description": "Body shown on Android when Health Connect isn't installed"},
   "stepsHealthConnectInstall": "Install Health Connect",
   "@stepsHealthConnectInstall": {"description": "Button that deep-links to the Health Connect Play Store listing"},
+  "stepsFlaggedPaceNotice": "Your last sync included an unusually fast stretch — it's still counted, just flagged for review.",
+  "@stepsFlaggedPaceNotice": {"description": "Shown after a sync whose step rate exceeded the realistic-pace threshold (§5.2); the distance is credited regardless, this is informational only"},
 
   "questStatsToLabel": "To {pointB}",
   "@questStatsToLabel": {

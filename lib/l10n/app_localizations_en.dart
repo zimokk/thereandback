@@ -89,6 +89,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stepsHealthConnectInstall => 'Install Health Connect';
 
   @override
+  String get stepsFlaggedPaceNotice =>
+      'Your last sync included an unusually fast stretch — it\'s still counted, just flagged for review.';
+
+  @override
   String questStatsToLabel(String pointB) {
     return 'To $pointB';
   }

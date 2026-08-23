@@ -15,7 +15,11 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$StepsSyncState {
 
- StepsPermissionStatus get permissionStatus; bool get isSyncing;
+ StepsPermissionStatus get permissionStatus; bool get isSyncing;/// Whether the most recent sync's interval exceeded the §5.2 realistic
+/// pace threshold (`stride.isImplausiblePace`). The distance is still
+/// credited either way — §5.2 requires flagging, never silently
+/// dropping — this is only a signal for the UI to show a notice.
+ bool get lastSyncFlagged;
 /// Create a copy of StepsSyncState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -26,16 +30,16 @@ $StepsSyncStateCopyWith<StepsSyncState> get copyWith => _$StepsSyncStateCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StepsSyncState&&(identical(other.permissionStatus, permissionStatus) || other.permissionStatus == permissionStatus)&&(identical(other.isSyncing, isSyncing) || other.isSyncing == isSyncing));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StepsSyncState&&(identical(other.permissionStatus, permissionStatus) || other.permissionStatus == permissionStatus)&&(identical(other.isSyncing, isSyncing) || other.isSyncing == isSyncing)&&(identical(other.lastSyncFlagged, lastSyncFlagged) || other.lastSyncFlagged == lastSyncFlagged));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,permissionStatus,isSyncing);
+int get hashCode => Object.hash(runtimeType,permissionStatus,isSyncing,lastSyncFlagged);
 
 @override
 String toString() {
-  return 'StepsSyncState(permissionStatus: $permissionStatus, isSyncing: $isSyncing)';
+  return 'StepsSyncState(permissionStatus: $permissionStatus, isSyncing: $isSyncing, lastSyncFlagged: $lastSyncFlagged)';
 }
 
 
@@ -46,7 +50,7 @@ abstract mixin class $StepsSyncStateCopyWith<$Res>  {
   factory $StepsSyncStateCopyWith(StepsSyncState value, $Res Function(StepsSyncState) _then) = _$StepsSyncStateCopyWithImpl;
 @useResult
 $Res call({
- StepsPermissionStatus permissionStatus, bool isSyncing
+ StepsPermissionStatus permissionStatus, bool isSyncing, bool lastSyncFlagged
 });
 
 
@@ -63,10 +67,11 @@ class _$StepsSyncStateCopyWithImpl<$Res>
 
 /// Create a copy of StepsSyncState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? permissionStatus = null,Object? isSyncing = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? permissionStatus = null,Object? isSyncing = null,Object? lastSyncFlagged = null,}) {
   return _then(StepsSyncState(
 permissionStatus: null == permissionStatus ? _self.permissionStatus : permissionStatus // ignore: cast_nullable_to_non_nullable
 as StepsPermissionStatus,isSyncing: null == isSyncing ? _self.isSyncing : isSyncing // ignore: cast_nullable_to_non_nullable
+as bool,lastSyncFlagged: null == lastSyncFlagged ? _self.lastSyncFlagged : lastSyncFlagged // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }
@@ -152,10 +157,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( StepsPermissionStatus permissionStatus,  bool isSyncing)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( StepsPermissionStatus permissionStatus,  bool isSyncing,  bool lastSyncFlagged)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _StepsSyncState() when $default != null:
-return $default(_that.permissionStatus,_that.isSyncing);case _:
+return $default(_that.permissionStatus,_that.isSyncing,_that.lastSyncFlagged);case _:
   return orElse();
 
 }
@@ -173,10 +178,10 @@ return $default(_that.permissionStatus,_that.isSyncing);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( StepsPermissionStatus permissionStatus,  bool isSyncing)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( StepsPermissionStatus permissionStatus,  bool isSyncing,  bool lastSyncFlagged)  $default,) {final _that = this;
 switch (_that) {
 case _StepsSyncState():
-return $default(_that.permissionStatus,_that.isSyncing);case _:
+return $default(_that.permissionStatus,_that.isSyncing,_that.lastSyncFlagged);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -193,10 +198,10 @@ return $default(_that.permissionStatus,_that.isSyncing);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( StepsPermissionStatus permissionStatus,  bool isSyncing)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( StepsPermissionStatus permissionStatus,  bool isSyncing,  bool lastSyncFlagged)?  $default,) {final _that = this;
 switch (_that) {
 case _StepsSyncState() when $default != null:
-return $default(_that.permissionStatus,_that.isSyncing);case _:
+return $default(_that.permissionStatus,_that.isSyncing,_that.lastSyncFlagged);case _:
   return null;
 
 }
@@ -208,11 +213,16 @@ return $default(_that.permissionStatus,_that.isSyncing);case _:
 
 
 class _StepsSyncState implements StepsSyncState {
-  const _StepsSyncState({this.permissionStatus = StepsPermissionStatus.unknown, this.isSyncing = false});
+  const _StepsSyncState({this.permissionStatus = StepsPermissionStatus.unknown, this.isSyncing = false, this.lastSyncFlagged = false});
   
 
 @override@JsonKey() final  StepsPermissionStatus permissionStatus;
 @override@JsonKey() final  bool isSyncing;
+/// Whether the most recent sync's interval exceeded the §5.2 realistic
+/// pace threshold (`stride.isImplausiblePace`). The distance is still
+/// credited either way — §5.2 requires flagging, never silently
+/// dropping — this is only a signal for the UI to show a notice.
+@override@JsonKey() final  bool lastSyncFlagged;
 
 /// Create a copy of StepsSyncState
 /// with the given fields replaced by the non-null parameter values.
@@ -224,16 +234,16 @@ _$StepsSyncStateCopyWith<_StepsSyncState> get copyWith => __$StepsSyncStateCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StepsSyncState&&(identical(other.permissionStatus, permissionStatus) || other.permissionStatus == permissionStatus)&&(identical(other.isSyncing, isSyncing) || other.isSyncing == isSyncing));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StepsSyncState&&(identical(other.permissionStatus, permissionStatus) || other.permissionStatus == permissionStatus)&&(identical(other.isSyncing, isSyncing) || other.isSyncing == isSyncing)&&(identical(other.lastSyncFlagged, lastSyncFlagged) || other.lastSyncFlagged == lastSyncFlagged));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,permissionStatus,isSyncing);
+int get hashCode => Object.hash(runtimeType,permissionStatus,isSyncing,lastSyncFlagged);
 
 @override
 String toString() {
-  return 'StepsSyncState(permissionStatus: $permissionStatus, isSyncing: $isSyncing)';
+  return 'StepsSyncState(permissionStatus: $permissionStatus, isSyncing: $isSyncing, lastSyncFlagged: $lastSyncFlagged)';
 }
 
 
@@ -244,7 +254,7 @@ abstract mixin class _$StepsSyncStateCopyWith<$Res> implements $StepsSyncStateCo
   factory _$StepsSyncStateCopyWith(_StepsSyncState value, $Res Function(_StepsSyncState) _then) = __$StepsSyncStateCopyWithImpl;
 @override @useResult
 $Res call({
- StepsPermissionStatus permissionStatus, bool isSyncing
+ StepsPermissionStatus permissionStatus, bool isSyncing, bool lastSyncFlagged
 });
 
 
@@ -261,10 +271,11 @@ class __$StepsSyncStateCopyWithImpl<$Res>
 
 /// Create a copy of StepsSyncState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? permissionStatus = null,Object? isSyncing = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? permissionStatus = null,Object? isSyncing = null,Object? lastSyncFlagged = null,}) {
   return _then(_StepsSyncState(
 permissionStatus: null == permissionStatus ? _self.permissionStatus : permissionStatus // ignore: cast_nullable_to_non_nullable
 as StepsPermissionStatus,isSyncing: null == isSyncing ? _self.isSyncing : isSyncing // ignore: cast_nullable_to_non_nullable
+as bool,lastSyncFlagged: null == lastSyncFlagged ? _self.lastSyncFlagged : lastSyncFlagged // ignore: cast_nullable_to_non_nullable
 as bool,
   ));
 }

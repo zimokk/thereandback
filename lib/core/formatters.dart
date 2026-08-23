@@ -26,12 +26,17 @@ enum DistanceUnit { meters, kilometers }
 /// or is planned (§5.4, §6.5).
 FormattedDistance formatDistance(int meters) {
   assert(meters >= 0, 'distance is never negative (progress is monotonic)');
+  // The domain (stride.clampNonDecreasing) already guarantees this never
+  // happens; this clamp only keeps a release build (where `assert` is a
+  // no-op) from rendering a nonsensical negative distance if that
+  // guarantee is ever broken upstream.
+  final safeMeters = meters < 0 ? 0 : meters;
 
-  if (meters < 1000) {
-    return FormattedDistance(value: '$meters', unit: DistanceUnit.meters);
+  if (safeMeters < 1000) {
+    return FormattedDistance(value: '$safeMeters', unit: DistanceUnit.meters);
   }
 
-  final km = meters / 1000;
+  final km = safeMeters / 1000;
   if (km <= 100) {
     return FormattedDistance(
       value: km.toStringAsFixed(2),

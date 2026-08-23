@@ -212,6 +212,12 @@ abstract class AppLocalizations {
   /// **'Install Health Connect'**
   String get stepsHealthConnectInstall;
 
+  /// Shown after a sync whose step rate exceeded the realistic-pace threshold (§5.2); the distance is credited regardless, this is informational only
+  ///
+  /// In en, this message translates to:
+  /// **'Your last sync included an unusually fast stretch — it\'s still counted, just flagged for review.'**
+  String get stepsFlaggedPaceNotice;
+
   /// Subtitle under the total quest distance, naming the destination
   ///
   /// In en, this message translates to:

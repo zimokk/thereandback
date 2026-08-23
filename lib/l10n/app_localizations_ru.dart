@@ -93,6 +93,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get stepsHealthConnectInstall => 'Установить Health Connect';
 
   @override
+  String get stepsFlaggedPaceNotice =>
+      'В последней синхронизации был необычно быстрый отрезок — он всё равно засчитан, просто помечен для проверки.';
+
+  @override
   String questStatsToLabel(String pointB) {
     return 'До $pointB';
   }
