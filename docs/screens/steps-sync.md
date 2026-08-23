@@ -137,6 +137,29 @@ device/emulator to close out. Phase 3's own criteria (drift schema test,
 idempotent-sync test) are unit/widget-level and **are** covered and green
 in this environment — see Tests below.
 
+Every line of this module's own logic is covered except the lines that
+structurally *require* a real device or a real file to run at all — these
+are the same kind of gap as the health plugin itself, not oversights:
+
+- `steps/data/health_adapter.dart` (0%) — `HealthPackageAdapter`, the real
+  `health`-package wrapper. Never touched by a test, by policy (`testing`
+  skill: never the real health plugin in a test).
+- `steps/presentation/steps_providers.dart`: `healthAdapterProvider`'s body
+  (constructs the real `HealthPackageAdapter()`) — same reason. Also
+  `refreshStatus()`'s `if (Platform.isAndroid)` branch — `Platform.isAndroid`
+  reflects the machine actually running the test suite (Linux, here and in
+  CI), not a simulated target, so this branch cannot be reached without
+  refactoring the notifier to take an injectable platform check.
+- `data/drift/database.dart`: the hand-written `SelectedQuestRows`/
+  `StepIntervalRecords` column getters (`text()()`, `dateTime()()`, …) are
+  read once by `drift_dev`'s builder at codegen time — they're schema
+  declarations, not code that runs when the app does, so "0% coverage"
+  there doesn't mean anything is untested. `_openConnection()`'s body (the
+  real, file-backed `LazyDatabase` using `path_provider` and
+  `sqlite3.tempDirectory`) is the file-I/O counterpart to the health-plugin
+  gap above — untestable without touching a real filesystem through a
+  platform channel, which unit/widget tests must not do.
+
 ## l10n keys
 
 `stepsPermissionExplainTitle`, `stepsPermissionExplainBody`,
@@ -158,10 +181,40 @@ and an in-memory `AppDatabase` — a realistic pace leaves `lastSyncFlagged`
 false, an implausible one (a huge step count over a short
 `lastSyncedAt`-to-now window) sets it true, and **either way the distance
 is credited to `selectedJourneyProvider`** (the test that would have caught
-`isImplausiblePace` being unwired); a fourth test proves the Phase 3
-durability claim directly — after a sync, reloading via
-`progressRepositoryProvider` (what a restarted app's `build()` does)
-matches what was just credited in memory.
+`isImplausiblePace` being unwired); another proves the Phase 3 durability
+claim directly — after a sync, reloading via `progressRepositoryProvider`
+(what a restarted app's `build()` does) matches what was just credited in
+memory; another proves a *genuine* duplicate interval (pre-recorded before
+`sync()` runs, as a concurrent background/foreground sync would) is not
+credited twice by `sync()` itself, not just by the repository it calls.
+Two further groups cover `StepsSync`'s permission-flow methods through the
+real class — `build()`/`refreshStatus()` (unknown → notRequested,
+auto-sync when already granted) and `requestPermission()`/
+`openHealthConnectInstall()` (on a fixed-`build()` fake, so the real
+`build()`'s own background `refreshStatus()` microtask can't race these
+tests) — previously only exercised via fakes that skipped this logic
+entirely.
+
+`test/features/steps/presentation/permission_gate_test.dart` (new — none
+existed before) covers all five `StepsPermissionGate` render states
+(`unknown`, `notRequested`, `denied`, `healthConnectMissing`, granted with
+and without a flagged-pace notice) plus tapping each card's button, proving
+the gate is wired to the real `requestPermission()`/
+`openHealthConnectInstall()` methods, not just rendering static text.
+
+`test/features/journey/presentation/journey_providers_test.dart` (new)
+covers `SelectedJourney.build()`'s restore branch directly: a database
+populated *before* a provider container exists (simulating a real app
+restart — same disk, fresh Riverpod graph) is correctly restored into
+`selectedJourneyProvider`, and a container with nothing persisted stays
+`null` rather than getting stuck. (`selectedJourneyProvider` is
+`autoDispose` — these tests keep a listener attached, or the in-flight
+restore has nothing keeping it alive to land its result.)
+
+`test/app/database_provider_test.dart` (new) covers `appDatabaseProvider`'s
+real, non-overridden body — every other test overrides it, so this was
+otherwise never exercised — without touching the filesystem, since
+`AppDatabase()`'s connection is lazy and this test never runs a query.
 
 Data layer (§12's mandatory "drift schema migration test" and "a repeated
 sync of the same interval does not double progress"):
@@ -179,9 +232,8 @@ sync of the same interval does not double progress"):
   and never writes a second row; a different `journeyId` at the same
   `intervalStart` is correctly treated as distinct, not a duplicate.
 
-No widget test exists solely for `permission_gate.dart` in isolation today
-— its three states are exercised through
 `test/features/journey/presentation/journey_tab_test.dart` (see
-[`journey.md`](journey.md)), which overrides `stepsSyncProvider` directly
-with a fixed `_FixedStepsSync` fake rather than touching the real
-`health` plugin.
+[`journey.md`](journey.md)) additionally exercises the `granted` and
+`denied` states of `permission_gate.dart` in the context of the whole Путь
+tab, overriding `stepsSyncProvider` directly with a fixed `_FixedStepsSync`
+fake rather than touching the real `health` plugin.

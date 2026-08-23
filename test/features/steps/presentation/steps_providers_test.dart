@@ -21,6 +21,19 @@ class _GrantedStepsSync extends StepsSync {
       const StepsSyncState(permissionStatus: StepsPermissionStatus.granted);
 }
 
+/// A [StepsSync] with a fixed starting state and no build()-triggered
+/// background work — like [_GrantedStepsSync], but with a configurable
+/// initial [StepsSyncState] for tests that exercise `requestPermission()`/
+/// `openHealthConnectInstall()` starting from `notRequested`.
+class _FixedStepsSync extends StepsSync {
+  _FixedStepsSync(this._state);
+
+  final StepsSyncState _state;
+
+  @override
+  StepsSyncState build() => _state;
+}
+
 void main() {
   late _MockHealthAdapter adapter;
   late ProviderContainer container;
@@ -129,5 +142,202 @@ void main() {
     expect(reloaded, isNotNull);
     expect(reloaded!.progressMeters, credited.progressMeters);
     expect(reloaded.lastSyncedAt, credited.lastSyncedAt);
+  });
+
+  test('a genuinely duplicate interval (same intervalStart already recorded) '
+      'is not credited a second time by sync() itself, not just the '
+      'repository it calls', () async {
+    when(() => adapter.fetchDelta(any(), any()))
+        .thenAnswer((_) async => const StepsDelta(steps: 100));
+
+    final intervalStart = DateTime.now().subtract(const Duration(minutes: 10));
+    container
+        .read(selectedJourneyProvider.notifier)
+        .start('odyssey-ithaca', now: DateTime.now());
+    container
+        .read(selectedJourneyProvider.notifier)
+        .applySyncedProgress(progressMeters: 0, syncedAt: intervalStart);
+
+    // Pre-record the exact interval sync() is about to fetch — as if a
+    // concurrent sync (background/foreground race) already claimed it.
+    await container
+        .read(stepSampleRepositoryProvider)
+        .recordInterval(
+          ownerId: localOwnerId,
+          journeyId: 'odyssey-ithaca',
+          intervalStart: intervalStart,
+          intervalEnd: DateTime.now(),
+          steps: 100,
+          resolvedMeters: 75,
+          flaggedPace: false,
+          syncedAt: DateTime.now(),
+        );
+
+    await container.read(stepsSyncProvider.notifier).sync();
+
+    // No new credit — the interval was already recorded, so sync()'s
+    // own `isNewInterval` branch must not add another 75 m on top.
+    expect(container.read(selectedJourneyProvider)!.progressMeters, 0);
+  });
+
+  _realStepsSyncGroup();
+}
+
+/// Covers `StepsSync`'s permission-flow methods (`build()`/`refreshStatus()`,
+/// `requestPermission()`, `openHealthConnectInstall()`) through the real
+/// class — every other group in this file swaps it for a fixed-state fake,
+/// which left this logic completely untested (see `docs/screens/steps-sync.md`).
+///
+/// `refreshStatus()`'s `Platform.isAndroid` branch is not exercised here:
+/// `Platform.isAndroid` reflects the host actually running the test (this
+/// suite runs on Linux, in CI and locally), not a simulated target, so the
+/// Health-Connect-missing path can't be reached without refactoring the
+/// notifier to take an injectable platform check — out of scope for a
+/// coverage pass. `permission_gate_test.dart` covers that state's
+/// *rendering* directly via a fixed-state fake instead.
+void _realStepsSyncGroup() {
+  group(
+    'StepsSync.build() / refreshStatus() — the real, un-overridden class',
+    () {
+      late _MockHealthAdapter adapter;
+      late ProviderContainer container;
+
+      setUp(() {
+        adapter = _MockHealthAdapter();
+        container = ProviderContainer(
+          overrides: [
+            healthAdapterProvider.overrideWithValue(adapter),
+            appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+          ],
+        );
+        addTearDown(container.dispose);
+      });
+
+      test('build() starts unknown; refreshStatus() resolves to notRequested '
+          'when permission was never granted', () async {
+        when(() => adapter.configure()).thenAnswer((_) async {});
+        when(() => adapter.hasStepsPermission()).thenAnswer((_) async => false);
+
+        expect(
+          container.read(stepsSyncProvider).permissionStatus,
+          StepsPermissionStatus.unknown,
+        );
+
+        await container.read(stepsSyncProvider.notifier).refreshStatus();
+
+        expect(
+          container.read(stepsSyncProvider).permissionStatus,
+          StepsPermissionStatus.notRequested,
+        );
+        verifyNever(() => adapter.fetchDelta(any(), any()));
+      });
+
+      test(
+        'refreshStatus() auto-syncs when permission is already granted',
+        () async {
+          when(() => adapter.configure()).thenAnswer((_) async {});
+          when(() => adapter.hasStepsPermission())
+              .thenAnswer((_) async => true);
+          when(() => adapter.fetchDelta(any(), any()))
+              .thenAnswer((_) async => const StepsDelta(steps: 100));
+
+          container
+              .read(selectedJourneyProvider.notifier)
+              .start('odyssey-ithaca', now: DateTime.now());
+
+          await container.read(stepsSyncProvider.notifier).refreshStatus();
+
+          expect(
+            container.read(stepsSyncProvider).permissionStatus,
+            StepsPermissionStatus.granted,
+          );
+          expect(
+            container.read(selectedJourneyProvider)!.progressMeters,
+            greaterThan(0),
+          );
+        },
+      );
+    },
+  );
+
+  group('StepsSync.requestPermission() / openHealthConnectInstall() — real '
+      'methods on a fixed-build fake', () {
+    late _MockHealthAdapter adapter;
+    late ProviderContainer container;
+
+    setUp(() {
+      adapter = _MockHealthAdapter();
+      container = ProviderContainer(
+        overrides: [
+          healthAdapterProvider.overrideWithValue(adapter),
+          appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+          // Only build() is faked here (same pattern as `_GrantedStepsSync`
+          // above) — the real build() would kick off its own
+          // refreshStatus() microtask in the background with no stubs of
+          // its own, racing these tests and outliving them into
+          // `tearDown`'s container.dispose(). requestPermission() and
+          // openHealthConnectInstall() below are the real, inherited
+          // methods; only their starting state is fixed.
+          stepsSyncProvider.overrideWith(
+            () => _FixedStepsSync(
+              const StepsSyncState(
+                permissionStatus: StepsPermissionStatus.notRequested,
+              ),
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+    });
+
+    test(
+      'requestPermission(): granted transitions to granted and syncs',
+      () async {
+        when(() => adapter.requestStepsPermission())
+            .thenAnswer((_) async => true);
+        when(() => adapter.fetchDelta(any(), any()))
+            .thenAnswer((_) async => const StepsDelta(steps: 100));
+        container
+            .read(selectedJourneyProvider.notifier)
+            .start('odyssey-ithaca', now: DateTime.now());
+
+        await container.read(stepsSyncProvider.notifier).requestPermission();
+
+        expect(
+          container.read(stepsSyncProvider).permissionStatus,
+          StepsPermissionStatus.granted,
+        );
+        expect(
+          container.read(selectedJourneyProvider)!.progressMeters,
+          greaterThan(0),
+        );
+      },
+    );
+
+    test(
+      'requestPermission(): denied transitions to denied without syncing',
+      () async {
+        when(() => adapter.requestStepsPermission())
+            .thenAnswer((_) async => false);
+
+        await container.read(stepsSyncProvider.notifier).requestPermission();
+
+        expect(
+          container.read(stepsSyncProvider).permissionStatus,
+          StepsPermissionStatus.denied,
+        );
+        verifyNever(() => adapter.fetchDelta(any(), any()));
+      },
+    );
+
+    test('openHealthConnectInstall() delegates to the adapter', () async {
+      when(() => adapter.openHealthConnectInstall()).thenAnswer((_) async {});
+
+      await container
+          .read(stepsSyncProvider.notifier)
+          .openHealthConnectInstall();
+
+      verify(() => adapter.openHealthConnectInstall()).called(1);
+    });
   });
 }

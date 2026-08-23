@@ -95,3 +95,9 @@ screen.
 `paceMetersPerDay`, `estimateArrival` per the §12 mandatory list (local
 calendar dates, DST-shaped date jump, zero-pace dash, clamped negative
 day-diff).
+
+`test/features/journey/presentation/journey_providers_test.dart` covers
+`SelectedJourney.build()`'s restore-from-disk branch directly (see
+[`steps-sync.md`](steps-sync.md#phase-3--durable-persistence-drift)) — a
+database populated before the provider container exists comes back
+correctly, and an empty one stays `null` rather than getting stuck.
