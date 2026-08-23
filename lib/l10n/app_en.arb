@@ -1,0 +1,113 @@
+{
+  "@@locale": "en",
+
+  "navJourney": "Path",
+  "@navJourney": {"description": "Bottom nav label for the Путь (journey) tab"},
+  "navQuestStats": "Map",
+  "@navQuestStats": {"description": "Bottom nav label for the quest stats / progress tab"},
+  "navAchievements": "Trophies",
+  "@navAchievements": {"description": "Bottom nav label for the achievements tab"},
+  "navSettings": "Settings",
+  "@navSettings": {"description": "Bottom nav label for the settings tab"},
+
+  "unitMeters": "{count, plural, one{meter} other{meters}}",
+  "@unitMeters": {
+    "description": "Unit label under a distance shown in meters (§5.4)",
+    "placeholders": {"count": {"type": "int"}}
+  },
+  "unitKilometers": "{count, plural, one{kilometer} other{kilometers}}",
+  "@unitKilometers": {
+    "description": "Unit label under a distance shown in kilometers (§5.4)",
+    "placeholders": {"count": {"type": "num"}}
+  },
+
+  "journeyCatalogTitle": "Choose your quest",
+  "@journeyCatalogTitle": {"description": "Heading over the quest catalog when no quest is selected"},
+  "journeyCatalogStartButton": "Start quest",
+  "@journeyCatalogStartButton": {"description": "Button on a catalog card that starts that quest"},
+  "journeyDayCounter": "Day {day}",
+  "@journeyDayCounter": {
+    "description": "Quest-day counter on the Путь tab; a label, not a count of days, so it never pluralizes (§5.3)",
+    "placeholders": {"day": {"type": "int"}}
+  },
+  "journeyNarrativeComingSoon": "Narrative for this stretch of the road is still being written.",
+  "@journeyNarrativeComingSoon": {
+    "description": "Empty-state line shown where a NarrativeBeat will render once quest content exists (Phase 11) — this is a UI empty state, not quest narrative itself (§11)"
+  },
+
+  "stepsPermissionExplainTitle": "Let your steps move you",
+  "@stepsPermissionExplainTitle": {"description": "Title of the card explaining why step access is requested, shown before the OS prompt (§7)"},
+  "stepsPermissionExplainBody": "There and Back reads your step and walking-distance data to move your traveler along the route. It never leaves this device except as your total quest progress.",
+  "@stepsPermissionExplainBody": {"description": "Body of the pre-permission explanation card"},
+  "stepsPermissionAllow": "Allow access",
+  "@stepsPermissionAllow": {"description": "Button that triggers the OS health-permission prompt"},
+  "stepsPermissionDeniedTitle": "No step data yet",
+  "@stepsPermissionDeniedTitle": {"description": "Title shown after the user denies step access"},
+  "stepsPermissionDeniedBody": "Access was denied, so your traveler isn't moving yet. You can grant access again anytime.",
+  "@stepsPermissionDeniedBody": {"description": "Body shown after the user denies step access (§7: never a dead end)"},
+  "stepsPermissionRetry": "Try again",
+  "@stepsPermissionRetry": {"description": "Button that re-requests step access after a denial"},
+  "stepsHealthConnectMissingTitle": "Health Connect required",
+  "@stepsHealthConnectMissingTitle": {"description": "Title shown on Android when Health Connect isn't installed"},
+  "stepsHealthConnectMissingBody": "Install Health Connect to let your steps move your traveler.",
+  "@stepsHealthConnectMissingBody": {"description": "Body shown on Android when Health Connect isn't installed"},
+  "stepsHealthConnectInstall": "Install Health Connect",
+  "@stepsHealthConnectInstall": {"description": "Button that deep-links to the Health Connect Play Store listing"},
+
+  "questStatsToLabel": "To {pointB}",
+  "@questStatsToLabel": {
+    "description": "Subtitle under the total quest distance, naming the destination",
+    "placeholders": {"pointB": {"type": "String"}}
+  },
+  "questStatsStartedLabel": "Quest Started",
+  "@questStatsStartedLabel": {"description": "Label for the quest start date stat row"},
+  "questStatsEtaLabel": "Estimated Arrival",
+  "@questStatsEtaLabel": {"description": "Label for the ETA stat row"},
+  "questStatsMapComingSoonTitle": "Route map",
+  "@questStatsMapComingSoonTitle": {"description": "Title of the placeholder panel where the drawn map lands (Phase 11)"},
+  "questStatsMapComingSoonBody": "The illustrated map for this quest is on its way — check back in a future update.",
+  "@questStatsMapComingSoonBody": {"description": "Body of the placeholder map panel"},
+  "questStatsEmptyTitle": "No quest yet",
+  "@questStatsEmptyTitle": {"description": "Title shown on the stats tab before any quest is selected"},
+  "questStatsEmptyBody": "Start a quest from the Path tab to see its stats here.",
+  "@questStatsEmptyBody": {"description": "Body shown on the stats tab before any quest is selected"},
+  "questStatsEmptyCta": "Go to Path",
+  "@questStatsEmptyCta": {"description": "Button navigating from the empty stats tab to the Path tab"},
+
+  "achievementFirstStepsTitle": "First Steps",
+  "@achievementFirstStepsTitle": {"description": "Achievement title: reach 1 km on the current quest"},
+  "achievementHalfDayMarchTitle": "Half-Day March",
+  "@achievementHalfDayMarchTitle": {"description": "Achievement title: reach 50 km on the current quest"},
+  "achievementSeasonedWandererTitle": "Seasoned Wanderer",
+  "@achievementSeasonedWandererTitle": {"description": "Achievement title: reach 500 km on the current quest"},
+  "achievementJourneysEndTitle": "Journey's End",
+  "@achievementJourneysEndTitle": {"description": "Achievement title: reach the full quest length"},
+  "achievementUnlockedLabel": "Unlocked",
+  "@achievementUnlockedLabel": {"description": "Caption on an unlocked achievement tile"},
+  "achievementRemainingLabel": "{amount} left",
+  "@achievementRemainingLabel": {
+    "description": "Caption on a locked achievement tile; word order is locale-specific (§11) — English puts the amount first",
+    "placeholders": {"amount": {"type": "String"}}
+  },
+
+  "settingsTitle": "Settings",
+  "@settingsTitle": {"description": "Settings tab app bar title"},
+  "settingsAccountSectionTitle": "Account",
+  "@settingsAccountSectionTitle": {"description": "Settings section heading for the sign-in row"},
+  "settingsSignInButton": "Sign in",
+  "@settingsSignInButton": {"description": "Row label for the optional sign-in entry point (§8)"},
+  "settingsSignInSubtitle": "Optional — your progress already works without an account.",
+  "@settingsSignInSubtitle": {"description": "Subtitle under the sign-in row explaining it's optional"},
+  "settingsSignInStubTitle": "Coming soon",
+  "@settingsSignInStubTitle": {"description": "Title of the sheet shown when tapping sign-in today"},
+  "settingsSignInStubBody": "Account sign-in isn't wired up yet — your quest progress already works without it.",
+  "@settingsSignInStubBody": {"description": "Body of the sign-in stub sheet"},
+  "settingsSignInStubClose": "Close",
+  "@settingsSignInStubClose": {"description": "Button that dismisses the sign-in stub sheet"},
+  "settingsLanguageSectionTitle": "Language",
+  "@settingsLanguageSectionTitle": {"description": "Settings section heading for the language switch"},
+  "settingsLanguageRussian": "Русский",
+  "@settingsLanguageRussian": {"description": "Language option label — kept in Russian in both locales, it names the language itself"},
+  "settingsLanguageEnglish": "English",
+  "@settingsLanguageEnglish": {"description": "Language option label — kept in English in both locales, it names the language itself"}
+}

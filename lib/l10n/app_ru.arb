@@ -1,0 +1,53 @@
+{
+  "@@locale": "ru",
+
+  "navJourney": "Путь",
+  "navQuestStats": "Карта",
+  "navAchievements": "Трофеи",
+  "navSettings": "Настройки",
+
+  "unitMeters": "{count, plural, one{метр} few{метра} many{метров} other{метра}}",
+  "unitKilometers": "{count, plural, one{километр} few{километра} many{километров} other{километра}}",
+
+  "journeyCatalogTitle": "Выберите поход",
+  "journeyCatalogStartButton": "Начать поход",
+  "journeyDayCounter": "День {day}",
+  "journeyNarrativeComingSoon": "Рассказ об этом участке пути ещё пишется.",
+
+  "stepsPermissionExplainTitle": "Пусть шаги двигают вас",
+  "stepsPermissionExplainBody": "There and Back читает данные о шагах и пройденном расстоянии, чтобы двигать вашего путника по маршруту. Эти данные не покидают устройство — кроме итогового прогресса по квесту.",
+  "stepsPermissionAllow": "Разрешить доступ",
+  "stepsPermissionDeniedTitle": "Пока нет данных о шагах",
+  "stepsPermissionDeniedBody": "В доступе было отказано, поэтому путник пока не двигается. Вы можете разрешить доступ снова в любой момент.",
+  "stepsPermissionRetry": "Повторить",
+  "stepsHealthConnectMissingTitle": "Нужен Health Connect",
+  "stepsHealthConnectMissingBody": "Установите Health Connect, чтобы шаги двигали вашего путника.",
+  "stepsHealthConnectInstall": "Установить Health Connect",
+
+  "questStatsToLabel": "До {pointB}",
+  "questStatsStartedLabel": "Поход начат",
+  "questStatsEtaLabel": "Ожидаемое прибытие",
+  "questStatsMapComingSoonTitle": "Карта маршрута",
+  "questStatsMapComingSoonBody": "Иллюстрированная карта этого квеста готовится — загляните позже.",
+  "questStatsEmptyTitle": "Квест ещё не выбран",
+  "questStatsEmptyBody": "Начните поход на вкладке «Путь», чтобы увидеть здесь статистику.",
+  "questStatsEmptyCta": "К вкладке «Путь»",
+
+  "achievementFirstStepsTitle": "Первые шаги",
+  "achievementHalfDayMarchTitle": "Полдня в пути",
+  "achievementSeasonedWandererTitle": "Бывалый путник",
+  "achievementJourneysEndTitle": "Конец пути",
+  "achievementUnlockedLabel": "Получено",
+  "achievementRemainingLabel": "осталось {amount}",
+
+  "settingsTitle": "Настройки",
+  "settingsAccountSectionTitle": "Аккаунт",
+  "settingsSignInButton": "Войти",
+  "settingsSignInSubtitle": "Не обязательно — прогресс работает и без аккаунта.",
+  "settingsSignInStubTitle": "Скоро",
+  "settingsSignInStubBody": "Вход в аккаунт пока не подключён — прогресс по квесту уже работает и без него.",
+  "settingsSignInStubClose": "Закрыть",
+  "settingsLanguageSectionTitle": "Язык",
+  "settingsLanguageRussian": "Русский",
+  "settingsLanguageEnglish": "English"
+}
