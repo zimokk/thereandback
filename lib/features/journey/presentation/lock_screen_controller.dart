@@ -80,8 +80,22 @@ class LockScreenController extends _$LockScreenController {
 
       final notificationsGranted = await channel
           .requestNotificationPermission();
-      final backgroundHealthGranted = await healthAdapter
-          .requestBackgroundHealthPermission();
+
+      // Health Connect only grants READ_HEALTH_DATA_IN_BACKGROUND once the
+      // app already holds the base read permissions (READ_STEPS/
+      // READ_DISTANCE) — requesting it first fails even if the user taps
+      // "Allow" on the system prompt. The Путь tab is the usual place those
+      // get granted, but this toggle is reachable without ever opening it
+      // (fresh install → straight to Настройки), so ensure the prerequisite
+      // here too instead of assuming it's already in place.
+      var stepsGranted = await healthAdapter.hasStepsPermission() ?? false;
+      if (!stepsGranted) {
+        stepsGranted = await healthAdapter.requestStepsPermission();
+      }
+
+      final backgroundHealthGranted = stepsGranted
+          ? await healthAdapter.requestBackgroundHealthPermission()
+          : false;
       final granted = notificationsGranted && backgroundHealthGranted;
 
       state = state.copyWith(

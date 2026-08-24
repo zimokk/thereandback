@@ -42,6 +42,10 @@ void main() {
         .thenAnswer((_) async => true);
     when(() => backgroundSync.register()).thenAnswer((_) async {});
     when(() => backgroundSync.cancel()).thenAnswer((_) async {});
+    when(() => healthAdapter.hasStepsPermission())
+        .thenAnswer((_) async => true);
+    when(() => healthAdapter.requestStepsPermission())
+        .thenAnswer((_) async => true);
     when(() => healthAdapter.requestBackgroundHealthPermission())
         .thenAnswer((_) async => true);
 
@@ -71,6 +75,43 @@ void main() {
     expect(container.read(lockScreenControllerProvider).enabled, isTrue);
     verify(() => backgroundSync.register()).called(1);
     verify(() => channel.start(any())).called(1);
+  });
+
+  test('enable() requests base steps permission first when Health Connect '
+      "hasn't granted it yet, then background permission — matching "
+      'Health Connect requiring the read permission before it will grant '
+      'background access', () async {
+    when(() => healthAdapter.hasStepsPermission())
+        .thenAnswer((_) async => false);
+
+    await container.read(lockScreenControllerProvider.notifier).enable();
+
+    verify(() => healthAdapter.requestStepsPermission()).called(1);
+    verify(() => healthAdapter.requestBackgroundHealthPermission())
+        .called(1);
+    expect(
+      container.read(lockScreenControllerProvider).permissionStatus,
+      LockScreenPermissionStatus.granted,
+    );
+    expect(container.read(lockScreenControllerProvider).enabled, isTrue);
+  });
+
+  test('enable() never requests background permission when the base steps '
+      "permission request fails — Health Connect wouldn't grant it anyway",
+      () async {
+    when(() => healthAdapter.hasStepsPermission())
+        .thenAnswer((_) async => false);
+    when(() => healthAdapter.requestStepsPermission())
+        .thenAnswer((_) async => false);
+
+    await container.read(lockScreenControllerProvider.notifier).enable();
+
+    verifyNever(() => healthAdapter.requestBackgroundHealthPermission());
+    expect(
+      container.read(lockScreenControllerProvider).permissionStatus,
+      LockScreenPermissionStatus.denied,
+    );
+    expect(container.read(lockScreenControllerProvider).enabled, isFalse);
   });
 
   test('enable() denied leaves the feature off and never registers '
