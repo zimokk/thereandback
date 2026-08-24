@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:thereandback/app/database_provider.dart';
 import 'package:thereandback/app/theme.dart';
+import 'package:thereandback/data/drift/database.dart';
 import 'package:thereandback/features/achievements/presentation/achievements_tab.dart';
 import 'package:thereandback/features/journey/presentation/journey_providers.dart';
 import 'package:thereandback/l10n/app_localizations.dart';
 
 Widget _wrap(Widget child) {
   return ProviderScope(
+    // `testing` skill: never a real drift database in a test.
+    overrides: [
+      appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+    ],
     child: MaterialApp(
       theme: buildAppTheme(),
       locale: const Locale('en'),
