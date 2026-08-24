@@ -48,7 +48,33 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Health Connect requires the requesting app to be able to
+                 show its own privacy-policy rationale before granting
+                 health permissions — without this filter, Health Connect
+                 can silently fail to recognize (or reject) our permission
+                 request, independent of anything the user does in system
+                 Settings. -->
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
         </activity>
+        <!-- Required by Health Connect so its own "manage app permissions"
+             screen can deep-link back into this app (Android's
+             android:permission="START_VIEW_PERMISSION_USAGE" is a
+             system-signature permission held only by the OS/Health
+             Connect, not something this app requests). Same requirement
+             as the intent-filter above — part of the same Health Connect
+             setup contract, see the `health` package's Android docs. -->
+        <activity-alias
+            android:name="ViewPermissionUsageActivity"
+            android:exported="true"
+            android:targetActivity=".MainActivity"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
@@ -68,5 +94,12 @@
         <!-- Package visibility so isHealthConnectAvailable()/installHealthConnect()
              (§7: Health Connect can be missing, handle it explicitly) can see it. -->
         <package android:name="com.google.android.apps.healthdata" />
+        <!-- Lets Health Connect verify this app can show a permissions
+             rationale, part of the same setup contract as the
+             ACTION_SHOW_PERMISSIONS_RATIONALE intent-filter on
+             .MainActivity above. -->
+        <intent>
+            <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+        </intent>
     </queries>
 </manifest>
