@@ -2,6 +2,15 @@
     <!-- Health Connect (§3, §7) — read-only. -->
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.READ_DISTANCE" />
+    <!-- Classic Android runtime permission ("Physical activity" in system
+         UI) that Health Connect's own STEPS permission additionally
+         requires — health.requestAuthorization() only drives the Health
+         Connect side, so features/steps/data/health_adapter.dart requests
+         this one separately via permission_handler. Already reaches the
+         merged manifest via a dependency's own manifest, but declared
+         explicitly here for the same reason POST_NOTIFICATIONS is below:
+         this app's manifest should say what it asks users for. -->
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
     <!-- Health Connect's background-read permission (§7) — requested only
          when the user turns on the lock-screen/notification-shade display
          (`features/journey/presentation/lock_screen_controller.dart`), not

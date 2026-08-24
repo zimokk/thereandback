@@ -1,4 +1,7 @@
+import 'dart:io' show Platform;
+
 import 'package:health/health.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 /// One interval's worth of raw activity data, as reported by the platform.
 /// Not a domain type — this is the shape the adapter hands to
@@ -84,12 +87,37 @@ class HealthPackageAdapter implements HealthAdapter {
   Future<void> configure() => _health.configure();
 
   @override
-  Future<bool?> hasStepsPermission() =>
-      _health.hasPermissions(_types, permissions: _readPermissions);
+  Future<bool?> hasStepsPermission() async {
+    if (!await _hasActivityRecognitionPermission()) return false;
+    return _health.hasPermissions(_types, permissions: _readPermissions);
+  }
 
   @override
-  Future<bool> requestStepsPermission() =>
-      _health.requestAuthorization(_types, permissions: _readPermissions);
+  Future<bool> requestStepsPermission() async {
+    if (!await _requestActivityRecognitionPermission()) return false;
+    return _health.requestAuthorization(_types, permissions: _readPermissions);
+  }
+
+  /// Android only: reading [HealthDataType.STEPS] through Health Connect
+  /// additionally gates on the classic dangerous runtime permission
+  /// `android.permission.ACTIVITY_RECOGNITION` ("Physical activity" in the
+  /// system permissions UI). `_health.hasPermissions`/`requestAuthorization`
+  /// never ask for it — it's a plain Android runtime permission, not part
+  /// of Health Connect's own permission screen — so without this check the
+  /// app would sit at "denied" forever without the user ever having seen a
+  /// prompt for it. Always granted on iOS, which has no such permission.
+  Future<bool> _hasActivityRecognitionPermission() async {
+    if (!Platform.isAndroid) return true;
+    return (await Permission.activityRecognition.status).isGranted;
+  }
+
+  /// Shows the OS prompt for [_hasActivityRecognitionPermission]'s
+  /// permission, ahead of the Health Connect prompt `requestAuthorization`
+  /// shows next — see that method's doc for why this is needed at all.
+  Future<bool> _requestActivityRecognitionPermission() async {
+    if (!Platform.isAndroid) return true;
+    return (await Permission.activityRecognition.request()).isGranted;
+  }
 
   @override
   Future<HealthConnectAvailability> healthConnectAvailability() async {
