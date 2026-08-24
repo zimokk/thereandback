@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Drawable-type alias for the mipmap launcher icon. `flutter_local_notifications`
+  looks up bitmap/icon resources under the `drawable` resource type only
+  (`Resources.getIdentifier(name, "drawable", packageName)`), so `ic_launcher`
+  in `res/mipmap-*/` can't be referenced directly as a notification's large
+  icon — this alias makes it reachable by name under `drawable` without
+  duplicating the actual PNGs.
+-->
+<bitmap xmlns:android="http://schemas.android.com/apk/res/android"
+    android:src="@mipmap/ic_launcher" />

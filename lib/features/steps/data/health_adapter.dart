@@ -53,6 +53,16 @@ abstract class HealthAdapter {
   /// caller's problem to clamp (`stride.clampNonDecreasing`), not this
   /// adapter's.
   Future<StepsDelta> fetchDelta(DateTime from, DateTime to);
+
+  /// Whether Health Connect's background-read permission is granted (§7's
+  /// background-sync mechanism, Android only). Always `true` on iOS — there
+  /// is no equivalent gate there; HealthKit's own background delivery has
+  /// its own setup, out of scope for this adapter method.
+  Future<bool> hasBackgroundHealthPermission();
+
+  /// Shows the OS prompt for Health Connect's background-read permission.
+  /// Always `true` on iOS, same reasoning as [hasBackgroundHealthPermission].
+  Future<bool> requestBackgroundHealthPermission();
 }
 
 /// Real implementation backed by the `health` package.
@@ -121,4 +131,12 @@ class HealthPackageAdapter implements HealthAdapter {
       walkingDistanceMeters: walkingDistanceMeters,
     );
   }
+
+  @override
+  Future<bool> hasBackgroundHealthPermission() =>
+      _health.isHealthDataInBackgroundAuthorized();
+
+  @override
+  Future<bool> requestBackgroundHealthPermission() =>
+      _health.requestHealthDataInBackgroundAuthorization();
 }

@@ -171,4 +171,41 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsLanguageEnglish => 'English';
+
+  @override
+  String get settingsLockScreenSectionTitle => 'Lock screen';
+
+  @override
+  String get settingsLockScreenToggleTitle =>
+      'Show progress on the lock screen';
+
+  @override
+  String get settingsLockScreenToggleSubtitle =>
+      'A quiet, ongoing notification with your quest progress — visible in the notification shade and on the lock screen.';
+
+  @override
+  String get lockScreenPermissionExplainTitle => 'Keep your progress visible';
+
+  @override
+  String get lockScreenPermissionExplainBody =>
+      'To show your progress on the lock screen, There and Back needs permission to post a notification and to read your steps in the background, roughly every 15 minutes. Only your quest progress is shown there — never raw health data.';
+
+  @override
+  String get lockScreenPermissionAllow => 'Allow';
+
+  @override
+  String get lockScreenPermissionDeniedBody =>
+      'Permission wasn\'t granted, so the lock screen display is off. You can turn it on again anytime.';
+
+  @override
+  String get lockScreenChannelName => 'Quest progress';
+
+  @override
+  String get lockScreenChannelDescription =>
+      'Shows your current quest progress in the notification shade and on the lock screen.';
+
+  @override
+  String lockScreenBody(String day, String distance) {
+    return '$day · $distance';
+  }
 }

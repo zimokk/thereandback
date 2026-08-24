@@ -3,11 +3,10 @@ import 'dart:io' show Platform;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../app/database_provider.dart';
-import '../../../core/local_owner.dart';
 import '../../journey/presentation/journey_providers.dart';
 import '../data/health_adapter.dart';
 import '../data/step_sample_repository.dart';
-import '../domain/stride.dart';
+import '../data/steps_sync_engine.dart';
 import 'steps_sync_state.dart';
 
 part 'steps_providers.g.dart';
@@ -92,9 +91,13 @@ class StepsSync extends _$StepsSync {
   /// is itself the first line of defense against the §5.2 idempotency race
   /// a double-tap or overlapping background/foreground sync could cause).
   ///
-  /// Also runs the §5.2 realistic-pace check on the raw step count and
-  /// records the result in [StepsSyncState.lastSyncFlagged] — flagged, not
-  /// dropped, so the credited distance is unaffected either way.
+  /// The actual fetch/resolve/record algorithm lives in
+  /// `data/steps_sync_engine.dart`'s [StepsSyncEngine] — shared with the
+  /// Android background sync task, so a background tick and a later
+  /// foreground sync of the same interval go through the exact same
+  /// idempotency key. This method's job is just the provider-facing part:
+  /// building the engine, applying its result, and tracking
+  /// [StepsSyncState.lastSyncFlagged]/`isSyncing`.
   Future<void> sync() async {
     final selected = ref.read(selectedJourneyProvider);
     if (selected == null) return;
@@ -103,50 +106,19 @@ class StepsSync extends _$StepsSync {
 
     state = state.copyWith(isSyncing: true);
     try {
-      final adapter = ref.read(healthAdapterProvider);
-      final intervalStart = selected.lastSyncedAt;
-      final now = DateTime.now();
-      final interval = now.difference(intervalStart);
-      final delta = await adapter.fetchDelta(intervalStart, now);
-
-      // §5.2: an interval above the realistic-pace threshold is flagged,
-      // never silently dropped — the distance below is still credited.
-      final flagged = isImplausiblePace(steps: delta.steps, interval: interval);
-
-      final deltaMeters = resolveDistanceMeters(
-        stepCount: delta.steps,
-        walkingDistanceMeters: delta.walkingDistanceMeters,
+      final engine = StepsSyncEngine(
+        healthAdapter: ref.read(healthAdapterProvider),
+        stepSampleRepository: ref.read(stepSampleRepositoryProvider),
       );
+      final result = await engine.sync(quest: selected, now: DateTime.now());
 
-      // §5.2's real idempotency guarantee: durable, keyed on
-      // (ownerId, journeyId, intervalStart), so a replay of this exact
-      // interval — say, after an app restart lost `lastSyncedAt` — is
-      // recognized and never credited twice.
-      final isNewInterval = await ref
-          .read(stepSampleRepositoryProvider)
-          .recordInterval(
-            ownerId: localOwnerId,
-            journeyId: selected.journeyId,
-            intervalStart: intervalStart,
-            intervalEnd: now,
-            steps: delta.steps,
-            walkingDistanceMeters: delta.walkingDistanceMeters,
-            resolvedMeters: deltaMeters,
-            flaggedPace: flagged,
-            syncedAt: now,
-          );
-
-      final candidateMeters = isNewInterval
-          ? clampNonDecreasing(
-              selected.progressMeters,
-              selected.progressMeters + deltaMeters,
-            )
-          : selected.progressMeters; // already credited — advance the
-      // sync window only, per the idempotency guard above.
       ref
           .read(selectedJourneyProvider.notifier)
-          .applySyncedProgress(progressMeters: candidateMeters, syncedAt: now);
-      state = state.copyWith(lastSyncFlagged: flagged);
+          .applySyncedProgress(
+            progressMeters: result.progressMeters,
+            syncedAt: result.syncedAt,
+          );
+      state = state.copyWith(lastSyncFlagged: result.flagged);
     } finally {
       state = state.copyWith(isSyncing: false);
     }

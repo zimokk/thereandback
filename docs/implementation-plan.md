@@ -153,6 +153,27 @@ Security Rules обязаны разрешать чтение чужого пр�
 
 ---
 
+### Standalone — постоянное отображение на экране блокировки (Android)
+
+Не привязана к номеру фазы выше — CLAUDE.md §7 описывает её отдельно от
+пушей, и ни один Phase 4–10 её не покрывает; сделана как отдельное
+плановое изменение по правилу §13 (новая зависимость + разрешения → сначала
+план). Закрывает заодно и открытый вопрос §7/§14 "механизм фонового
+синка" — для Android; iOS-механизм остаётся открытым.
+
+Android-only: постоянное уведомление (шторка + экран блокировки) через
+`flutter_local_notifications`, обновляется по прогрессу как из foreground-
+синка, так и из периодической фоновой задачи `workmanager` (15 минут — пол
+`WorkManager`). iOS (Live Activity, нативный Widget Extension на Swift) —
+намеренно отложена: свой план и PR, см. документ ниже.
+
+- **Модули:** `features/journey/domain/lock_screen_snapshot.dart`; `features/journey/data/lock_screen_channel.dart`, `android_lock_screen_channel.dart`; `features/steps/data/steps_sync_engine.dart` (общий алгоритм синка, вынесен из `StepsSync.sync()`), `android_background_sync.dart`; `features/journey/presentation/lock_screen_controller.dart`; `features/profile/presentation/settings_tab.dart` (тумблер)
+- **Готово, когда:** тумблер в Настройках включает уведомление только после двух разрешений (`POST_NOTIFICATIONS`, Health Connect background-read); уведомление переживает закрытие приложения и обновляется фоновой задачей; выключение тумблера отменяет и задачу, и уведомление; `positionLabel` — честный плейсхолдер до Phase 6/11.
+- **Подробности:** [`docs/screens/lock-screen.md`](screens/lock-screen.md)
+- **Зависит от:** Phase 3 (drift), Phase 4 (steps sync)
+
+---
+
 ## Milestone M4 — Content & Release (Phase 10–12)
 
 Замыкание цикла, ради которого приложение строилось: выбрать следующий

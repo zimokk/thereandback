@@ -5,6 +5,8 @@ import '../../../design/colors.dart';
 import '../../../design/spacing.dart';
 import '../../../design/typography.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../journey/presentation/lock_screen_controller.dart';
+import '../../journey/presentation/lock_screen_state.dart';
 import 'locale_provider.dart';
 
 /// Настройки (§6.5), trimmed to what this base ships: an optional sign-in
@@ -17,6 +19,7 @@ class SettingsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(appLocaleProvider);
     final l10n = AppLocalizations.of(context)!;
+    final lockScreenSupported = ref.watch(lockScreenSupportedProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -48,6 +51,10 @@ class SettingsTab extends ConsumerWidget {
                 onTap: () => _showSignInStub(context, l10n),
               ),
             ),
+            if (lockScreenSupported) ...[
+              const SizedBox(height: AppSpacing.md),
+              const _LockScreenSection(),
+            ],
             const SizedBox(height: AppSpacing.md),
             _SectionCard(
               title: l10n.settingsLanguageSectionTitle,
@@ -120,6 +127,59 @@ void _showSignInStub(BuildContext context, AppLocalizations l10n) {
       ),
     ),
   );
+}
+
+/// The §7 "persistent lock screen / notification shade" toggle. Off by
+/// default — turning it on requests two OS permissions
+/// (`POST_NOTIFICATIONS` and Health Connect's background-read permission)
+/// through `lock_screen_controller.dart`'s `enable()`, so the subtitle
+/// explains what's about to be asked before the prompts show up (§7: never
+/// request without explaining first).
+class _LockScreenSection extends ConsumerWidget {
+  const _LockScreenSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final state = ref.watch(lockScreenControllerProvider);
+    final l10n = AppLocalizations.of(context)!;
+
+    return _SectionCard(
+      title: l10n.settingsLockScreenSectionTitle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            activeThumbColor: AppColors.gold,
+            title: Text(
+              l10n.settingsLockScreenToggleTitle,
+              style: AppTypography.body,
+            ),
+            subtitle: Text(
+              l10n.settingsLockScreenToggleSubtitle,
+              style: AppTypography.bodySecondary,
+            ),
+            value: state.enabled,
+            onChanged: state.isBusy
+                ? null
+                : (value) => value
+                      ? ref.read(lockScreenControllerProvider.notifier).enable()
+                      : ref
+                            .read(lockScreenControllerProvider.notifier)
+                            .disable(),
+          ),
+          if (state.permissionStatus == LockScreenPermissionStatus.denied)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.sm),
+              child: Text(
+                l10n.lockScreenPermissionDeniedBody,
+                style: AppTypography.bodySecondary,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SectionCard extends StatelessWidget {
