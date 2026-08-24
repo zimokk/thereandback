@@ -34,9 +34,10 @@ class JourneyPathView extends ConsumerWidget {
 
     final day = questDay(startedAt: selected.startedAt, now: DateTime.now());
     final distance = formatDistance(selected.progressMeters);
-    final progressFraction = journey.totalMeters == 0
-        ? 0.0
-        : (selected.progressMeters / journey.totalMeters).clamp(0.0, 1.0);
+    final progress = progressFraction(
+      progressMeters: selected.progressMeters,
+      totalMeters: journey.totalMeters,
+    );
 
     return ColoredBox(
       color: AppColors.background,
@@ -44,7 +45,7 @@ class JourneyPathView extends ConsumerWidget {
         children: [
           Expanded(
             child: CustomPaint(
-              painter: _StraightPathPainter(progress: progressFraction),
+              painter: _StraightPathPainter(progress: progress),
               child: const SizedBox.expand(),
             ),
           ),
