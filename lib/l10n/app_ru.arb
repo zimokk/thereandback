@@ -50,5 +50,17 @@
   "settingsSignInStubClose": "Закрыть",
   "settingsLanguageSectionTitle": "Язык",
   "settingsLanguageRussian": "Русский",
-  "settingsLanguageEnglish": "English"
+  "settingsLanguageEnglish": "English",
+
+  "settingsLockScreenSectionTitle": "Экран блокировки",
+  "settingsLockScreenToggleTitle": "Показывать прогресс на экране блокировки",
+  "settingsLockScreenToggleSubtitle": "Тихое постоянное уведомление с прогрессом похода — видно в шторке уведомлений и на экране блокировки.",
+  "lockScreenPermissionExplainTitle": "Прогресс всегда на виду",
+  "lockScreenPermissionExplainBody": "Чтобы показывать прогресс на экране блокировки, There and Back нужно разрешение показывать уведомление и читать шаги в фоне — примерно раз в 15 минут. Там показывается только прогресс похода — никогда не сырые данные о здоровье.",
+  "lockScreenPermissionAllow": "Разрешить",
+  "lockScreenPermissionDeniedBody": "Разрешение не получено, отображение на экране блокировки выключено. Его можно включить снова в любой момент.",
+
+  "lockScreenChannelName": "Прогресс похода",
+  "lockScreenChannelDescription": "Показывает текущий прогресс похода в шторке уведомлений и на экране блокировки.",
+  "lockScreenBody": "{day} · {distance}"
 }

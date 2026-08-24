@@ -111,5 +111,30 @@
   "settingsLanguageRussian": "Русский",
   "@settingsLanguageRussian": {"description": "Language option label — kept in Russian in both locales, it names the language itself"},
   "settingsLanguageEnglish": "English",
-  "@settingsLanguageEnglish": {"description": "Language option label — kept in English in both locales, it names the language itself"}
+  "@settingsLanguageEnglish": {"description": "Language option label — kept in English in both locales, it names the language itself"},
+
+  "settingsLockScreenSectionTitle": "Lock screen",
+  "@settingsLockScreenSectionTitle": {"description": "Settings section heading for the persistent lock-screen/notification-shade progress toggle (§7)"},
+  "settingsLockScreenToggleTitle": "Show progress on the lock screen",
+  "@settingsLockScreenToggleTitle": {"description": "Label of the off-by-default toggle that turns on the ongoing notification"},
+  "settingsLockScreenToggleSubtitle": "A quiet, ongoing notification with your quest progress — visible in the notification shade and on the lock screen.",
+  "@settingsLockScreenToggleSubtitle": {"description": "Subtitle explaining what the toggle does, shown under it"},
+  "lockScreenPermissionExplainTitle": "Keep your progress visible",
+  "@lockScreenPermissionExplainTitle": {"description": "Title of the explanation shown before requesting the notification + background-sync permissions (§7)"},
+  "lockScreenPermissionExplainBody": "To show your progress on the lock screen, There and Back needs permission to post a notification and to read your steps in the background, roughly every 15 minutes. Only your quest progress is shown there — never raw health data.",
+  "@lockScreenPermissionExplainBody": {"description": "Body of the pre-permission explanation, shown before the OS prompts"},
+  "lockScreenPermissionAllow": "Allow",
+  "@lockScreenPermissionAllow": {"description": "Button that triggers the OS notification/background-health permission prompts"},
+  "lockScreenPermissionDeniedBody": "Permission wasn't granted, so the lock screen display is off. You can turn it on again anytime.",
+  "@lockScreenPermissionDeniedBody": {"description": "Shown after the user denies the notification/background-health permissions (§7: never a dead end)"},
+
+  "lockScreenChannelName": "Quest progress",
+  "@lockScreenChannelName": {"description": "Android notification channel name for the ongoing lock-screen/shade notification (shown in system notification settings, not in-app)"},
+  "lockScreenChannelDescription": "Shows your current quest progress in the notification shade and on the lock screen.",
+  "@lockScreenChannelDescription": {"description": "Android notification channel description (shown in system notification settings, not in-app)"},
+  "lockScreenBody": "{day} · {distance}",
+  "@lockScreenBody": {
+    "description": "The ongoing notification's prominent line: the quest-day counter and formatted progress distance, already composed",
+    "placeholders": {"day": {"type": "String"}, "distance": {"type": "String"}}
+  }
 }

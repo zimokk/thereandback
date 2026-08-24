@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:thereandback/app/theme.dart';
+import 'package:thereandback/features/journey/presentation/lock_screen_controller.dart';
 import 'package:thereandback/features/profile/presentation/locale_provider.dart';
 import 'package:thereandback/features/profile/presentation/settings_tab.dart';
 import 'package:thereandback/l10n/app_localizations.dart';
 
-Widget _wrap(Widget child) {
+Widget _wrap(Widget child, {bool lockScreenSupported = false}) {
   return ProviderScope(
+    overrides: [
+      lockScreenSupportedProvider.overrideWithValue(lockScreenSupported),
+    ],
     child: Consumer(
       builder: (context, ref, _) {
         final locale = ref.watch(appLocaleProvider);
@@ -63,4 +67,35 @@ void main() {
     expect(find.text('Settings'), findsOneWidget);
     expect(find.text('Настройки'), findsNothing);
   });
+
+  testWidgets(
+    'the lock-screen toggle is hidden where the platform isn\'t supported '
+    '(default lockScreenSupportedProvider — this suite runs on Linux)',
+    (tester) async {
+      await tester.pumpWidget(_wrap(const SettingsTab()));
+      await tester.pump();
+
+      expect(
+        find.text('Показывать прогресс на экране блокировки'),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets(
+    'on a platform where it is supported, the toggle renders off by default',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(const SettingsTab(), lockScreenSupported: true),
+      );
+      await tester.pump();
+
+      final tile = tester.widget<SwitchListTile>(find.byType(SwitchListTile));
+      expect(tile.value, isFalse);
+      expect(
+        find.text('Показывать прогресс на экране блокировки'),
+        findsOneWidget,
+      );
+    },
+  );
 }

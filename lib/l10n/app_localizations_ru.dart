@@ -175,4 +175,41 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsLanguageEnglish => 'English';
+
+  @override
+  String get settingsLockScreenSectionTitle => 'Экран блокировки';
+
+  @override
+  String get settingsLockScreenToggleTitle =>
+      'Показывать прогресс на экране блокировки';
+
+  @override
+  String get settingsLockScreenToggleSubtitle =>
+      'Тихое постоянное уведомление с прогрессом похода — видно в шторке уведомлений и на экране блокировки.';
+
+  @override
+  String get lockScreenPermissionExplainTitle => 'Прогресс всегда на виду';
+
+  @override
+  String get lockScreenPermissionExplainBody =>
+      'Чтобы показывать прогресс на экране блокировки, There and Back нужно разрешение показывать уведомление и читать шаги в фоне — примерно раз в 15 минут. Там показывается только прогресс похода — никогда не сырые данные о здоровье.';
+
+  @override
+  String get lockScreenPermissionAllow => 'Разрешить';
+
+  @override
+  String get lockScreenPermissionDeniedBody =>
+      'Разрешение не получено, отображение на экране блокировки выключено. Его можно включить снова в любой момент.';
+
+  @override
+  String get lockScreenChannelName => 'Прогресс похода';
+
+  @override
+  String get lockScreenChannelDescription =>
+      'Показывает текущий прогресс похода в шторке уведомлений и на экране блокировки.';
+
+  @override
+  String lockScreenBody(String day, String distance) {
+    return '$day · $distance';
+  }
 }

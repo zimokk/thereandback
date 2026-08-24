@@ -361,6 +361,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'English'**
   String get settingsLanguageEnglish;
+
+  /// Settings section heading for the persistent lock-screen/notification-shade progress toggle (§7)
+  ///
+  /// In en, this message translates to:
+  /// **'Lock screen'**
+  String get settingsLockScreenSectionTitle;
+
+  /// Label of the off-by-default toggle that turns on the ongoing notification
+  ///
+  /// In en, this message translates to:
+  /// **'Show progress on the lock screen'**
+  String get settingsLockScreenToggleTitle;
+
+  /// Subtitle explaining what the toggle does, shown under it
+  ///
+  /// In en, this message translates to:
+  /// **'A quiet, ongoing notification with your quest progress — visible in the notification shade and on the lock screen.'**
+  String get settingsLockScreenToggleSubtitle;
+
+  /// Title of the explanation shown before requesting the notification + background-sync permissions (§7)
+  ///
+  /// In en, this message translates to:
+  /// **'Keep your progress visible'**
+  String get lockScreenPermissionExplainTitle;
+
+  /// Body of the pre-permission explanation, shown before the OS prompts
+  ///
+  /// In en, this message translates to:
+  /// **'To show your progress on the lock screen, There and Back needs permission to post a notification and to read your steps in the background, roughly every 15 minutes. Only your quest progress is shown there — never raw health data.'**
+  String get lockScreenPermissionExplainBody;
+
+  /// Button that triggers the OS notification/background-health permission prompts
+  ///
+  /// In en, this message translates to:
+  /// **'Allow'**
+  String get lockScreenPermissionAllow;
+
+  /// Shown after the user denies the notification/background-health permissions (§7: never a dead end)
+  ///
+  /// In en, this message translates to:
+  /// **'Permission wasn\'t granted, so the lock screen display is off. You can turn it on again anytime.'**
+  String get lockScreenPermissionDeniedBody;
+
+  /// Android notification channel name for the ongoing lock-screen/shade notification (shown in system notification settings, not in-app)
+  ///
+  /// In en, this message translates to:
+  /// **'Quest progress'**
+  String get lockScreenChannelName;
+
+  /// Android notification channel description (shown in system notification settings, not in-app)
+  ///
+  /// In en, this message translates to:
+  /// **'Shows your current quest progress in the notification shade and on the lock screen.'**
+  String get lockScreenChannelDescription;
+
+  /// The ongoing notification's prominent line: the quest-day counter and formatted progress distance, already composed
+  ///
+  /// In en, this message translates to:
+  /// **'{day} · {distance}'**
+  String lockScreenBody(String day, String distance);
 }
 
 class _AppLocalizationsDelegate

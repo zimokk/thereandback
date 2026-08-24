@@ -7,12 +7,17 @@ top of the original four-screen ask so the traveler actually moves off
 real device activity ("как делают фитнес-трекеры") instead of a hardcoded
 zero.
 
-This implements a **foreground-only** slice of `docs/implementation-plan.md`'s
-Phase 4 (permission flow, health-adapter wrapping, the realistic-pace flag)
+This implements a slice of `docs/implementation-plan.md`'s Phase 4
+(permission flow, health-adapter wrapping, the realistic-pace flag)
 together with Phase 3's local persistence (drift) — see
-[below](#phase-3--durable-persistence-drift). Background delivery
-(`workmanager`/`BGTaskScheduler`) is still out of scope; see that section
-below.
+[below](#phase-3--durable-persistence-drift). The sync **algorithm** below
+is foreground-only in the sense that this doc describes it from
+`StepsSync`'s point of view; the same algorithm also runs from an Android
+background task now — see
+[`lock-screen.md`](lock-screen.md#background-sync-workmanager) for that
+half, added alongside the persistent lock-screen/notification-shade
+feature. iOS background delivery (`BGTaskScheduler`/HealthKit background
+delivery) is still out of scope.
 
 ## What it does
 
@@ -33,26 +38,33 @@ below.
    buttonless notice on the next build (`_FlaggedPaceNotice`) — purely
    informational, it doesn't block or undo the credited distance.
 
-## Foreground only — background sync is explicitly out of scope here
+## Foreground trigger — the algorithm this doc describes
 
-§7 calls background delivery its own architectural decision that needs a
-separate plan before any code — this module deliberately does not declare
-`READ_HEALTH_DATA_IN_BACKGROUND` (Android manifest) and does not touch
-`workmanager`/`BGTaskScheduler`. Sync runs when the Путь tab is opened;
-there's no pull-to-refresh gesture wired up yet either, so today "opening
-the tab" is the only trigger.
+Sync runs when the Путь tab is opened; there's no pull-to-refresh gesture
+wired up yet either, so today "opening the tab" is the only *foreground*
+trigger. §5.1/§5.2's sync algorithm itself (fetch delta → resolve meters →
+record idempotently) was extracted into `steps/data/steps_sync_engine.dart`
+(`StepsSyncEngine`) so it has no `Ref`/provider dependency — `StepsSync.sync()`
+below is one caller of it; the Android background task described in
+[`lock-screen.md`](lock-screen.md#background-sync-workmanager) is the other,
+running the identical algorithm through the identical
+`(ownerId, journeyId, intervalStart)` idempotency key so the two can never
+double-credit the same interval. `READ_HEALTH_DATA_IN_BACKGROUND` (Android
+manifest) is now declared because of that second caller — see
+`lock-screen.md` for why and under what user action.
 
 ## Layers
 
 | File | Layer | Responsibility |
 |---|---|---|
-| `steps/domain/stride.dart` | domain (pure Dart) | `stepsToMeters`, `resolveDistanceMeters` (platform distance beats steps×stride, §5.1), `clampNonDecreasing` (monotonic progress), `isImplausiblePace` (>250 steps/min flag, §5.2 — called from `StepsSync.sync()`, not just unit-tested in isolation) |
-| `steps/data/health_adapter.dart` | data | `HealthAdapter` interface + `HealthPackageAdapter` wrapping the `health` package (HealthKit/Health Connect) |
+| `steps/domain/stride.dart` | domain (pure Dart) | `stepsToMeters`, `resolveDistanceMeters` (platform distance beats steps×stride, §5.1), `clampNonDecreasing` (monotonic progress), `isImplausiblePace` (>250 steps/min flag, §5.2 — called from `StepsSyncEngine.sync()`, not just unit-tested in isolation) |
+| `steps/data/health_adapter.dart` | data | `HealthAdapter` interface + `HealthPackageAdapter` wrapping the `health` package (HealthKit/Health Connect), including the background-permission pair used by `lock-screen.md` |
 | `steps/data/step_sample_repository.dart` | data | `StepSampleRepository` + `DriftStepSampleRepository` — the idempotency log (see below) |
+| `steps/data/steps_sync_engine.dart` | data | `StepsSyncEngine` — the fetch/resolve/record algorithm itself, no `Ref`; shared by `StepsSync.sync()` (below) and the Android background task (`lock-screen.md`) |
 | `data/drift/database.dart` | data (shared, not steps-specific) | `AppDatabase`: `SelectedQuestRows` + `StepIntervalRecords` tables |
 | `features/journey/data/progress_repository.dart` | data | `ProgressRepository` — derives `SelectedQuest` from the interval log |
 | `steps/presentation/steps_sync_state.dart` | presentation | `StepsPermissionStatus` enum + `StepsSyncState` (freezed) |
-| `steps/presentation/steps_providers.dart` | presentation | `healthAdapterProvider`, `stepSampleRepositoryProvider`, `StepsSync` notifier (permission flow + `sync()`) |
+| `steps/presentation/steps_providers.dart` | presentation | `healthAdapterProvider`, `stepSampleRepositoryProvider`, `StepsSync` notifier (permission flow; `sync()` now just builds a `StepsSyncEngine` and applies its result) |
 | `steps/presentation/permission_gate.dart` | presentation | The three-state gate card |
 
 ## State — providers
@@ -111,7 +123,8 @@ Sync writes are idempotent, keyed on `(ownerId, journeyId, intervalStart)`
   `com.google.android.apps.healthdata` added to `<queries>` for package
   visibility (needed for `isHealthConnectAvailable()`/
   `installHealthConnect()` to see the app at all on Android 11+).
-  `READ_HEALTH_DATA_IN_BACKGROUND` is **not** declared (see above).
+  `READ_HEALTH_DATA_IN_BACKGROUND` **is** now declared — requested only
+  from the lock-screen toggle, not here; see `lock-screen.md`.
 - **`android/app/build.gradle.kts`**: `minSdk` raised to **26**
   (from Flutter's default 24) — the `health` package's Android module
   itself requires API 26+ for Health Connect; leaving the default would
@@ -174,6 +187,13 @@ Domain: `test/features/steps/domain/stride_test.dart` — the full §12
 mandatory list for this module (platform-distance preference, monotonic
 clamp on a negative delta, >250 steps/min flagged not dropped, threshold
 boundary).
+
+Engine: `test/features/steps/data/steps_sync_engine_test.dart` covers
+`StepsSyncEngine.sync()` directly against a mocked `HealthAdapter` and a
+real in-memory `AppDatabase`-backed `StepSampleRepository` — realistic vs.
+implausible pace, platform-distance preference over steps×stride, duplicate
+intervals, and the non-decreasing clamp. This is what both `StepsSync.sync()`
+and the Android background task (`lock-screen.md`) actually run.
 
 Provider-level: `test/features/steps/presentation/steps_providers_test.dart`
 exercises `StepsSync.sync()` end to end against a mocked `HealthAdapter`

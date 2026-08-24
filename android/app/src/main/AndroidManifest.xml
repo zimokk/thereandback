@@ -1,10 +1,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Health Connect (§3, §7) — read-only, foreground sync only.
-         READ_HEALTH_DATA_IN_BACKGROUND is deliberately not declared here:
-         background sync is a separate architectural decision that needs
-         its own plan (see docs/screens/steps-sync.md). -->
+    <!-- Health Connect (§3, §7) — read-only. -->
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.READ_DISTANCE" />
+    <!-- Health Connect's background-read permission (§7) — requested only
+         when the user turns on the lock-screen/notification-shade display
+         (`features/journey/presentation/lock_screen_controller.dart`), not
+         as part of health onboarding. See docs/screens/lock-screen.md. -->
+    <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_IN_BACKGROUND" />
+    <!-- Android 13+ notification permission, requested by the same toggle
+         (also declared transitively by workmanager_android, but kept
+         explicit here for the same reason READ_STEPS/READ_DISTANCE above
+         are — this app's own manifest should say what it asks users for,
+         not rely on a dependency's manifest to say it for us). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:label="thereandback"
