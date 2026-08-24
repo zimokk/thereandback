@@ -404,6 +404,18 @@ abstract class AppLocalizations {
   /// **'Permission wasn\'t granted, so the lock screen display is off. You can turn it on again anytime.'**
   String get lockScreenPermissionDeniedBody;
 
+  /// Names POST_NOTIFICATIONS as the specific permission still missing, so the denial message doesn't read as 'nothing was granted'
+  ///
+  /// In en, this message translates to:
+  /// **'Still missing: permission to post notifications.'**
+  String get lockScreenPermissionMissingNotifications;
+
+  /// Names Health Connect's READ_HEALTH_DATA_IN_BACKGROUND as the specific permission still missing
+  ///
+  /// In en, this message translates to:
+  /// **'Still missing: permission to read your steps in the background. Health Connect grants it on its own permission screen.'**
+  String get lockScreenPermissionMissingBackgroundHealth;
+
   /// Android notification channel name for the ongoing lock-screen/shade notification (shown in system notification settings, not in-app)
   ///
   /// In en, this message translates to:

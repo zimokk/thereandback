@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
+import 'package:flutter/widgets.dart' show AppLifecycleState;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../app/app_lifecycle.dart';
 import '../../../app/database_provider.dart';
 import '../../journey/presentation/journey_providers.dart';
 import '../data/health_adapter.dart';
@@ -35,6 +38,13 @@ StepSampleRepository stepSampleRepository(Ref ref) =>
 class StepsSync extends _$StepsSync {
   @override
   StepsSyncState build() {
+    // Health Connect's permission screen is a separate activity, so the
+    // grant usually lands while this app is backgrounded — without this the
+    // gate keeps showing "denied" until the next cold start.
+    ref.listen<AppLifecycleState>(appLifecycleProvider, (_, next) {
+      if (next == AppLifecycleState.resumed) unawaited(refreshStatus());
+    });
+
     // Kick off a status check as soon as this provider is first read; the
     // widget renders the `unknown` state for the one frame before this
     // resolves.

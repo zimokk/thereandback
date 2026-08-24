@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 
+import 'package:flutter/widgets.dart' show AppLifecycleState;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../app/app_lifecycle.dart';
 import '../../steps/data/android_background_sync.dart';
 import '../../steps/presentation/steps_providers.dart';
 import '../data/android_lock_screen_channel.dart';
@@ -65,7 +67,66 @@ class LockScreenController extends _$LockScreenController {
   @override
   LockScreenState build() {
     ref.listen<SelectedQuest?>(selectedJourneyProvider, _onQuestChanged);
+
+    // The permission screens this toggle sends the user to (Health Connect,
+    // Android app settings) are separate activities, and access can also be
+    // revoked there long after the fact — so re-read the OS on every return
+    // to the app instead of trusting the last request's result forever.
+    ref.listen<AppLifecycleState>(appLifecycleProvider, (_, next) {
+      if (next == AppLifecycleState.resumed) unawaited(refreshStatus());
+    });
+
+    // Same shape as `StepsSync.build()`: the UI renders the `unknown` state
+    // for the one frame before this resolves.
+    Future.microtask(refreshStatus);
     return const LockScreenState();
+  }
+
+  /// Re-reads both permissions from the platform and reconciles the toggle
+  /// with them. Never turns the feature *on* by itself — holding the
+  /// permissions is not the same as asking for a standing notification —
+  /// but does turn it off if access was revoked while the app was away.
+  Future<void> refreshStatus() async {
+    if (state.isBusy) return;
+
+    final notificationsGranted = await ref
+        .read(androidLockScreenChannelProvider)
+        .hasNotificationPermission();
+    final backgroundHealthGranted = await ref
+        .read(healthAdapterProvider)
+        .hasBackgroundHealthPermission();
+    final granted = notificationsGranted && backgroundHealthGranted;
+
+    state = state.copyWith(
+      notificationsGranted: notificationsGranted,
+      backgroundHealthGranted: backgroundHealthGranted,
+      permissionStatus: _statusFor(granted: granted),
+    );
+
+    if (state.enabled && !granted) await _revoke();
+  }
+
+  /// Keeps [LockScreenPermissionStatus.notRequested] distinguishable from a
+  /// real refusal: "not granted" only means "denied" once the user has
+  /// actually been through [enable].
+  LockScreenPermissionStatus _statusFor({required bool granted}) {
+    if (granted) return LockScreenPermissionStatus.granted;
+    return switch (state.permissionStatus) {
+      LockScreenPermissionStatus.unknown ||
+      LockScreenPermissionStatus.notRequested =>
+        LockScreenPermissionStatus.notRequested,
+      LockScreenPermissionStatus.granted ||
+      LockScreenPermissionStatus.denied => LockScreenPermissionStatus.denied,
+    };
+  }
+
+  /// Access disappeared under a running feature: stop the background task
+  /// and clear the display, but leave [LockScreenState.permissionStatus] to
+  /// the caller — it already knows why this happened.
+  Future<void> _revoke() async {
+    await ref.read(androidBackgroundSyncProvider).cancel();
+    await ref.read(lockScreenChannelProvider).end();
+    state = state.copyWith(enabled: false, activeJourneyId: null);
   }
 
   /// Requests both permissions and, if both are granted, turns the feature
@@ -100,6 +161,8 @@ class LockScreenController extends _$LockScreenController {
 
       state = state.copyWith(
         enabled: granted,
+        notificationsGranted: notificationsGranted,
+        backgroundHealthGranted: backgroundHealthGranted,
         permissionStatus: granted
             ? LockScreenPermissionStatus.granted
             : LockScreenPermissionStatus.denied,

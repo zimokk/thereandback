@@ -59,6 +59,8 @@
   "lockScreenPermissionExplainBody": "Чтобы показывать прогресс на экране блокировки, There and Back нужно разрешение показывать уведомление и читать шаги в фоне — примерно раз в 15 минут. Там показывается только прогресс похода — никогда не сырые данные о здоровье.",
   "lockScreenPermissionAllow": "Разрешить",
   "lockScreenPermissionDeniedBody": "Разрешение не получено, отображение на экране блокировки выключено. Его можно включить снова в любой момент.",
+  "lockScreenPermissionMissingNotifications": "Не хватает разрешения на показ уведомлений.",
+  "lockScreenPermissionMissingBackgroundHealth": "Не хватает разрешения читать шаги в фоне. Оно выдаётся на экране разрешений Health Connect.",
 
   "lockScreenChannelName": "Прогресс похода",
   "lockScreenChannelDescription": "Показывает текущий прогресс похода в шторке уведомлений и на экране блокировки.",

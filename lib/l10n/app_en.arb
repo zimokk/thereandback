@@ -127,6 +127,10 @@
   "@lockScreenPermissionAllow": {"description": "Button that triggers the OS notification/background-health permission prompts"},
   "lockScreenPermissionDeniedBody": "Permission wasn't granted, so the lock screen display is off. You can turn it on again anytime.",
   "@lockScreenPermissionDeniedBody": {"description": "Shown after the user denies the notification/background-health permissions (§7: never a dead end)"},
+  "lockScreenPermissionMissingNotifications": "Still missing: permission to post notifications.",
+  "@lockScreenPermissionMissingNotifications": {"description": "Names POST_NOTIFICATIONS as the specific permission still missing, so the denial message doesn't read as 'nothing was granted'"},
+  "lockScreenPermissionMissingBackgroundHealth": "Still missing: permission to read your steps in the background. Health Connect grants it on its own permission screen.",
+  "@lockScreenPermissionMissingBackgroundHealth": {"description": "Names Health Connect's READ_HEALTH_DATA_IN_BACKGROUND as the specific permission still missing"},
 
   "lockScreenChannelName": "Quest progress",
   "@lockScreenChannelName": {"description": "Android notification channel name for the ongoing lock-screen/shade notification (shown in system notification settings, not in-app)"},

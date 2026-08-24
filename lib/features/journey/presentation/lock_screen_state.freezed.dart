@@ -15,7 +15,11 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$LockScreenState {
 
- bool get enabled; LockScreenPermissionStatus get permissionStatus; bool get isBusy;/// The `journeyId` [LockScreenChannel.start] was last called for, or
+ bool get enabled; LockScreenPermissionStatus get permissionStatus; bool get isBusy;/// The two permissions behind [permissionStatus], kept separately so the
+/// UI can name the one that is actually missing instead of saying "no
+/// permission" when the other one was granted just fine — the exact
+/// confusion the combined status caused.
+ bool get notificationsGranted; bool get backgroundHealthGranted;/// The `journeyId` [LockScreenChannel.start] was last called for, or
 /// `null` if nothing is currently being shown. Lets the controller tell
 /// "first display for this quest" (→ `start`) apart from "same quest,
 /// new progress" (→ `update`) without asking the channel implementation
@@ -33,16 +37,16 @@ $LockScreenStateCopyWith<LockScreenState> get copyWith => _$LockScreenStateCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LockScreenState&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.permissionStatus, permissionStatus) || other.permissionStatus == permissionStatus)&&(identical(other.isBusy, isBusy) || other.isBusy == isBusy)&&(identical(other.activeJourneyId, activeJourneyId) || other.activeJourneyId == activeJourneyId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LockScreenState&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.permissionStatus, permissionStatus) || other.permissionStatus == permissionStatus)&&(identical(other.isBusy, isBusy) || other.isBusy == isBusy)&&(identical(other.notificationsGranted, notificationsGranted) || other.notificationsGranted == notificationsGranted)&&(identical(other.backgroundHealthGranted, backgroundHealthGranted) || other.backgroundHealthGranted == backgroundHealthGranted)&&(identical(other.activeJourneyId, activeJourneyId) || other.activeJourneyId == activeJourneyId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,enabled,permissionStatus,isBusy,activeJourneyId);
+int get hashCode => Object.hash(runtimeType,enabled,permissionStatus,isBusy,notificationsGranted,backgroundHealthGranted,activeJourneyId);
 
 @override
 String toString() {
-  return 'LockScreenState(enabled: $enabled, permissionStatus: $permissionStatus, isBusy: $isBusy, activeJourneyId: $activeJourneyId)';
+  return 'LockScreenState(enabled: $enabled, permissionStatus: $permissionStatus, isBusy: $isBusy, notificationsGranted: $notificationsGranted, backgroundHealthGranted: $backgroundHealthGranted, activeJourneyId: $activeJourneyId)';
 }
 
 
@@ -53,7 +57,7 @@ abstract mixin class $LockScreenStateCopyWith<$Res>  {
   factory $LockScreenStateCopyWith(LockScreenState value, $Res Function(LockScreenState) _then) = _$LockScreenStateCopyWithImpl;
 @useResult
 $Res call({
- bool enabled, LockScreenPermissionStatus permissionStatus, bool isBusy, String? activeJourneyId
+ bool enabled, LockScreenPermissionStatus permissionStatus, bool isBusy, bool notificationsGranted, bool backgroundHealthGranted, String? activeJourneyId
 });
 
 
@@ -70,11 +74,13 @@ class _$LockScreenStateCopyWithImpl<$Res>
 
 /// Create a copy of LockScreenState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? enabled = null,Object? permissionStatus = null,Object? isBusy = null,Object? activeJourneyId = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? enabled = null,Object? permissionStatus = null,Object? isBusy = null,Object? notificationsGranted = null,Object? backgroundHealthGranted = null,Object? activeJourneyId = freezed,}) {
   return _then(LockScreenState(
 enabled: null == enabled ? _self.enabled : enabled // ignore: cast_nullable_to_non_nullable
 as bool,permissionStatus: null == permissionStatus ? _self.permissionStatus : permissionStatus // ignore: cast_nullable_to_non_nullable
 as LockScreenPermissionStatus,isBusy: null == isBusy ? _self.isBusy : isBusy // ignore: cast_nullable_to_non_nullable
+as bool,notificationsGranted: null == notificationsGranted ? _self.notificationsGranted : notificationsGranted // ignore: cast_nullable_to_non_nullable
+as bool,backgroundHealthGranted: null == backgroundHealthGranted ? _self.backgroundHealthGranted : backgroundHealthGranted // ignore: cast_nullable_to_non_nullable
 as bool,activeJourneyId: freezed == activeJourneyId ? _self.activeJourneyId : activeJourneyId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
@@ -161,10 +167,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool enabled,  LockScreenPermissionStatus permissionStatus,  bool isBusy,  String? activeJourneyId)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( bool enabled,  LockScreenPermissionStatus permissionStatus,  bool isBusy,  bool notificationsGranted,  bool backgroundHealthGranted,  String? activeJourneyId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _LockScreenState() when $default != null:
-return $default(_that.enabled,_that.permissionStatus,_that.isBusy,_that.activeJourneyId);case _:
+return $default(_that.enabled,_that.permissionStatus,_that.isBusy,_that.notificationsGranted,_that.backgroundHealthGranted,_that.activeJourneyId);case _:
   return orElse();
 
 }
@@ -182,10 +188,10 @@ return $default(_that.enabled,_that.permissionStatus,_that.isBusy,_that.activeJo
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool enabled,  LockScreenPermissionStatus permissionStatus,  bool isBusy,  String? activeJourneyId)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( bool enabled,  LockScreenPermissionStatus permissionStatus,  bool isBusy,  bool notificationsGranted,  bool backgroundHealthGranted,  String? activeJourneyId)  $default,) {final _that = this;
 switch (_that) {
 case _LockScreenState():
-return $default(_that.enabled,_that.permissionStatus,_that.isBusy,_that.activeJourneyId);case _:
+return $default(_that.enabled,_that.permissionStatus,_that.isBusy,_that.notificationsGranted,_that.backgroundHealthGranted,_that.activeJourneyId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -202,10 +208,10 @@ return $default(_that.enabled,_that.permissionStatus,_that.isBusy,_that.activeJo
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool enabled,  LockScreenPermissionStatus permissionStatus,  bool isBusy,  String? activeJourneyId)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( bool enabled,  LockScreenPermissionStatus permissionStatus,  bool isBusy,  bool notificationsGranted,  bool backgroundHealthGranted,  String? activeJourneyId)?  $default,) {final _that = this;
 switch (_that) {
 case _LockScreenState() when $default != null:
-return $default(_that.enabled,_that.permissionStatus,_that.isBusy,_that.activeJourneyId);case _:
+return $default(_that.enabled,_that.permissionStatus,_that.isBusy,_that.notificationsGranted,_that.backgroundHealthGranted,_that.activeJourneyId);case _:
   return null;
 
 }
@@ -217,12 +223,18 @@ return $default(_that.enabled,_that.permissionStatus,_that.isBusy,_that.activeJo
 
 
 class _LockScreenState implements LockScreenState {
-  const _LockScreenState({this.enabled = false, this.permissionStatus = LockScreenPermissionStatus.unknown, this.isBusy = false, this.activeJourneyId});
+  const _LockScreenState({this.enabled = false, this.permissionStatus = LockScreenPermissionStatus.unknown, this.isBusy = false, this.notificationsGranted = false, this.backgroundHealthGranted = false, this.activeJourneyId});
   
 
 @override@JsonKey() final  bool enabled;
 @override@JsonKey() final  LockScreenPermissionStatus permissionStatus;
 @override@JsonKey() final  bool isBusy;
+/// The two permissions behind [permissionStatus], kept separately so the
+/// UI can name the one that is actually missing instead of saying "no
+/// permission" when the other one was granted just fine — the exact
+/// confusion the combined status caused.
+@override@JsonKey() final  bool notificationsGranted;
+@override@JsonKey() final  bool backgroundHealthGranted;
 /// The `journeyId` [LockScreenChannel.start] was last called for, or
 /// `null` if nothing is currently being shown. Lets the controller tell
 /// "first display for this quest" (→ `start`) apart from "same quest,
@@ -242,16 +254,16 @@ _$LockScreenStateCopyWith<_LockScreenState> get copyWith => __$LockScreenStateCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LockScreenState&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.permissionStatus, permissionStatus) || other.permissionStatus == permissionStatus)&&(identical(other.isBusy, isBusy) || other.isBusy == isBusy)&&(identical(other.activeJourneyId, activeJourneyId) || other.activeJourneyId == activeJourneyId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LockScreenState&&(identical(other.enabled, enabled) || other.enabled == enabled)&&(identical(other.permissionStatus, permissionStatus) || other.permissionStatus == permissionStatus)&&(identical(other.isBusy, isBusy) || other.isBusy == isBusy)&&(identical(other.notificationsGranted, notificationsGranted) || other.notificationsGranted == notificationsGranted)&&(identical(other.backgroundHealthGranted, backgroundHealthGranted) || other.backgroundHealthGranted == backgroundHealthGranted)&&(identical(other.activeJourneyId, activeJourneyId) || other.activeJourneyId == activeJourneyId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,enabled,permissionStatus,isBusy,activeJourneyId);
+int get hashCode => Object.hash(runtimeType,enabled,permissionStatus,isBusy,notificationsGranted,backgroundHealthGranted,activeJourneyId);
 
 @override
 String toString() {
-  return 'LockScreenState(enabled: $enabled, permissionStatus: $permissionStatus, isBusy: $isBusy, activeJourneyId: $activeJourneyId)';
+  return 'LockScreenState(enabled: $enabled, permissionStatus: $permissionStatus, isBusy: $isBusy, notificationsGranted: $notificationsGranted, backgroundHealthGranted: $backgroundHealthGranted, activeJourneyId: $activeJourneyId)';
 }
 
 
@@ -262,7 +274,7 @@ abstract mixin class _$LockScreenStateCopyWith<$Res> implements $LockScreenState
   factory _$LockScreenStateCopyWith(_LockScreenState value, $Res Function(_LockScreenState) _then) = __$LockScreenStateCopyWithImpl;
 @override @useResult
 $Res call({
- bool enabled, LockScreenPermissionStatus permissionStatus, bool isBusy, String? activeJourneyId
+ bool enabled, LockScreenPermissionStatus permissionStatus, bool isBusy, bool notificationsGranted, bool backgroundHealthGranted, String? activeJourneyId
 });
 
 
@@ -279,11 +291,13 @@ class __$LockScreenStateCopyWithImpl<$Res>
 
 /// Create a copy of LockScreenState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? enabled = null,Object? permissionStatus = null,Object? isBusy = null,Object? activeJourneyId = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? enabled = null,Object? permissionStatus = null,Object? isBusy = null,Object? notificationsGranted = null,Object? backgroundHealthGranted = null,Object? activeJourneyId = freezed,}) {
   return _then(_LockScreenState(
 enabled: null == enabled ? _self.enabled : enabled // ignore: cast_nullable_to_non_nullable
 as bool,permissionStatus: null == permissionStatus ? _self.permissionStatus : permissionStatus // ignore: cast_nullable_to_non_nullable
 as LockScreenPermissionStatus,isBusy: null == isBusy ? _self.isBusy : isBusy // ignore: cast_nullable_to_non_nullable
+as bool,notificationsGranted: null == notificationsGranted ? _self.notificationsGranted : notificationsGranted // ignore: cast_nullable_to_non_nullable
+as bool,backgroundHealthGranted: null == backgroundHealthGranted ? _self.backgroundHealthGranted : backgroundHealthGranted // ignore: cast_nullable_to_non_nullable
 as bool,activeJourneyId: freezed == activeJourneyId ? _self.activeJourneyId : activeJourneyId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
