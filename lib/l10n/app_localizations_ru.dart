@@ -202,6 +202,14 @@ class AppLocalizationsRu extends AppLocalizations {
       'Разрешение не получено, отображение на экране блокировки выключено. Его можно включить снова в любой момент.';
 
   @override
+  String get lockScreenPermissionMissingNotifications =>
+      'Не хватает разрешения на показ уведомлений.';
+
+  @override
+  String get lockScreenPermissionMissingBackgroundHealth =>
+      'Не хватает разрешения читать шаги в фоне. Оно выдаётся на экране разрешений Health Connect.';
+
+  @override
   String get lockScreenChannelName => 'Прогресс похода';
 
   @override

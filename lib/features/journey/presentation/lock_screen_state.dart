@@ -23,6 +23,13 @@ abstract class LockScreenState with _$LockScreenState {
     LockScreenPermissionStatus permissionStatus,
     @Default(false) bool isBusy,
 
+    /// The two permissions behind [permissionStatus], kept separately so the
+    /// UI can name the one that is actually missing instead of saying "no
+    /// permission" when the other one was granted just fine — the exact
+    /// confusion the combined status caused.
+    @Default(false) bool notificationsGranted,
+    @Default(false) bool backgroundHealthGranted,
+
     /// The `journeyId` [LockScreenChannel.start] was last called for, or
     /// `null` if nothing is currently being shown. Lets the controller tell
     /// "first display for this quest" (→ `start`) apart from "same quest,

@@ -10,6 +10,9 @@ android {
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
+        // Required by flutter_local_notifications 22.x: its AAR metadata refuses
+        // to link without core library desugaring, even with no scheduled notification.
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -49,4 +52,10 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Backports the java.time APIs flutter_local_notifications relies on to the
+    // app's minSdk 26; version pinned to the one the plugin itself ships with.
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

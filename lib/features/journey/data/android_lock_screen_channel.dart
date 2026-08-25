@@ -70,6 +70,22 @@ class AndroidLockScreenChannel implements LockScreenChannel {
     return granted ?? true;
   }
 
+  /// Whether `POST_NOTIFICATIONS` is currently held, *without* prompting.
+  /// Separate from [requestNotificationPermission] because the user can
+  /// grant or revoke it outside the app (Android settings) while it is
+  /// backgrounded — the toggle has to be able to re-read the truth rather
+  /// than trust whatever the last request returned. Resolves `true` on API
+  /// levels that have no such permission, matching the request path.
+  Future<bool> hasNotificationPermission() async {
+    await _ensureInitialized();
+    final enabled = await _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.areNotificationsEnabled();
+    return enabled ?? true;
+  }
+
   Future<void> _ensureInitialized() async {
     if (_initialized) return;
     const androidSettings = AndroidInitializationSettings(_statusBarIcon);

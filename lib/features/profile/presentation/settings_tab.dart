@@ -168,7 +168,7 @@ class _LockScreenSection extends ConsumerWidget {
                             .read(lockScreenControllerProvider.notifier)
                             .disable(),
           ),
-          if (state.permissionStatus == LockScreenPermissionStatus.denied)
+          if (state.permissionStatus == LockScreenPermissionStatus.denied) ...[
             Padding(
               padding: const EdgeInsets.only(top: AppSpacing.sm),
               child: Text(
@@ -176,6 +176,27 @@ class _LockScreenSection extends ConsumerWidget {
                 style: AppTypography.bodySecondary,
               ),
             ),
+            // Name the permission that is actually missing: the toggle needs
+            // both, and saying only "permission wasn't granted" reads as a
+            // flat contradiction when the user can see one of them granted
+            // in Android's own settings.
+            if (!state.notificationsGranted)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.sm),
+                child: Text(
+                  l10n.lockScreenPermissionMissingNotifications,
+                  style: AppTypography.bodySecondary,
+                ),
+              ),
+            if (!state.backgroundHealthGranted)
+              Padding(
+                padding: const EdgeInsets.only(top: AppSpacing.sm),
+                child: Text(
+                  l10n.lockScreenPermissionMissingBackgroundHealth,
+                  style: AppTypography.bodySecondary,
+                ),
+              ),
+          ],
         ],
       ),
     );

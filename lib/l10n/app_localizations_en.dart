@@ -198,6 +198,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Permission wasn\'t granted, so the lock screen display is off. You can turn it on again anytime.';
 
   @override
+  String get lockScreenPermissionMissingNotifications =>
+      'Still missing: permission to post notifications.';
+
+  @override
+  String get lockScreenPermissionMissingBackgroundHealth =>
+      'Still missing: permission to read your steps in the background. Health Connect grants it on its own permission screen.';
+
+  @override
   String get lockScreenChannelName => 'Quest progress';
 
   @override

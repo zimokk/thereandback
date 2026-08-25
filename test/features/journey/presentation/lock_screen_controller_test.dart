@@ -42,7 +42,17 @@ void main() {
         .thenAnswer((_) async => true);
     when(() => backgroundSync.register()).thenAnswer((_) async {});
     when(() => backgroundSync.cancel()).thenAnswer((_) async {});
+    when(() => healthAdapter.hasStepsPermission())
+        .thenAnswer((_) async => true);
+    when(() => healthAdapter.requestStepsPermission())
+        .thenAnswer((_) async => true);
     when(() => healthAdapter.requestBackgroundHealthPermission())
+        .thenAnswer((_) async => true);
+    // `build()` kicks off a status read immediately, so these are reached by
+    // every test here, not only the ones that assert on them.
+    when(() => channel.hasNotificationPermission())
+        .thenAnswer((_) async => true);
+    when(() => healthAdapter.hasBackgroundHealthPermission())
         .thenAnswer((_) async => true);
 
     container = ProviderContainer(
@@ -72,6 +82,44 @@ void main() {
     verify(() => backgroundSync.register()).called(1);
     verify(() => channel.start(any())).called(1);
   });
+
+  test('enable() requests base steps permission first when Health Connect '
+      "hasn't granted it yet, then background permission — matching "
+      'Health Connect requiring the read permission before it will grant '
+      'background access', () async {
+    when(() => healthAdapter.hasStepsPermission())
+        .thenAnswer((_) async => false);
+
+    await container.read(lockScreenControllerProvider.notifier).enable();
+
+    verify(() => healthAdapter.requestStepsPermission()).called(1);
+    verify(() => healthAdapter.requestBackgroundHealthPermission()).called(1);
+    expect(
+      container.read(lockScreenControllerProvider).permissionStatus,
+      LockScreenPermissionStatus.granted,
+    );
+    expect(container.read(lockScreenControllerProvider).enabled, isTrue);
+  });
+
+  test(
+    'enable() never requests background permission when the base steps '
+    "permission request fails — Health Connect wouldn't grant it anyway",
+    () async {
+      when(() => healthAdapter.hasStepsPermission())
+          .thenAnswer((_) async => false);
+      when(() => healthAdapter.requestStepsPermission())
+          .thenAnswer((_) async => false);
+
+      await container.read(lockScreenControllerProvider.notifier).enable();
+
+      verifyNever(() => healthAdapter.requestBackgroundHealthPermission());
+      expect(
+        container.read(lockScreenControllerProvider).permissionStatus,
+        LockScreenPermissionStatus.denied,
+      );
+      expect(container.read(lockScreenControllerProvider).enabled, isFalse);
+    },
+  );
 
   test('enable() denied leaves the feature off and never registers '
       'background sync', () async {
@@ -141,6 +189,76 @@ void main() {
     await container.read(lockScreenControllerProvider.notifier).disable();
 
     expect(container.read(lockScreenControllerProvider).enabled, isFalse);
+    verify(() => backgroundSync.cancel()).called(1);
+    verify(() => channel.end()).called(1);
+  });
+
+  test('refreshStatus() reads both permissions back from the platform instead '
+      'of trusting the last request — the toggle used to claim "no permission" '
+      'while Android settings showed it granted', () async {
+    await container.read(lockScreenControllerProvider.notifier).refreshStatus();
+
+    final state = container.read(lockScreenControllerProvider);
+    expect(state.notificationsGranted, isTrue);
+    expect(state.backgroundHealthGranted, isTrue);
+    expect(state.permissionStatus, LockScreenPermissionStatus.granted);
+  });
+
+  test(
+    'refreshStatus() never turns the feature on by itself — holding the '
+    'permissions is not the same as asking for a standing notification',
+    () async {
+      await container
+          .read(lockScreenControllerProvider.notifier)
+          .refreshStatus();
+
+      expect(container.read(lockScreenControllerProvider).enabled, isFalse);
+      verifyNever(() => backgroundSync.register());
+    },
+  );
+
+  test('refreshStatus() records which half is missing, so the UI can name it '
+      'rather than reporting a flat "not granted"', () async {
+    when(() => healthAdapter.hasBackgroundHealthPermission())
+        .thenAnswer((_) async => false);
+
+    await container.read(lockScreenControllerProvider.notifier).refreshStatus();
+
+    final state = container.read(lockScreenControllerProvider);
+    expect(state.notificationsGranted, isTrue);
+    expect(state.backgroundHealthGranted, isFalse);
+  });
+
+  test('refreshStatus() leaves an untouched toggle on notRequested, not denied '
+      "— the user hasn't refused anything yet", () async {
+    when(() => channel.hasNotificationPermission())
+        .thenAnswer((_) async => false);
+
+    await container.read(lockScreenControllerProvider.notifier).refreshStatus();
+
+    expect(
+      container.read(lockScreenControllerProvider).permissionStatus,
+      LockScreenPermissionStatus.notRequested,
+    );
+  });
+
+  test('refreshStatus() turns a running feature off when access was revoked '
+      'while the app was backgrounded', () async {
+    container
+        .read(selectedJourneyProvider.notifier)
+        .start('odyssey-ithaca', now: DateTime.now());
+    await container.read(lockScreenControllerProvider.notifier).enable();
+    expect(container.read(lockScreenControllerProvider).enabled, isTrue);
+    clearInteractions(channel);
+    clearInteractions(backgroundSync);
+
+    when(() => healthAdapter.hasBackgroundHealthPermission())
+        .thenAnswer((_) async => false);
+    await container.read(lockScreenControllerProvider.notifier).refreshStatus();
+
+    final state = container.read(lockScreenControllerProvider);
+    expect(state.enabled, isFalse);
+    expect(state.permissionStatus, LockScreenPermissionStatus.denied);
     verify(() => backgroundSync.cancel()).called(1);
     verify(() => channel.end()).called(1);
   });

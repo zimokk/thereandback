@@ -25,7 +25,12 @@ rewrite.
 2. Turning it on (`LockScreenController.enable()`) requests two OS
    permissions — `POST_NOTIFICATIONS` and Health Connect's background-read
    permission — and only turns the feature on if both are granted (§7:
-   explain before asking, never a dead end on denial).
+   explain before asking, never a dead end on denial). Health Connect only
+   grants the background-read permission once the base `READ_STEPS`/
+   `READ_DISTANCE` permissions are already held — requesting it first fails
+   even if the user taps "Allow" — so `enable()` checks/requests those first
+   via the same `HealthAdapter.requestStepsPermission()` the Путь tab uses,
+   in case this toggle is reached without ever visiting that tab.
 3. If granted: registers the `workmanager` periodic background task
    ([below](#background-sync-workmanager)) and, if a quest is already
    active, shows the notification immediately.
