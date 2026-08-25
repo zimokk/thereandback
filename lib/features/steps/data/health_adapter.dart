@@ -1,4 +1,7 @@
+import 'dart:io' show Platform;
+
 import 'package:health/health.dart';
+import 'package:permission_handler/permission_handler.dart' as ph;
 
 /// One interval's worth of raw activity data, as reported by the platform.
 /// Not a domain type — this is the shape the adapter hands to
@@ -39,6 +42,21 @@ abstract class HealthAdapter {
   /// successfully — on iOS this is not the same as "granted" (§7 caveat
   /// carried over from `hasStepsPermission`).
   Future<bool> requestStepsPermission();
+
+  /// Android's `ACTIVITY_RECOGNITION` runtime permission (shows as "Physical
+  /// activity" in system settings) — a dangerous-protection-level OS
+  /// permission, separate from and a prerequisite for Health Connect's own
+  /// per-type consent screen ("Fitness and wellness"): Health Connect will
+  /// not hand over the Steps/Distance read grant while this is missing, no
+  /// matter how many times [requestStepsPermission] is called. Declaring it
+  /// in the manifest is not enough on Android 10+ — it must be requested at
+  /// runtime. Always `true` on iOS, which has no such permission.
+  Future<bool> hasActivityRecognitionPermission();
+
+  /// Shows the OS "Physical activity" runtime prompt. Must be called, and
+  /// granted, before [requestStepsPermission] — see
+  /// [hasActivityRecognitionPermission]. Always `true` on iOS.
+  Future<bool> requestActivityRecognitionPermission();
 
   /// Android-only meaningful check; always [HealthConnectAvailability.available]
   /// on iOS (§7: Health Connect can be missing on Android and must be
@@ -90,6 +108,19 @@ class HealthPackageAdapter implements HealthAdapter {
   @override
   Future<bool> requestStepsPermission() =>
       _health.requestAuthorization(_types, permissions: _readPermissions);
+
+  @override
+  Future<bool> hasActivityRecognitionPermission() async {
+    if (!Platform.isAndroid) return true;
+    return (await ph.Permission.activityRecognition.status).isGranted;
+  }
+
+  @override
+  Future<bool> requestActivityRecognitionPermission() async {
+    if (!Platform.isAndroid) return true;
+    final status = await ph.Permission.activityRecognition.request();
+    return status.isGranted;
+  }
 
   @override
   Future<HealthConnectAvailability> healthConnectAvailability() async {

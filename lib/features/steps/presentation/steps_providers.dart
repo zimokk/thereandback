@@ -36,6 +36,18 @@ StepSampleRepository stepSampleRepository(Ref ref) =>
 /// (see `docs/screens/steps-sync.md`).
 @riverpod
 class StepsSync extends _$StepsSync {
+  /// Guards `refreshStatus()` and `requestPermission()` against each other.
+  /// Health Connect's permission screen is a separate activity: granting it
+  /// resumes this app, which fires `refreshStatus()` from the lifecycle
+  /// listener below, *while* the `await` in `requestPermission()` that
+  /// launched that same screen is still pending. Both write
+  /// `permissionStatus` when they resolve; without this guard, whichever
+  /// finishes last wins even if its answer is the stale one — the explicit
+  /// request's own result could be overwritten by a resume-triggered check
+  /// that ran a moment earlier. Internal bookkeeping only, not part of
+  /// [StepsSyncState] — nothing in the UI needs to observe it.
+  bool _permissionOpInFlight = false;
+
   @override
   StepsSyncState build() {
     // Health Connect's permission screen is a separate activity, so the
@@ -53,41 +65,74 @@ class StepsSync extends _$StepsSync {
   }
 
   Future<void> refreshStatus() async {
-    final adapter = ref.read(healthAdapterProvider);
-    await adapter.configure();
+    // An explicit requestPermission() is mid-flight (e.g. its Health Connect
+    // screen just resumed this app and fired the lifecycle listener before
+    // the awaited request itself resolved) — let that call's own result
+    // stand rather than racing it with a status check that can read stale
+    // platform state.
+    if (_permissionOpInFlight) return;
+    _permissionOpInFlight = true;
+    try {
+      final adapter = ref.read(healthAdapterProvider);
+      await adapter.configure();
 
-    if (Platform.isAndroid) {
-      final availability = await adapter.healthConnectAvailability();
-      if (availability == HealthConnectAvailability.notInstalled) {
-        state = state.copyWith(
-          permissionStatus: StepsPermissionStatus.healthConnectMissing,
-        );
-        return;
+      if (Platform.isAndroid) {
+        final availability = await adapter.healthConnectAvailability();
+        if (availability == HealthConnectAvailability.notInstalled) {
+          state = state.copyWith(
+            permissionStatus: StepsPermissionStatus.healthConnectMissing,
+          );
+          return;
+        }
       }
-    }
 
-    final granted = await adapter.hasStepsPermission();
-    state = state.copyWith(
-      permissionStatus: granted == true
-          ? StepsPermissionStatus.granted
-          : StepsPermissionStatus.notRequested,
-    );
-    if (granted == true) {
-      await sync();
+      final granted = await adapter.hasStepsPermission();
+      state = state.copyWith(
+        permissionStatus: granted == true
+            ? StepsPermissionStatus.granted
+            : StepsPermissionStatus.notRequested,
+      );
+      if (granted == true) {
+        await sync();
+      }
+    } finally {
+      _permissionOpInFlight = false;
     }
   }
 
   /// Shows the OS permission prompt (called from the explanation card).
+  ///
+  /// Android needs two prompts in sequence, not one: `ACTIVITY_RECOGNITION`
+  /// ("Physical activity" in system settings) is a dangerous-protection-level
+  /// OS permission that Health Connect requires as a prerequisite for its
+  /// own Steps/Distance consent screen ("Fitness and wellness") — Health
+  /// Connect will not grant that screen's request while it's missing, no
+  /// matter how many times the request below runs. See
+  /// `HealthAdapter.hasActivityRecognitionPermission`. A no-op `true` on iOS.
   Future<void> requestPermission() async {
-    final adapter = ref.read(healthAdapterProvider);
-    final granted = await adapter.requestStepsPermission();
-    state = state.copyWith(
-      permissionStatus: granted
-          ? StepsPermissionStatus.granted
-          : StepsPermissionStatus.denied,
-    );
-    if (granted) {
-      await sync();
+    if (_permissionOpInFlight) return;
+    _permissionOpInFlight = true;
+    try {
+      final adapter = ref.read(healthAdapterProvider);
+
+      final activityRecognitionGranted = await adapter
+          .requestActivityRecognitionPermission();
+      if (!activityRecognitionGranted) {
+        state = state.copyWith(permissionStatus: StepsPermissionStatus.denied);
+        return;
+      }
+
+      final granted = await adapter.requestStepsPermission();
+      state = state.copyWith(
+        permissionStatus: granted
+            ? StepsPermissionStatus.granted
+            : StepsPermissionStatus.denied,
+      );
+      if (granted) {
+        await sync();
+      }
+    } finally {
+      _permissionOpInFlight = false;
     }
   }
 

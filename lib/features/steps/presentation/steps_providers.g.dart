@@ -173,7 +173,7 @@ final class StepsSyncProvider
   }
 }
 
-String _$stepsSyncHash() => r'43cb35161fe91f33ae4d866072cce9e22da25247';
+String _$stepsSyncHash() => r'98c9646ee14b312e96668fe5449c2af09ec6f141';
 
 /// Drives the foreground steps-sync flow: permission checks, the Health
 /// Connect "not installed" case, and syncing a delta into

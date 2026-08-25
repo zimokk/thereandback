@@ -135,6 +135,8 @@ void main() {
     tester,
   ) async {
     final adapter = _MockHealthAdapter();
+    when(() => adapter.requestActivityRecognitionPermission())
+        .thenAnswer((_) async => true);
     when(() => adapter.requestStepsPermission()).thenAnswer((_) async => true);
 
     await tester.pumpWidget(
@@ -154,6 +156,8 @@ void main() {
     'tapping "Allow access" on the notRequested card requests permission',
     (tester) async {
       final adapter = _MockHealthAdapter();
+      when(() => adapter.requestActivityRecognitionPermission())
+          .thenAnswer((_) async => true);
       when(() => adapter.requestStepsPermission())
           .thenAnswer((_) async => true);
 

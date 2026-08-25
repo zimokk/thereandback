@@ -111,6 +111,49 @@ Sync writes are idempotent, keyed on `(ownerId, journeyId, intervalStart)`
   `steps_providers_test.dart`, `quest_stats_tab_test.dart` and
   `achievements_tab_test.dart` that call `.start()`/`.applySyncedProgress()`.
 
+## Android permission flow is two runtime prompts, not one
+
+Health Connect's own consent screen for Steps/Distance ("Fitness and
+wellness" in system settings) is not the only gate on Android. Reading step
+data also needs `ACTIVITY_RECOGNITION` ("Physical activity" in system
+settings) — a dangerous-protection-level OS permission since Android 10.
+Declaring it in the manifest (already done, see below) is not enough: Android
+never shows its runtime dialog unless the app explicitly requests it, and
+Health Connect refuses to grant the Steps/Distance read while it's missing —
+no matter how many times the Health Connect request itself runs. Before this
+was wired up, `requestPermission()` only ever asked for the Health Connect
+half, so `ACTIVITY_RECOGNITION` silently stayed ungranted forever: tapping
+"Allow" in the app's own explanation card opened Health Connect's screen, the
+user accepted it, and the gate still reported denied — because Health Connect
+itself wasn't actually able to hand over the grant.
+
+`HealthAdapter.hasActivityRecognitionPermission()` /
+`requestActivityRecognitionPermission()` (via `permission_handler` — the
+`health` package does not request this permission itself) wrap that OS
+prompt. `StepsSync.requestPermission()` now requests it first and only asks
+Health Connect for Steps/Distance if it was granted; a no-op `true` on iOS,
+which has no equivalent permission.
+
+Health Connect's permission screen is a separate activity, so a grant can
+land while this app is backgrounded, resuming it mid-`await` inside
+`requestPermission()` — which fires the `appLifecycleProvider` listener's
+`refreshStatus()` before that `await` resolves. Both write
+`permissionStatus`; without guarding against that, whichever finishes last
+wins even when its answer is the stale one. `_permissionOpInFlight` (private
+to `StepsSync`, not part of `StepsSyncState`) makes `refreshStatus()` a no-op
+while a `requestPermission()` call it would race is still in flight, and vice
+versa.
+
+**Granting the permission through system Settings instead of the app's own
+flow** (a symptom of the bug above, not a fix for it) can additionally show a
+Health Connect notice that new data will only be visible "starting tomorrow"
+— that's Health Connect's own settings-vs-in-app-request reconciliation, not
+a limitation of what this app asks for. Once the OS prompt and the Health
+Connect prompt both go through the app's actual `PermissionController`-backed
+request (the fix above), Health Connect's normal 30-day read-back window
+applies from the moment of grant — same-day backfill (§5.2's "seed
+`lastSyncedAt` to the start of the local day") is not blocked by this.
+
 ## Platform setup done here
 
 - **iOS** (`ios/Runner/Info.plist`): `NSHealthShareUsageDescription` added.
@@ -125,6 +168,17 @@ Sync writes are idempotent, keyed on `(ownerId, journeyId, intervalStart)`
   `installHealthConnect()` to see the app at all on Android 11+).
   `READ_HEALTH_DATA_IN_BACKGROUND` **is** now declared — requested only
   from the lock-screen toggle, not here; see `lock-screen.md`.
+  `android.permission.ACTIVITY_RECOGNITION` is also declared (added earlier,
+  alongside the `FlutterFragmentActivity`/rationale-activity fix) — it needs
+  no manifest entry of its own from `permission_handler`, which ships an
+  empty plugin manifest and expects the consuming app to declare whatever it
+  requests, same as the pattern already used here for `POST_NOTIFICATIONS`.
+- **`permission_handler`** (`^13.0.1`) — added because `health` does not
+  request `ACTIVITY_RECOGNITION` itself (confirmed against its README and
+  community reports); nothing already in the project exposes a plain Android
+  runtime-permission request, and writing a custom `MethodChannel` for it
+  would just re-implement what this package already handles across OS
+  versions. See "Android permission flow is two runtime prompts" above.
 - **`android/app/build.gradle.kts`**: `minSdk` raised to **26**
   (from Flutter's default 24) — the `health` package's Android module
   itself requires API 26+ for Health Connect; leaving the default would
@@ -150,13 +204,24 @@ device/emulator to close out. Phase 3's own criteria (drift schema test,
 idempotent-sync test) are unit/widget-level and **are** covered and green
 in this environment — see Tests below.
 
+The `ACTIVITY_RECOGNITION` fix above was diagnosed from a real device's
+symptoms (system settings showing "Physical activity"/"Fitness and wellness"
+ungranted despite tapping Allow) but, same as everything else in this list,
+implemented and tested without one — confirm on a real device that
+`requestPermission()` now shows *two* system prompts in sequence and that
+`hasStepsPermission()` reads `true` afterward, not just that the code
+compiles and the mocked-adapter tests pass.
+
 Every line of this module's own logic is covered except the lines that
 structurally *require* a real device or a real file to run at all — these
 are the same kind of gap as the health plugin itself, not oversights:
 
 - `steps/data/health_adapter.dart` (0%) — `HealthPackageAdapter`, the real
   `health`-package wrapper. Never touched by a test, by policy (`testing`
-  skill: never the real health plugin in a test).
+  skill: never the real health plugin in a test). `hasActivityRecognitionPermission()`/
+  `requestActivityRecognitionPermission()` (the `permission_handler` wrapper
+  added for the two-runtime-prompts fix above) fall in the same excluded set
+  for the same reason — real plugin, not unit-testable.
 - `steps/presentation/steps_providers.dart`: `healthAdapterProvider`'s body
   (constructs the real `HealthPackageAdapter()`) — same reason. Also
   `refreshStatus()`'s `if (Platform.isAndroid)` branch — `Platform.isAndroid`
@@ -213,7 +278,12 @@ auto-sync when already granted) and `requestPermission()`/
 `openHealthConnectInstall()` (on a fixed-`build()` fake, so the real
 `build()`'s own background `refreshStatus()` microtask can't race these
 tests) — previously only exercised via fakes that skipped this logic
-entirely.
+entirely. That second group also covers the `ACTIVITY_RECOGNITION` fix: a
+denied "Physical activity" prompt stops `requestPermission()` before Health
+Connect is ever asked (`requestStepsPermission()` unstubbed and unverified,
+proving it's never called), and a `Completer`-controlled test proves
+`refreshStatus()` is a no-op while `requestPermission()` is still suspended
+mid-`await` — the resume-races-the-request scenario described above.
 
 `test/features/steps/presentation/permission_gate_test.dart` (new — none
 existed before) covers all five `StepsPermissionGate` render states
