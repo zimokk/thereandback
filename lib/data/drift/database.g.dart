@@ -909,6 +909,234 @@ class StepIntervalRecordsCompanion extends UpdateCompanion<StepIntervalRecord> {
   }
 }
 
+class $LockScreenPreferenceRowsTable extends LockScreenPreferenceRows
+    with TableInfo<$LockScreenPreferenceRowsTable, LockScreenPreferenceRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $LockScreenPreferenceRowsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _ownerIdMeta = const VerificationMeta(
+    'ownerId',
+  );
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+    'owner_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _enabledMeta = const VerificationMeta(
+    'enabled',
+  );
+  @override
+  late final GeneratedColumn<bool> enabled = GeneratedColumn<bool>(
+    'enabled',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("enabled" IN (0, 1))',
+    ),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [ownerId, enabled];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'lock_screen_preference_rows';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<LockScreenPreferenceRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('owner_id')) {
+      context.handle(
+        _ownerIdMeta,
+        ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ownerIdMeta);
+    }
+    if (data.containsKey('enabled')) {
+      context.handle(
+        _enabledMeta,
+        enabled.isAcceptableOrUnknown(data['enabled']!, _enabledMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_enabledMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {ownerId};
+  @override
+  LockScreenPreferenceRow map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return LockScreenPreferenceRow(
+      ownerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_id'],
+      )!,
+      enabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}enabled'],
+      )!,
+    );
+  }
+
+  @override
+  $LockScreenPreferenceRowsTable createAlias(String alias) {
+    return $LockScreenPreferenceRowsTable(attachedDatabase, alias);
+  }
+}
+
+class LockScreenPreferenceRow extends DataClass
+    implements Insertable<LockScreenPreferenceRow> {
+  final String ownerId;
+  final bool enabled;
+  const LockScreenPreferenceRow({required this.ownerId, required this.enabled});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['owner_id'] = Variable<String>(ownerId);
+    map['enabled'] = Variable<bool>(enabled);
+    return map;
+  }
+
+  LockScreenPreferenceRowsCompanion toCompanion(bool nullToAbsent) {
+    return LockScreenPreferenceRowsCompanion(
+      ownerId: Value(ownerId),
+      enabled: Value(enabled),
+    );
+  }
+
+  factory LockScreenPreferenceRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return LockScreenPreferenceRow(
+      ownerId: serializer.fromJson<String>(json['ownerId']),
+      enabled: serializer.fromJson<bool>(json['enabled']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'ownerId': serializer.toJson<String>(ownerId),
+      'enabled': serializer.toJson<bool>(enabled),
+    };
+  }
+
+  LockScreenPreferenceRow copyWith({String? ownerId, bool? enabled}) =>
+      LockScreenPreferenceRow(
+        ownerId: ownerId ?? this.ownerId,
+        enabled: enabled ?? this.enabled,
+      );
+  LockScreenPreferenceRow copyWithCompanion(
+    LockScreenPreferenceRowsCompanion data,
+  ) {
+    return LockScreenPreferenceRow(
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      enabled: data.enabled.present ? data.enabled.value : this.enabled,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LockScreenPreferenceRow(')
+          ..write('ownerId: $ownerId, ')
+          ..write('enabled: $enabled')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(ownerId, enabled);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is LockScreenPreferenceRow &&
+          other.ownerId == this.ownerId &&
+          other.enabled == this.enabled);
+}
+
+class LockScreenPreferenceRowsCompanion
+    extends UpdateCompanion<LockScreenPreferenceRow> {
+  final Value<String> ownerId;
+  final Value<bool> enabled;
+  final Value<int> rowid;
+  const LockScreenPreferenceRowsCompanion({
+    this.ownerId = const Value.absent(),
+    this.enabled = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  LockScreenPreferenceRowsCompanion.insert({
+    required String ownerId,
+    required bool enabled,
+    this.rowid = const Value.absent(),
+  }) : ownerId = Value(ownerId),
+       enabled = Value(enabled);
+  static Insertable<LockScreenPreferenceRow> custom({
+    Expression<String>? ownerId,
+    Expression<bool>? enabled,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (ownerId != null) 'owner_id': ownerId,
+      if (enabled != null) 'enabled': enabled,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  LockScreenPreferenceRowsCompanion copyWith({
+    Value<String>? ownerId,
+    Value<bool>? enabled,
+    Value<int>? rowid,
+  }) {
+    return LockScreenPreferenceRowsCompanion(
+      ownerId: ownerId ?? this.ownerId,
+      enabled: enabled ?? this.enabled,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (enabled.present) {
+      map['enabled'] = Variable<bool>(enabled.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('LockScreenPreferenceRowsCompanion(')
+          ..write('ownerId: $ownerId, ')
+          ..write('enabled: $enabled, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -916,6 +1144,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $SelectedQuestRowsTable(this);
   late final $StepIntervalRecordsTable stepIntervalRecords =
       $StepIntervalRecordsTable(this);
+  late final $LockScreenPreferenceRowsTable lockScreenPreferenceRows =
+      $LockScreenPreferenceRowsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -923,6 +1153,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   List<DatabaseSchemaEntity> get allSchemaEntities => [
     selectedQuestRows,
     stepIntervalRecords,
+    lockScreenPreferenceRows,
   ];
 }
 
@@ -1416,6 +1647,168 @@ typedef $$StepIntervalRecordsTableProcessedTableManager =
       StepIntervalRecord,
       PrefetchHooks Function()
     >;
+typedef $$LockScreenPreferenceRowsTableCreateCompanionBuilder =
+    LockScreenPreferenceRowsCompanion Function({
+      required String ownerId,
+      required bool enabled,
+      Value<int> rowid,
+    });
+typedef $$LockScreenPreferenceRowsTableUpdateCompanionBuilder =
+    LockScreenPreferenceRowsCompanion Function({
+      Value<String> ownerId,
+      Value<bool> enabled,
+      Value<int> rowid,
+    });
+
+class $$LockScreenPreferenceRowsTableFilterComposer
+    extends Composer<_$AppDatabase, $LockScreenPreferenceRowsTable> {
+  $$LockScreenPreferenceRowsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get enabled => $composableBuilder(
+    column: $table.enabled,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$LockScreenPreferenceRowsTableOrderingComposer
+    extends Composer<_$AppDatabase, $LockScreenPreferenceRowsTable> {
+  $$LockScreenPreferenceRowsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get enabled => $composableBuilder(
+    column: $table.enabled,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$LockScreenPreferenceRowsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $LockScreenPreferenceRowsTable> {
+  $$LockScreenPreferenceRowsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+
+  GeneratedColumn<bool> get enabled =>
+      $composableBuilder(column: $table.enabled, builder: (column) => column);
+}
+
+class $$LockScreenPreferenceRowsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $LockScreenPreferenceRowsTable,
+          LockScreenPreferenceRow,
+          $$LockScreenPreferenceRowsTableFilterComposer,
+          $$LockScreenPreferenceRowsTableOrderingComposer,
+          $$LockScreenPreferenceRowsTableAnnotationComposer,
+          $$LockScreenPreferenceRowsTableCreateCompanionBuilder,
+          $$LockScreenPreferenceRowsTableUpdateCompanionBuilder,
+          (
+            LockScreenPreferenceRow,
+            BaseReferences<
+              _$AppDatabase,
+              $LockScreenPreferenceRowsTable,
+              LockScreenPreferenceRow
+            >,
+          ),
+          LockScreenPreferenceRow,
+          PrefetchHooks Function()
+        > {
+  $$LockScreenPreferenceRowsTableTableManager(
+    _$AppDatabase db,
+    $LockScreenPreferenceRowsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$LockScreenPreferenceRowsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$LockScreenPreferenceRowsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$LockScreenPreferenceRowsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> ownerId = const Value.absent(),
+                Value<bool> enabled = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => LockScreenPreferenceRowsCompanion(
+                ownerId: ownerId,
+                enabled: enabled,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String ownerId,
+                required bool enabled,
+                Value<int> rowid = const Value.absent(),
+              }) => LockScreenPreferenceRowsCompanion.insert(
+                ownerId: ownerId,
+                enabled: enabled,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$LockScreenPreferenceRowsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $LockScreenPreferenceRowsTable,
+      LockScreenPreferenceRow,
+      $$LockScreenPreferenceRowsTableFilterComposer,
+      $$LockScreenPreferenceRowsTableOrderingComposer,
+      $$LockScreenPreferenceRowsTableAnnotationComposer,
+      $$LockScreenPreferenceRowsTableCreateCompanionBuilder,
+      $$LockScreenPreferenceRowsTableUpdateCompanionBuilder,
+      (
+        LockScreenPreferenceRow,
+        BaseReferences<
+          _$AppDatabase,
+          $LockScreenPreferenceRowsTable,
+          LockScreenPreferenceRow
+        >,
+      ),
+      LockScreenPreferenceRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1424,4 +1817,9 @@ class $AppDatabaseManager {
       $$SelectedQuestRowsTableTableManager(_db, _db.selectedQuestRows);
   $$StepIntervalRecordsTableTableManager get stepIntervalRecords =>
       $$StepIntervalRecordsTableTableManager(_db, _db.stepIntervalRecords);
+  $$LockScreenPreferenceRowsTableTableManager get lockScreenPreferenceRows =>
+      $$LockScreenPreferenceRowsTableTableManager(
+        _db,
+        _db.lockScreenPreferenceRows,
+      );
 }

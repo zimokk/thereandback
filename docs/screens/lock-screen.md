@@ -153,6 +153,41 @@ battery managers can still kill the task early — both are inherent to
   what's already shown in-app (day, distance, a coarse position label),
   consistent with §7's privacy rule.
 
+## `enabled` is now durable — a cold restart used to forget it was ever on
+
+`LockScreenState.enabled` is in-memory Riverpod state; the real notification
+and the `workmanager` periodic task are OS-owned constructs that keep
+running across an app restart on their own regardless. Before this, a fresh
+`LockScreenController.build()` after a restart always started from
+`enabled: false` no matter what the previous session had — so
+`refreshStatus()`'s `if (state.enabled && !granted) revoke()` check could
+never fire on a cold start: it had no way to know there was anything
+running to revoke. A permission revoked while the app was closed (Health
+Connect, Android app settings — both separate activities/apps) went
+undetected until the user happened to open Настройки, at which point
+`build()` ran again and (for the same reason) still started from
+`enabled: false`.
+
+`LockScreenPreferenceRows` (`data/drift/database.dart`, schemaVersion 2 —
+see `test/data/drift/migration_test.dart` for the migration test this
+change shipped with) and `LockScreenPreferenceRepository`
+(`features/journey/data/lock_screen_preference_repository.dart`) persist the
+flag, keyed on `ownerId` (same placeholder-until-Phase-8 pattern as
+`SelectedQuestRows`, §8/§13). `enable()`, `disable()`, and the auto-revoke
+path in `refreshStatus()` all write through it; `build()` reads it back
+before running `refreshStatus()` for the first time (`_restoreThenRefresh()`
+— folded into `refreshStatus()`'s own `isBusy` guard via an optional
+`restoredEnabled` parameter, not a separate unguarded write, since a
+build()-time restore racing an in-flight `enable()`/`disable()` call could
+otherwise stomp whichever `state.enabled` write loses the race).
+
+`LockScreenController` changed from `@riverpod` to
+`@Riverpod(keepAlive: true)`, and `app/app_shell.dart` — the shell every tab
+route is nested under — now unconditionally `ref.watch`es it. Both are
+needed together: keeping the provider alive doesn't make it run *earlier*
+on its own, so without the shell's eager watch this restore would still
+only happen the first time the user opened Настройки, same gap as before.
+
 ## Platform setup done here
 
 - **Android** (`android/app/src/main/AndroidManifest.xml`):
@@ -213,7 +248,32 @@ the real platform channel — by the same `testing`-skill policy that keeps
   background sync, shows the already-active quest), enable denied (stays
   off, never registers), a same-quest progress update (`update()`, not
   `start()` again), quest completion (`end()` + background-sync
-  `cancel()`), and `disable()`.
+  `cancel()`), and `disable()`. Extended for the durable-`enabled` fix
+  above: `enable()`/`disable()` persist through
+  `DriftLockScreenPreferenceRepository`; a fresh `build()` (a new
+  `ProviderContainer` over a database pre-seeded with `enabled: true`,
+  simulating a real restart, not just re-reading the same in-memory
+  session) restores it and — when the mocked permission is now denied —
+  runs the same revoke path `refreshStatus()`'s resume-triggered case
+  already covered, proving it also fires from a cold start; a second case
+  proves it leaves the feature alone when permission still holds.
+- `test/features/journey/data/lock_screen_preference_repository_test.dart`
+  (new) — `loadEnabled()`/`saveEnabled()` round-trip, defaulting to `false`
+  for an owner nothing was ever saved for, a later save overwriting rather
+  than adding a row, and per-owner isolation (§8, §13).
+- `test/data/drift/migration_test.dart` (new) — the real drift schema
+  migration test (§12) `app_database_test.dart` promised once
+  `schemaVersion` moved past 1: v1 → v2 preserves a pre-existing
+  `selectedQuestRows` row and leaves the new `lockScreenPreferenceRows`
+  table usable, via `SchemaVerifier.testWithDataIntegrity` (drift_dev's
+  schema-snapshot tooling — `drift_schemas/`, `test/generated_migrations/`,
+  both committed). Runs with `validateColumnConstraints: false` and writes
+  its v1 fixture via raw SQL rather than the generated v1 helper's typed
+  companion — see that file's own top comment for why: `drift_dev schema
+  dump` doesn't see this database's `storeDateTimeAsText: true` runtime
+  option, so the generated helper models `DateTime` columns as plain `int`,
+  a mismatch against this app's real `TEXT`-stored columns that has
+  nothing to do with whether the migration itself is correct.
 - `test/features/profile/presentation/settings_tab_test.dart` — extended:
   the toggle is hidden where `lockScreenSupportedProvider` is `false`
   (this suite's own host, Linux, by default) and renders off by default

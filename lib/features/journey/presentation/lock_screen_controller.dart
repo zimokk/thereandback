@@ -5,10 +5,13 @@ import 'package:flutter/widgets.dart' show AppLifecycleState;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../app/app_lifecycle.dart';
+import '../../../app/database_provider.dart';
+import '../../../core/local_owner.dart';
 import '../../steps/data/android_background_sync.dart';
 import '../../steps/presentation/steps_providers.dart';
 import '../data/android_lock_screen_channel.dart';
 import '../data/lock_screen_channel.dart';
+import '../data/lock_screen_preference_repository.dart';
 import '../domain/lock_screen_snapshot.dart';
 import '../domain/quest_selection.dart';
 import 'journey_providers.dart';
@@ -47,6 +50,16 @@ AndroidBackgroundSync androidBackgroundSync(Ref ref) => AndroidBackgroundSync();
 @riverpod
 bool lockScreenSupported(Ref ref) => Platform.isAndroid;
 
+/// Durable store for [LockScreenState.enabled] — see
+/// `LockScreenPreferenceRows` (`data/drift/database.dart`) for why the
+/// in-memory flag alone isn't enough. Overridden with an in-memory
+/// `AppDatabase` in tests via
+/// `appDatabaseProvider` (`testing` skill), same as every other
+/// drift-backed repository provider in this app.
+@riverpod
+LockScreenPreferenceRepository lockScreenPreferenceRepository(Ref ref) =>
+    DriftLockScreenPreferenceRepository(ref.watch(appDatabaseProvider));
+
 /// Drives the persistent lock-screen / notification-shade display (§7).
 ///
 /// Off by default — turning it on requests two permissions
@@ -62,7 +75,12 @@ bool lockScreenSupported(Ref ref) => Platform.isAndroid;
 /// [lockScreenChannelProvider], without going through this controller at
 /// all), and on quest completion (§6.1: the scene goes static, so this
 /// stops showing "in progress" too).
-@riverpod
+///
+/// `keepAlive: true` (unlike `StepsSync`, which is autoDispose): this
+/// controller must go on reconciling itself against the platform for the
+/// whole app session, not just while the Настройки tab happens to be
+/// mounted — see [build]'s restore step.
+@Riverpod(keepAlive: true)
 class LockScreenController extends _$LockScreenController {
   @override
   LockScreenState build() {
@@ -77,33 +95,65 @@ class LockScreenController extends _$LockScreenController {
     });
 
     // Same shape as `StepsSync.build()`: the UI renders the `unknown` state
-    // for the one frame before this resolves.
-    Future.microtask(refreshStatus);
+    // for the one frame before this resolves. Restoring the persisted
+    // `enabled` flag first (not just calling `refreshStatus()` directly, the
+    // way the resume listener above does) matters here: a fresh `build()`
+    // otherwise starts from `enabled: false` no matter what a previous
+    // session had, so `refreshStatus()`'s `if (state.enabled && !granted)
+    // revoke()` check could never fire on a cold start — it wouldn't know
+    // there was anything running to revoke. `app_shell.dart` reads this
+    // provider unconditionally so this runs on every app start, not only
+    // when the user happens to open Настройки.
+    Future.microtask(_restoreThenRefresh);
     return const LockScreenState();
+  }
+
+  Future<void> _restoreThenRefresh() async {
+    final persistedEnabled = await ref
+        .read(lockScreenPreferenceRepositoryProvider)
+        .loadEnabled(localOwnerId);
+    await refreshStatus(restoredEnabled: persistedEnabled);
   }
 
   /// Re-reads both permissions from the platform and reconciles the toggle
   /// with them. Never turns the feature *on* by itself — holding the
   /// permissions is not the same as asking for a standing notification —
   /// but does turn it off if access was revoked while the app was away.
-  Future<void> refreshStatus() async {
+  ///
+  /// [restoredEnabled], set only by [_restoreThenRefresh], applies the
+  /// value just loaded from drift as part of *this* guarded run rather than
+  /// as a separate unguarded write before it — `enable()`/`disable()` guard
+  /// their own writes to `state.enabled` behind `isBusy`, and a write to it
+  /// from here needs the same guard: without it, a build()-time restore
+  /// racing an in-flight `enable()`/`disable()` call could overwrite
+  /// whichever of the two `state.enabled` values loses the race, not
+  /// necessarily the correct one.
+  Future<void> refreshStatus({bool? restoredEnabled}) async {
     if (state.isBusy) return;
+    state = state.copyWith(isBusy: true);
+    try {
+      if (restoredEnabled != null) {
+        state = state.copyWith(enabled: restoredEnabled);
+      }
 
-    final notificationsGranted = await ref
-        .read(androidLockScreenChannelProvider)
-        .hasNotificationPermission();
-    final backgroundHealthGranted = await ref
-        .read(healthAdapterProvider)
-        .hasBackgroundHealthPermission();
-    final granted = notificationsGranted && backgroundHealthGranted;
+      final notificationsGranted = await ref
+          .read(androidLockScreenChannelProvider)
+          .hasNotificationPermission();
+      final backgroundHealthGranted = await ref
+          .read(healthAdapterProvider)
+          .hasBackgroundHealthPermission();
+      final granted = notificationsGranted && backgroundHealthGranted;
 
-    state = state.copyWith(
-      notificationsGranted: notificationsGranted,
-      backgroundHealthGranted: backgroundHealthGranted,
-      permissionStatus: _statusFor(granted: granted),
-    );
+      state = state.copyWith(
+        notificationsGranted: notificationsGranted,
+        backgroundHealthGranted: backgroundHealthGranted,
+        permissionStatus: _statusFor(granted: granted),
+      );
 
-    if (state.enabled && !granted) await _revoke();
+      if (state.enabled && !granted) await _revoke();
+    } finally {
+      state = state.copyWith(isBusy: false);
+    }
   }
 
   /// Keeps [LockScreenPermissionStatus.notRequested] distinguishable from a
@@ -127,6 +177,9 @@ class LockScreenController extends _$LockScreenController {
     await ref.read(androidBackgroundSyncProvider).cancel();
     await ref.read(lockScreenChannelProvider).end();
     state = state.copyWith(enabled: false, activeJourneyId: null);
+    await ref
+        .read(lockScreenPreferenceRepositoryProvider)
+        .saveEnabled(localOwnerId, false);
   }
 
   /// Requests both permissions and, if both are granted, turns the feature
@@ -167,6 +220,9 @@ class LockScreenController extends _$LockScreenController {
             ? LockScreenPermissionStatus.granted
             : LockScreenPermissionStatus.denied,
       );
+      await ref
+          .read(lockScreenPreferenceRepositoryProvider)
+          .saveEnabled(localOwnerId, granted);
 
       if (!granted) return;
 
@@ -187,6 +243,9 @@ class LockScreenController extends _$LockScreenController {
       await ref.read(androidBackgroundSyncProvider).cancel();
       await ref.read(lockScreenChannelProvider).end();
       state = state.copyWith(enabled: false, activeJourneyId: null);
+      await ref
+          .read(lockScreenPreferenceRepositoryProvider)
+          .saveEnabled(localOwnerId, false);
     } finally {
       state = state.copyWith(isBusy: false);
     }
