@@ -16,6 +16,12 @@ enum StepsPermissionStatus {
   granted,
   denied,
 
+  /// Android only: `ACTIVITY_RECOGNITION` ("Physical activity") hit
+  /// Android's two-denials-means-"don't ask again" rule (`USER_FIXED`) —
+  /// requesting again shows no dialog at all, so the gate must offer the
+  /// OS settings page instead of another "try again" (§7).
+  permanentlyDenied,
+
   /// Android only: Health Connect itself isn't installed on the device.
   healthConnectMissing,
 }

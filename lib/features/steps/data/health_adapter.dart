@@ -1,4 +1,7 @@
+import 'dart:io' show Platform;
+
 import 'package:health/health.dart';
+import 'package:permission_handler/permission_handler.dart' as ph;
 
 /// One interval's worth of raw activity data, as reported by the platform.
 /// Not a domain type — this is the shape the adapter hands to
@@ -22,6 +25,16 @@ enum HealthConnectAvailability {
   notInstalled,
 }
 
+/// Outcome of asking for a dangerous-protection-level OS runtime permission
+/// (currently just `ACTIVITY_RECOGNITION`). Android auto-treats a second
+/// denial of the same permission as "don't ask again" (`USER_FIXED`,
+/// Android 11+): a third request shows no dialog at all and resolves
+/// straight to [permanentlyDenied], so the only way forward is the app's
+/// OS settings page ([HealthAdapter.openAppSettings]), never another
+/// request. §7: denial is never a dead end, so the two outcomes need to
+/// drive different UI, not both collapse into one "denied" bucket.
+enum RuntimePermissionResult { granted, denied, permanentlyDenied }
+
 /// Abstraction over the `health` package (HealthKit / Health Connect, §3),
 /// so presentation and sync logic can be tested with a fake instead of the
 /// real platform plugin (`testing` skill: never a real health plugin in a
@@ -39,6 +52,29 @@ abstract class HealthAdapter {
   /// successfully — on iOS this is not the same as "granted" (§7 caveat
   /// carried over from `hasStepsPermission`).
   Future<bool> requestStepsPermission();
+
+  /// Android's `ACTIVITY_RECOGNITION` runtime permission (shows as "Physical
+  /// activity" in system settings) — a dangerous-protection-level OS
+  /// permission, separate from and a prerequisite for Health Connect's own
+  /// per-type consent screen ("Fitness and wellness"): Health Connect will
+  /// not hand over the Steps/Distance read grant while this is missing, no
+  /// matter how many times [requestStepsPermission] is called. Declaring it
+  /// in the manifest is not enough on Android 10+ — it must be requested at
+  /// runtime. Always `true` on iOS, which has no such permission.
+  Future<bool> hasActivityRecognitionPermission();
+
+  /// Shows the OS "Physical activity" runtime prompt. Must be called, and
+  /// granted, before [requestStepsPermission] — see
+  /// [hasActivityRecognitionPermission]. Always [RuntimePermissionResult.granted]
+  /// on iOS. See [RuntimePermissionResult] for what
+  /// [RuntimePermissionResult.permanentlyDenied] means and how a caller
+  /// should react to it (never call this again — go to [openAppSettings]).
+  Future<RuntimePermissionResult> requestActivityRecognitionPermission();
+
+  /// Opens this app's page in the OS settings app — the only way left to
+  /// grant a permission once [RuntimePermissionResult.permanentlyDenied]
+  /// has been reached.
+  Future<void> openAppSettings();
 
   /// Android-only meaningful check; always [HealthConnectAvailability.available]
   /// on iOS (§7: Health Connect can be missing on Android and must be
@@ -90,6 +126,26 @@ class HealthPackageAdapter implements HealthAdapter {
   @override
   Future<bool> requestStepsPermission() =>
       _health.requestAuthorization(_types, permissions: _readPermissions);
+
+  @override
+  Future<bool> hasActivityRecognitionPermission() async {
+    if (!Platform.isAndroid) return true;
+    return (await ph.Permission.activityRecognition.status).isGranted;
+  }
+
+  @override
+  Future<RuntimePermissionResult> requestActivityRecognitionPermission() async {
+    if (!Platform.isAndroid) return RuntimePermissionResult.granted;
+    final status = await ph.Permission.activityRecognition.request();
+    if (status.isGranted) return RuntimePermissionResult.granted;
+    if (status.isPermanentlyDenied) {
+      return RuntimePermissionResult.permanentlyDenied;
+    }
+    return RuntimePermissionResult.denied;
+  }
+
+  @override
+  Future<void> openAppSettings() => ph.openAppSettings();
 
   @override
   Future<HealthConnectAvailability> healthConnectAvailability() async {

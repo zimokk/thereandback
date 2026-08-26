@@ -79,6 +79,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get stepsPermissionRetry => 'Try again';
 
   @override
+  String get stepsPermissionPermanentlyDeniedTitle =>
+      'Permission needs a settings change';
+
+  @override
+  String get stepsPermissionPermanentlyDeniedBody =>
+      'Android won\'t ask again after a couple of tries — open this app\'s settings and allow Physical activity to let your traveler move.';
+
+  @override
+  String get stepsPermissionOpenSettings => 'Open settings';
+
+  @override
   String get stepsHealthConnectMissingTitle => 'Health Connect required';
 
   @override
