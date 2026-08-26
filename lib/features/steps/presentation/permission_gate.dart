@@ -51,6 +51,16 @@ class StepsPermissionGate extends ConsumerWidget {
               ref.read(stepsSyncProvider.notifier).requestPermission(),
         );
 
+      case StepsPermissionStatus.permanentlyDenied:
+        return _GateCard(
+          title: l10n.stepsPermissionPermanentlyDeniedTitle,
+          body: l10n.stepsPermissionPermanentlyDeniedBody,
+          buttonLabel: l10n.stepsPermissionOpenSettings,
+          busy: state.isSyncing,
+          onPressed: () =>
+              ref.read(stepsSyncProvider.notifier).openAppSettings(),
+        );
+
       case StepsPermissionStatus.healthConnectMissing:
         return _GateCard(
           title: l10n.stepsHealthConnectMissingTitle,

@@ -93,6 +93,24 @@ void main() {
     expect(find.text('Install Health Connect'), findsOneWidget);
   });
 
+  testWidgets(
+    'permanentlyDenied renders the "open settings" card, not a retry',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const StepsPermissionGate(),
+          const StepsSyncState(
+            permissionStatus: StepsPermissionStatus.permanentlyDenied,
+          ),
+        ),
+      );
+
+      expect(find.text('Permission needs a settings change'), findsOneWidget);
+      expect(find.text('Open settings'), findsOneWidget);
+      expect(find.text('Try again'), findsNothing);
+    },
+  );
+
   testWidgets('granted with no flagged pace renders nothing', (tester) async {
     await tester.pumpWidget(
       _wrap(
@@ -136,7 +154,7 @@ void main() {
   ) async {
     final adapter = _MockHealthAdapter();
     when(() => adapter.requestActivityRecognitionPermission())
-        .thenAnswer((_) async => true);
+        .thenAnswer((_) async => RuntimePermissionResult.granted);
     when(() => adapter.requestStepsPermission()).thenAnswer((_) async => true);
 
     await tester.pumpWidget(
@@ -157,7 +175,7 @@ void main() {
     (tester) async {
       final adapter = _MockHealthAdapter();
       when(() => adapter.requestActivityRecognitionPermission())
-          .thenAnswer((_) async => true);
+          .thenAnswer((_) async => RuntimePermissionResult.granted);
       when(() => adapter.requestStepsPermission())
           .thenAnswer((_) async => true);
 
@@ -171,6 +189,24 @@ void main() {
       verify(() => adapter.requestStepsPermission()).called(1);
     },
   );
+
+  testWidgets('tapping "Open settings" on the permanentlyDenied card opens app '
+      "settings, not another permission request", (tester) async {
+    final adapter = _MockHealthAdapter();
+    when(() => adapter.openAppSettings()).thenAnswer((_) async {});
+
+    await tester.pumpWidget(
+      _wrapWithAdapter(StepsPermissionStatus.permanentlyDenied, adapter),
+    );
+
+    expect(find.text('Open settings'), findsOneWidget);
+
+    await tester.tap(find.text('Open settings'));
+    await tester.pump();
+
+    verify(() => adapter.openAppSettings()).called(1);
+    verifyNever(() => adapter.requestActivityRecognitionPermission());
+  });
 
   testWidgets('tapping "Install Health Connect" delegates to the adapter', (
     tester,

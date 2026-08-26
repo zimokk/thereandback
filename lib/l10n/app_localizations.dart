@@ -194,6 +194,24 @@ abstract class AppLocalizations {
   /// **'Try again'**
   String get stepsPermissionRetry;
 
+  /// Title shown after Android stops offering the permission dialog at all (two denials)
+  ///
+  /// In en, this message translates to:
+  /// **'Permission needs a settings change'**
+  String get stepsPermissionPermanentlyDeniedTitle;
+
+  /// Body shown after Android stops offering the permission dialog at all (§7: never a dead end)
+  ///
+  /// In en, this message translates to:
+  /// **'Android won\'t ask again after a couple of tries — open this app\'s settings and allow Physical activity to let your traveler move.'**
+  String get stepsPermissionPermanentlyDeniedBody;
+
+  /// Button that opens this app's OS settings page when the permission dialog is no longer offered
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get stepsPermissionOpenSettings;
+
   /// Title shown on Android when Health Connect isn't installed
   ///
   /// In en, this message translates to:

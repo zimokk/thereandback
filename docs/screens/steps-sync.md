@@ -131,8 +131,20 @@ itself wasn't actually able to hand over the grant.
 `requestActivityRecognitionPermission()` (via `permission_handler` — the
 `health` package does not request this permission itself) wrap that OS
 prompt. `StepsSync.requestPermission()` now requests it first and only asks
-Health Connect for Steps/Distance if it was granted; a no-op `true` on iOS,
+Health Connect for Steps/Distance if it was granted; a no-op grant on iOS,
 which has no equivalent permission.
+
+**Two denials, not infinite retries.** Android auto-treats a *second* denial
+of the same dangerous permission as "don't ask again" (`USER_FIXED`,
+Android 11+): a third call to the request API shows no dialog at all and
+resolves straight back to denied, with zero UI — so a naive "Try again"
+button would look broken from the third tap on. `requestActivityRecognitionPermission()`
+returns a three-way `RuntimePermissionResult` (`granted` / `denied` /
+`permanentlyDenied`), not a bool, so `requestPermission()` can tell the two
+apart: `permanentlyDenied` routes to its own `StepsPermissionStatus`, whose
+gate card offers `HealthAdapter.openAppSettings()` (this app's OS settings
+page — the only place left to grant it) instead of another request that
+would never show anything.
 
 Health Connect's permission screen is a separate activity, so a grant can
 land while this app is backgrounded, resuming it mid-`await` inside
@@ -219,9 +231,10 @@ are the same kind of gap as the health plugin itself, not oversights:
 - `steps/data/health_adapter.dart` (0%) — `HealthPackageAdapter`, the real
   `health`-package wrapper. Never touched by a test, by policy (`testing`
   skill: never the real health plugin in a test). `hasActivityRecognitionPermission()`/
-  `requestActivityRecognitionPermission()` (the `permission_handler` wrapper
-  added for the two-runtime-prompts fix above) fall in the same excluded set
-  for the same reason — real plugin, not unit-testable.
+  `requestActivityRecognitionPermission()`/`openAppSettings()` (the
+  `permission_handler` wrapper added for the two-runtime-prompts fix above)
+  fall in the same excluded set for the same reason — real plugin, not
+  unit-testable.
 - `steps/presentation/steps_providers.dart`: `healthAdapterProvider`'s body
   (constructs the real `HealthPackageAdapter()`) — same reason. Also
   `refreshStatus()`'s `if (Platform.isAndroid)` branch — `Platform.isAndroid`
@@ -243,6 +256,8 @@ are the same kind of gap as the health plugin itself, not oversights:
 `stepsPermissionExplainTitle`, `stepsPermissionExplainBody`,
 `stepsPermissionAllow`, `stepsPermissionDeniedTitle`,
 `stepsPermissionDeniedBody`, `stepsPermissionRetry`,
+`stepsPermissionPermanentlyDeniedTitle`,
+`stepsPermissionPermanentlyDeniedBody`, `stepsPermissionOpenSettings`,
 `stepsHealthConnectMissingTitle`, `stepsHealthConnectMissingBody`,
 `stepsHealthConnectInstall`, `stepsFlaggedPaceNotice`.
 
@@ -275,15 +290,21 @@ credited twice by `sync()` itself, not just by the repository it calls.
 Two further groups cover `StepsSync`'s permission-flow methods through the
 real class — `build()`/`refreshStatus()` (unknown → notRequested,
 auto-sync when already granted) and `requestPermission()`/
-`openHealthConnectInstall()` (on a fixed-`build()` fake, so the real
-`build()`'s own background `refreshStatus()` microtask can't race these
-tests) — previously only exercised via fakes that skipped this logic
-entirely. That second group also covers the `ACTIVITY_RECOGNITION` fix: a
-denied "Physical activity" prompt stops `requestPermission()` before Health
+`openHealthConnectInstall()`/`openAppSettings()` (on a fixed-`build()` fake,
+so the real `build()`'s own background `refreshStatus()` microtask can't
+race these tests) — previously only exercised via fakes that skipped this
+logic entirely. That second group also covers the `ACTIVITY_RECOGNITION`
+fix: a plain-`denied` prompt stops `requestPermission()` before Health
 Connect is ever asked (`requestStepsPermission()` unstubbed and unverified,
-proving it's never called), and a `Completer`-controlled test proves
-`refreshStatus()` is a no-op while `requestPermission()` is still suspended
-mid-`await` — the resume-races-the-request scenario described above.
+proving it's never called), a separate case does the same for
+`permanentlyDenied` and asserts the distinct `StepsPermissionStatus`, and a
+`Completer`-controlled test proves `refreshStatus()` is a no-op while
+`requestPermission()` is still suspended mid-`await` — the
+resume-races-the-request scenario described above.
+`permission_gate_test.dart` covers the `permanentlyDenied` card rendering
+("Open settings", no "Try again") and that tapping it calls
+`openAppSettings()` without ever calling `requestActivityRecognitionPermission()`
+again.
 
 `test/features/steps/presentation/permission_gate_test.dart` (new — none
 existed before) covers all five `StepsPermissionGate` render states

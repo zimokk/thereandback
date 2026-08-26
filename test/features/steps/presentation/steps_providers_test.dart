@@ -296,7 +296,7 @@ void _realStepsSyncGroup() {
       'requestPermission(): granted transitions to granted and syncs',
       () async {
         when(() => adapter.requestActivityRecognitionPermission())
-            .thenAnswer((_) async => true);
+            .thenAnswer((_) async => RuntimePermissionResult.granted);
         when(() => adapter.requestStepsPermission())
             .thenAnswer((_) async => true);
         when(() => adapter.fetchDelta(any(), any()))
@@ -322,7 +322,7 @@ void _realStepsSyncGroup() {
       'requestPermission(): denied transitions to denied without syncing',
       () async {
         when(() => adapter.requestActivityRecognitionPermission())
-            .thenAnswer((_) async => true);
+            .thenAnswer((_) async => RuntimePermissionResult.granted);
         when(() => adapter.requestStepsPermission())
             .thenAnswer((_) async => false);
 
@@ -343,7 +343,7 @@ void _realStepsSyncGroup() {
       'surface the same confusing "denied despite tapping Allow" bug',
       () async {
         when(() => adapter.requestActivityRecognitionPermission())
-            .thenAnswer((_) async => false);
+            .thenAnswer((_) async => RuntimePermissionResult.denied);
 
         await container.read(stepsSyncProvider.notifier).requestPermission();
 
@@ -356,12 +356,29 @@ void _realStepsSyncGroup() {
       },
     );
 
+    test('requestPermission(): ACTIVITY_RECOGNITION permanently denied (two '
+        "prior refusals — Android's own \"don't ask again\" rule) goes "
+        'straight to permanentlyDenied, not another dialog-less "denied" '
+        'that a "try again" button could never recover from', () async {
+      when(() => adapter.requestActivityRecognitionPermission())
+          .thenAnswer((_) async => RuntimePermissionResult.permanentlyDenied);
+
+      await container.read(stepsSyncProvider.notifier).requestPermission();
+
+      expect(
+        container.read(stepsSyncProvider).permissionStatus,
+        StepsPermissionStatus.permanentlyDenied,
+      );
+      verifyNever(() => adapter.requestStepsPermission());
+      verifyNever(() => adapter.fetchDelta(any(), any()));
+    });
+
     test('refreshStatus() is a no-op while requestPermission() is still '
         'in flight — guards the race where Health Connect\'s permission '
         'screen resumes the app (firing the lifecycle-triggered '
         'refreshStatus()) before the awaited request itself resolves, so '
         'a stale check can\'t overwrite the real answer', () async {
-      final activityRecognitionCompleter = Completer<bool>();
+      final activityRecognitionCompleter = Completer<RuntimePermissionResult>();
       when(() => adapter.requestActivityRecognitionPermission())
           .thenAnswer((_) => activityRecognitionCompleter.future);
       when(() => adapter.requestStepsPermission())
@@ -387,13 +404,21 @@ void _realStepsSyncGroup() {
         StepsPermissionStatus.notRequested,
       );
 
-      activityRecognitionCompleter.complete(true);
+      activityRecognitionCompleter.complete(RuntimePermissionResult.granted);
       await requestFuture;
 
       expect(
         container.read(stepsSyncProvider).permissionStatus,
         StepsPermissionStatus.granted,
       );
+    });
+
+    test('openAppSettings() delegates to the adapter', () async {
+      when(() => adapter.openAppSettings()).thenAnswer((_) async {});
+
+      await container.read(stepsSyncProvider.notifier).openAppSettings();
+
+      verify(() => adapter.openAppSettings()).called(1);
     });
 
     test('openHealthConnectInstall() delegates to the adapter', () async {

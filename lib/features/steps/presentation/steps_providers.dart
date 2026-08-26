@@ -108,18 +108,35 @@ class StepsSync extends _$StepsSync {
   /// own Steps/Distance consent screen ("Fitness and wellness") — Health
   /// Connect will not grant that screen's request while it's missing, no
   /// matter how many times the request below runs. See
-  /// `HealthAdapter.hasActivityRecognitionPermission`. A no-op `true` on iOS.
+  /// `HealthAdapter.hasActivityRecognitionPermission`. A no-op grant on iOS.
+  ///
+  /// A second `ACTIVITY_RECOGNITION` denial is Android's last one — the
+  /// third call here shows no dialog at all
+  /// ([RuntimePermissionResult.permanentlyDenied], see that enum) — so from
+  /// then on this method routes to [StepsPermissionStatus.permanentlyDenied]
+  /// instead of re-asking, and the gate offers [openAppSettings] instead of
+  /// another "try again".
   Future<void> requestPermission() async {
     if (_permissionOpInFlight) return;
     _permissionOpInFlight = true;
     try {
       final adapter = ref.read(healthAdapterProvider);
 
-      final activityRecognitionGranted = await adapter
+      final activityRecognitionResult = await adapter
           .requestActivityRecognitionPermission();
-      if (!activityRecognitionGranted) {
-        state = state.copyWith(permissionStatus: StepsPermissionStatus.denied);
-        return;
+      switch (activityRecognitionResult) {
+        case RuntimePermissionResult.permanentlyDenied:
+          state = state.copyWith(
+            permissionStatus: StepsPermissionStatus.permanentlyDenied,
+          );
+          return;
+        case RuntimePermissionResult.denied:
+          state = state.copyWith(
+            permissionStatus: StepsPermissionStatus.denied,
+          );
+          return;
+        case RuntimePermissionResult.granted:
+          break;
       }
 
       final granted = await adapter.requestStepsPermission();
@@ -135,6 +152,12 @@ class StepsSync extends _$StepsSync {
       _permissionOpInFlight = false;
     }
   }
+
+  /// Opens this app's OS settings page — the only way left to grant
+  /// `ACTIVITY_RECOGNITION` once [StepsPermissionStatus.permanentlyDenied]
+  /// has been reached (called from the gate's "Open settings" button).
+  Future<void> openAppSettings() =>
+      ref.read(healthAdapterProvider).openAppSettings();
 
   Future<void> openHealthConnectInstall() =>
       ref.read(healthAdapterProvider).openHealthConnectInstall();

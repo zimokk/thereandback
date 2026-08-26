@@ -25,6 +25,16 @@ enum HealthConnectAvailability {
   notInstalled,
 }
 
+/// Outcome of asking for a dangerous-protection-level OS runtime permission
+/// (currently just `ACTIVITY_RECOGNITION`). Android auto-treats a second
+/// denial of the same permission as "don't ask again" (`USER_FIXED`,
+/// Android 11+): a third request shows no dialog at all and resolves
+/// straight to [permanentlyDenied], so the only way forward is the app's
+/// OS settings page ([HealthAdapter.openAppSettings]), never another
+/// request. §7: denial is never a dead end, so the two outcomes need to
+/// drive different UI, not both collapse into one "denied" bucket.
+enum RuntimePermissionResult { granted, denied, permanentlyDenied }
+
 /// Abstraction over the `health` package (HealthKit / Health Connect, §3),
 /// so presentation and sync logic can be tested with a fake instead of the
 /// real platform plugin (`testing` skill: never a real health plugin in a
@@ -55,8 +65,16 @@ abstract class HealthAdapter {
 
   /// Shows the OS "Physical activity" runtime prompt. Must be called, and
   /// granted, before [requestStepsPermission] — see
-  /// [hasActivityRecognitionPermission]. Always `true` on iOS.
-  Future<bool> requestActivityRecognitionPermission();
+  /// [hasActivityRecognitionPermission]. Always [RuntimePermissionResult.granted]
+  /// on iOS. See [RuntimePermissionResult] for what
+  /// [RuntimePermissionResult.permanentlyDenied] means and how a caller
+  /// should react to it (never call this again — go to [openAppSettings]).
+  Future<RuntimePermissionResult> requestActivityRecognitionPermission();
+
+  /// Opens this app's page in the OS settings app — the only way left to
+  /// grant a permission once [RuntimePermissionResult.permanentlyDenied]
+  /// has been reached.
+  Future<void> openAppSettings();
 
   /// Android-only meaningful check; always [HealthConnectAvailability.available]
   /// on iOS (§7: Health Connect can be missing on Android and must be
@@ -116,11 +134,18 @@ class HealthPackageAdapter implements HealthAdapter {
   }
 
   @override
-  Future<bool> requestActivityRecognitionPermission() async {
-    if (!Platform.isAndroid) return true;
+  Future<RuntimePermissionResult> requestActivityRecognitionPermission() async {
+    if (!Platform.isAndroid) return RuntimePermissionResult.granted;
     final status = await ph.Permission.activityRecognition.request();
-    return status.isGranted;
+    if (status.isGranted) return RuntimePermissionResult.granted;
+    if (status.isPermanentlyDenied) {
+      return RuntimePermissionResult.permanentlyDenied;
+    }
+    return RuntimePermissionResult.denied;
   }
+
+  @override
+  Future<void> openAppSettings() => ph.openAppSettings();
 
   @override
   Future<HealthConnectAvailability> healthConnectAvailability() async {

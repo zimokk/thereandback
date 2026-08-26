@@ -83,6 +83,17 @@ class AppLocalizationsRu extends AppLocalizations {
   String get stepsPermissionRetry => 'Повторить';
 
   @override
+  String get stepsPermissionPermanentlyDeniedTitle =>
+      'Нужно включить разрешение в настройках';
+
+  @override
+  String get stepsPermissionPermanentlyDeniedBody =>
+      'После пары отказов Android больше не показывает запрос сам — откройте настройки приложения и разрешите «Физическая активность», чтобы путник снова двигался.';
+
+  @override
+  String get stepsPermissionOpenSettings => 'Открыть настройки';
+
+  @override
   String get stepsHealthConnectMissingTitle => 'Нужен Health Connect';
 
   @override
