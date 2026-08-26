@@ -79,18 +79,31 @@ shape is built from what the platform template actually offers; the visual
 weight contrast comes from the title being small/system-styled while
 `bigText` is the prominent line, not from a chosen font weight.
 
-Two drawable resources back this, both placeholders pending real art
-(§9.1):
-- `android/app/src/main/res/drawable/ic_notification_status.xml` — a flat
-  monochrome status-bar icon (Android requires this; the full-color
-  launcher icon can't be used there).
+Two drawable resources back this:
+- `android/app/src/main/res/drawable-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_notification_status.png`
+  — a real alpha-mask silhouette (§9.1's first real art, not a placeholder
+  anymore), derived from `assets/branding/notification_icon_source.jpg`: the
+  source line art's dark pixels become opaque white, everything else
+  transparent, at the 24dp status-bar-icon base size per density. Android
+  re-tints whatever's opaque regardless of source color — no gradients, no
+  color, a single flat silhouette — so this couldn't reuse the full-color
+  launcher icon even if it wanted to. Replaced the old placeholder chevron
+  vector (`drawable/ic_notification_status.xml`, deleted).
 - `android/app/src/main/res/drawable/ic_launcher_notification.xml` — a
   `drawable`-type alias for `@mipmap/ic_launcher`, needed because
   `flutter_local_notifications` resolves bitmap/icon names only under the
   `drawable` resource type (`Resources.getIdentifier(name, "drawable", …)`
   — checked directly against the plugin's Java source, not assumed), so the
   mipmap launcher icon isn't reachable by name without this alias. This is
-  what renders as the notification's large icon, on the right.
+  what renders as the notification's large icon, on the right — now the
+  real launcher artwork too (§9.1): `android/app/src/main/res/mipmap-*/ic_launcher.png`
+  and `ios/Runner/Assets.xcassets/AppIcon.appiconset/*.png`, both generated
+  from `assets/branding/app_icon_source.png` at each required density/size.
+  That source image already has rounded corners baked in — iOS re-applies
+  its own corner mask on top of that, so the corners may read as slightly
+  double-rounded there; worth a real device/simulator look before treating
+  this as final. Android has no equivalent re-masking (no adaptive-icon XML
+  in this project), so it's unaffected.
 
 ## Background sync — `workmanager`
 
