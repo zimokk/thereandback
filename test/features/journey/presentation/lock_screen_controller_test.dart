@@ -58,9 +58,8 @@ void main() {
         .thenAnswer((_) async => true);
     when(() => healthAdapter.requestBackgroundHealthPermission())
         .thenAnswer((_) async => true);
-    when(() => healthAdapter.healthConnectAvailability()).thenAnswer(
-      (_) async => HealthConnectAvailability.available,
-    );
+    when(() => healthAdapter.healthConnectAvailability())
+        .thenAnswer((_) async => HealthConnectAvailability.available);
     // `build()` kicks off a status read immediately, so these are reached by
     // every test here, not only the ones that assert on them.
     when(() => channel.hasNotificationPermission())
