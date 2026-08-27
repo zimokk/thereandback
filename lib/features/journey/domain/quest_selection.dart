@@ -17,8 +17,8 @@ abstract class SelectedQuest with _$SelectedQuest {
     required DateTime startedAt,
 
     /// Start of the sync window not yet applied to [progressMeters]. Seeded
-    /// to the start of the local calendar day on quest start (§5.2), so
-    /// steps already taken that day still count.
+    /// to the exact moment the quest was started (§5.2) — steps taken
+    /// earlier that day, before the quest existed, are never counted.
     required DateTime lastSyncedAt,
 
     /// Total meters credited to this quest so far. Monotonically

@@ -63,19 +63,13 @@ class DriftProgressRepository implements ProgressRepository {
               ..limit(1))
             .getSingleOrNull();
 
-    // No synced interval yet: seed to the start of the local calendar day
-    // the quest was started (§5.2) — same formula `start()` uses, kept in
-    // sync deliberately rather than persisted twice.
-    final seededLastSyncedAt = DateTime(
-      startedAtLocal.year,
-      startedAtLocal.month,
-      startedAtLocal.day,
-    );
-
+    // No synced interval yet: seed to the exact moment the quest was
+    // started (§5.2) — same as `start()` sets in-memory, kept in sync
+    // deliberately rather than persisted twice.
     return SelectedQuest(
       journeyId: row.journeyId,
       startedAt: startedAtLocal,
-      lastSyncedAt: latest?.intervalEnd.toLocal() ?? seededLastSyncedAt,
+      lastSyncedAt: latest?.intervalEnd.toLocal() ?? startedAtLocal,
       progressMeters: progressMeters,
     );
   }

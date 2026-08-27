@@ -163,8 +163,9 @@ Health Connect notice that new data will only be visible "starting tomorrow"
 a limitation of what this app asks for. Once the OS prompt and the Health
 Connect prompt both go through the app's actual `PermissionController`-backed
 request (the fix above), Health Connect's normal 30-day read-back window
-applies from the moment of grant — same-day backfill (§5.2's "seed
-`lastSyncedAt` to the start of the local day") is not blocked by this.
+applies from the moment of grant — `lastSyncedAt` seeding to the exact quest-
+start moment (§5.2, changed 2026-08-27 from the earlier start-of-day seed) is
+not blocked by this.
 
 ## Platform setup done here
 

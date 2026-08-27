@@ -49,14 +49,14 @@ class SelectedJourney extends _$SelectedJourney {
     if (restored != null) state = restored;
   }
 
-  /// Starts a quest. `lastSyncedAt` seeds to the start of the local
-  /// calendar day (§5.2), not the exact moment, so steps already taken
-  /// today are still counted once a sync runs.
+  /// Starts a quest. `lastSyncedAt` seeds to the exact moment the user
+  /// tapped "Start quest" (§5.2) — steps taken earlier that day, before the
+  /// quest existed, are never counted.
   void start(String journeyId, {required DateTime now}) {
     state = SelectedQuest(
       journeyId: journeyId,
       startedAt: now,
-      lastSyncedAt: DateTime(now.year, now.month, now.day),
+      lastSyncedAt: now,
       progressMeters: 0,
     );
     unawaited(
