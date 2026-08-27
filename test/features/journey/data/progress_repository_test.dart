@@ -16,26 +16,24 @@ void main() {
     expect(await repository.loadSelectedQuest('owner-1'), isNull);
   });
 
-  test(
-    'a freshly started quest loads back with zero progress and the '
-    'lastSyncedAt seeded to the local calendar day it started on (§5.2)',
-    () async {
-      final startedAt = DateTime(2026, 3, 10, 21, 45);
-      await repository.startQuest(
-        'owner-1',
-        journeyId: 'odyssey-ithaca',
-        startedAt: startedAt,
-      );
+  test('a freshly started quest loads back with zero progress and the '
+      'lastSyncedAt seeded to the exact moment it started (§5.2) — steps '
+      'taken earlier that same day are never counted', () async {
+    final startedAt = DateTime(2026, 3, 10, 21, 45);
+    await repository.startQuest(
+      'owner-1',
+      journeyId: 'odyssey-ithaca',
+      startedAt: startedAt,
+    );
 
-      final quest = await repository.loadSelectedQuest('owner-1');
+    final quest = await repository.loadSelectedQuest('owner-1');
 
-      expect(quest, isNotNull);
-      expect(quest!.journeyId, 'odyssey-ithaca');
-      expect(quest.startedAt, startedAt);
-      expect(quest.progressMeters, 0);
-      expect(quest.lastSyncedAt, DateTime(2026, 3, 10));
-    },
-  );
+    expect(quest, isNotNull);
+    expect(quest!.journeyId, 'odyssey-ithaca');
+    expect(quest.startedAt, startedAt);
+    expect(quest.progressMeters, 0);
+    expect(quest.lastSyncedAt, startedAt);
+  });
 
   test(
     'progress is derived from recorded intervals, not stored as its own '

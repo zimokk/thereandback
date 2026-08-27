@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -11,7 +13,8 @@ import 'package:thereandback/features/journey/presentation/journey_providers.dar
 import 'package:thereandback/features/journey/presentation/lock_screen_controller.dart';
 import 'package:thereandback/features/journey/presentation/lock_screen_state.dart';
 import 'package:thereandback/features/steps/data/android_background_sync.dart';
-import 'package:thereandback/features/steps/data/health_adapter.dart';
+import 'package:thereandback/features/steps/data/health_adapter.dart'
+    show HealthAdapter, HealthConnectAvailability, RuntimePermissionResult;
 import 'package:thereandback/features/steps/presentation/steps_providers.dart';
 
 /// `enable()`/`refreshStatus()`'s `Platform.isAndroid` guard around
@@ -52,6 +55,9 @@ void main() {
         .thenAnswer((_) async => true);
     when(() => backgroundSync.register()).thenAnswer((_) async {});
     when(() => backgroundSync.cancel()).thenAnswer((_) async {});
+    when(() => healthAdapter.requestActivityRecognitionPermission())
+        .thenAnswer((_) async => RuntimePermissionResult.granted);
+    when(() => healthAdapter.openAppSettings()).thenAnswer((_) async {});
     when(() => healthAdapter.hasStepsPermission())
         .thenAnswer((_) async => true);
     when(() => healthAdapter.requestStepsPermission())
@@ -132,6 +138,121 @@ void main() {
       expect(container.read(lockScreenControllerProvider).enabled, isFalse);
     },
   );
+
+  test(
+    'enable() requests ACTIVITY_RECOGNITION before the base steps '
+    "permission — Health Connect won't grant Steps/Distance while it's "
+    'missing no matter how many times requestStepsPermission() runs',
+    () async {
+      await container.read(lockScreenControllerProvider.notifier).enable();
+
+      verify(() => healthAdapter.requestActivityRecognitionPermission())
+          .called(1);
+      verify(() => healthAdapter.hasStepsPermission()).called(1);
+    },
+  );
+
+  test('enable() never touches the base steps permission when '
+      'ACTIVITY_RECOGNITION is denied (not permanently) — Health Connect '
+      "wouldn't grant it anyway, and status is the ordinary denied, not "
+      'permanentlyDenied', () async {
+    when(() => healthAdapter.requestActivityRecognitionPermission())
+        .thenAnswer((_) async => RuntimePermissionResult.denied);
+
+    await container.read(lockScreenControllerProvider.notifier).enable();
+
+    verifyNever(() => healthAdapter.hasStepsPermission());
+    verifyNever(() => healthAdapter.requestStepsPermission());
+    expect(
+      container.read(lockScreenControllerProvider).permissionStatus,
+      LockScreenPermissionStatus.denied,
+    );
+    expect(container.read(lockScreenControllerProvider).enabled, isFalse);
+  });
+
+  test(
+    'enable() surfaces permanentlyDenied — distinct from denied — when '
+    "ACTIVITY_RECOGNITION hit Android's two-denials 'don't ask again' rule, "
+    'so the UI can offer settings instead of another dead-end retry',
+    () async {
+      when(() => healthAdapter.requestActivityRecognitionPermission())
+          .thenAnswer((_) async => RuntimePermissionResult.permanentlyDenied);
+
+      await container.read(lockScreenControllerProvider.notifier).enable();
+
+      verifyNever(() => healthAdapter.hasStepsPermission());
+      expect(
+        container.read(lockScreenControllerProvider).permissionStatus,
+        LockScreenPermissionStatus.permanentlyDenied,
+      );
+      expect(container.read(lockScreenControllerProvider).enabled, isFalse);
+      verifyNever(() => backgroundSync.register());
+    },
+  );
+
+  test('openAppSettings() delegates to the health adapter — the only way '
+      'left to grant ACTIVITY_RECOGNITION once permanentlyDenied is '
+      'reached', () async {
+    await container
+        .read(lockScreenControllerProvider.notifier)
+        .openAppSettings();
+
+    verify(() => healthAdapter.openAppSettings()).called(1);
+    // Drains build()'s own restore-then-refresh microtask before
+    // container.dispose() runs in tearDown — same reason the
+    // refreshStatus() tests above do this (see their comment).
+    await pumpEventQueue();
+  });
+
+  test('pressing the toggle again after a denial re-requests both permissions '
+      "— a refusal is never a dead end (§7), so enable() being callable again "
+      "is what makes the retry actually reach the OS dialogs", () async {
+    when(() => channel.requestNotificationPermission())
+        .thenAnswer((_) async => false);
+
+    await container.read(lockScreenControllerProvider.notifier).enable();
+    expect(container.read(lockScreenControllerProvider).enabled, isFalse);
+
+    when(() => channel.requestNotificationPermission())
+        .thenAnswer((_) async => true);
+    await container.read(lockScreenControllerProvider.notifier).enable();
+
+    verify(() => channel.requestNotificationPermission()).called(2);
+    verify(() => healthAdapter.requestActivityRecognitionPermission())
+        .called(2);
+    expect(container.read(lockScreenControllerProvider).enabled, isTrue);
+  });
+
+  test('enable() waits for an in-flight refreshStatus() instead of silently '
+      "bailing out — a resume-triggered background check (Health Connect's "
+      "and Android's own permission screens are separate activities, so "
+      'returning from either resumes this app right before the next tap) '
+      'must never eat the toggle tap with no dialog, no state change, and '
+      'nothing in the logs', () async {
+    // Let build()'s own restore-then-refresh microtask finish first, so
+    // it doesn't interleave with the race set up below.
+    container.read(lockScreenControllerProvider);
+    await pumpEventQueue();
+
+    final refreshGate = Completer<bool>();
+    when(() => channel.hasNotificationPermission())
+        .thenAnswer((_) => refreshGate.future);
+
+    final notifier = container.read(lockScreenControllerProvider.notifier);
+    final refreshFuture = notifier.refreshStatus();
+    // refreshStatus() is now suspended awaiting hasNotificationPermission()
+    // — exactly the window where the old shared `isBusy` guard used to
+    // make enable() bail out silently.
+    final enableFuture = notifier.enable();
+
+    refreshGate.complete(true);
+    await refreshFuture;
+    await enableFuture;
+
+    expect(container.read(lockScreenControllerProvider).enabled, isTrue);
+    verify(() => channel.requestNotificationPermission()).called(1);
+    verify(() => backgroundSync.register()).called(1);
+  });
 
   test('enable() denied leaves the feature off and never registers '
       'background sync', () async {

@@ -440,6 +440,42 @@ abstract class AppLocalizations {
   /// **'Health Connect isn\'t installed. Install it to read your steps in the background and show progress on the lock screen.'**
   String get lockScreenHealthConnectMissingBody;
 
+  /// Shown when ACTIVITY_RECOGNITION hit Android's two-denials-means-'don't ask again' rule — the toggle can no longer trigger the OS dialog, so this points at settings instead (§7: never a dead end)
+  ///
+  /// In en, this message translates to:
+  /// **'Android won\'t ask again after a couple of tries — open this app\'s settings and allow Physical activity, then turn this back on.'**
+  String get lockScreenPermissionPermanentlyDeniedBody;
+
+  /// Button that opens this app's OS settings page when the permission dialog is no longer offered
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get lockScreenPermissionOpenSettings;
+
+  /// Tappable hint shown once the toggle is on, opening the troubleshooting sheet below — some Android manufacturers gate lock-screen display behind their own separate OS settings this app has no API to request or detect
+  ///
+  /// In en, this message translates to:
+  /// **'Not showing on the lock screen?'**
+  String get lockScreenTroubleshootLink;
+
+  /// Title of the troubleshooting sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Not showing on the lock screen?'**
+  String get lockScreenTroubleshootTitle;
+
+  /// Troubleshooting steps for OEM-specific (mainly MIUI) lock-screen notification restrictions this app cannot detect or fix in code
+  ///
+  /// In en, this message translates to:
+  /// **'This app already asks Android to show it on the lock screen — some phone makers (Xiaomi/MIUI and others) add their own separate setting on top that can still block it, with no way for an app to check or request it directly. If it shows in the notification shade but not on the lock screen, check on your phone:\n\n1. A phone-wide \"Notifications on lock screen\" setting — usually under Settings → Lock screen or Settings → Notifications — set to show content, not hidden.\n2. This app\'s own lock-screen permission — under Settings → Apps → There and Back → Permissions.\n3. Autostart and battery saver for this app — set to unrestricted.\n4. After changing any of these, turn the toggle above off and back on, then restart the phone.\n5. Make sure Do Not Disturb is off.'**
+  String get lockScreenTroubleshootBody;
+
+  /// Button that dismisses the troubleshooting sheet
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get lockScreenTroubleshootClose;
+
   /// Android notification channel name for the ongoing lock-screen/shade notification (shown in system notification settings, not in-app)
   ///
   /// In en, this message translates to:

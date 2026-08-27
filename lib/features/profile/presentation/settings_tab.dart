@@ -196,7 +196,37 @@ class _LockScreenSection extends ConsumerWidget {
                 ],
               ),
             ),
-          if (state.permissionStatus == LockScreenPermissionStatus.denied) ...[
+          if (state.permissionStatus ==
+              LockScreenPermissionStatus.permanentlyDenied) ...[
+            // Android stopped offering the dialog again after two denials
+            // (`USER_FIXED`) — flipping the toggle again can't show it, so
+            // this is a distinct dead-end-free path (§7), not the ordinary
+            // "denied" copy below.
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.sm),
+              child: Text(
+                l10n.lockScreenPermissionPermanentlyDeniedBody,
+                style: AppTypography.bodySecondary,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.sm),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: FilledButton(
+                  onPressed: () => ref
+                      .read(lockScreenControllerProvider.notifier)
+                      .openAppSettings(),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.gold,
+                    foregroundColor: AppColors.background,
+                  ),
+                  child: Text(l10n.lockScreenPermissionOpenSettings),
+                ),
+              ),
+            ),
+          ] else if (state.permissionStatus ==
+              LockScreenPermissionStatus.denied) ...[
             Padding(
               padding: const EdgeInsets.only(top: AppSpacing.sm),
               child: Text(
@@ -225,10 +255,80 @@ class _LockScreenSection extends ConsumerWidget {
                 ),
               ),
           ],
+          if (state.enabled)
+            // Every permission this app can request/check is granted at
+            // this point, yet the OS-level display can still be blocked by
+            // a manufacturer-specific setting (mainly MIUI) this app has no
+            // API to detect or request — §7 "never a dead end" applies here
+            // too, just pointed at OS settings instead of another prompt.
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.sm),
+              child: GestureDetector(
+                onTap: () => _showLockScreenTroubleshootSheet(context, l10n),
+                child: Text(
+                  l10n.lockScreenTroubleshootLink,
+                  style: AppTypography.bodySecondary.copyWith(
+                    color: AppColors.gold,
+                    decoration: TextDecoration.underline,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
+}
+
+/// The manufacturer-specific (mainly MIUI) lock-screen-display checklist —
+/// see `_LockScreenSection`'s doc comment above for why this exists as a
+/// sheet rather than an OS permission request.
+void _showLockScreenTroubleshootSheet(
+  BuildContext context,
+  AppLocalizations l10n,
+) {
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: AppColors.surface,
+    // The checklist body is long (five numbered steps) — a plain Column
+    // overflows on shorter viewports (small phones, landscape) since a
+    // bottom sheet doesn't grow past a fraction of the screen height on its
+    // own. `isScrollControlled` lets the sheet grow taller, and the
+    // `SingleChildScrollView` below lets the remaining overflow scroll
+    // instead of erroring.
+    isScrollControlled: true,
+    builder: (context) => SingleChildScrollView(
+      padding: EdgeInsets.only(
+        left: AppSpacing.lg,
+        right: AppSpacing.lg,
+        top: AppSpacing.lg,
+        bottom: AppSpacing.lg + MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(l10n.lockScreenTroubleshootTitle, style: AppTypography.heading),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            l10n.lockScreenTroubleshootBody,
+            style: AppTypography.bodySecondary,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                l10n.lockScreenTroubleshootClose,
+                style: const TextStyle(color: AppColors.gold),
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _SectionCard extends StatelessWidget {

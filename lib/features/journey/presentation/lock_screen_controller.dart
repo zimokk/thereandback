@@ -8,7 +8,8 @@ import '../../../app/app_lifecycle.dart';
 import '../../../app/database_provider.dart';
 import '../../../core/local_owner.dart';
 import '../../steps/data/android_background_sync.dart';
-import '../../steps/data/health_adapter.dart' show HealthConnectAvailability;
+import '../../steps/data/health_adapter.dart'
+    show HealthConnectAvailability, RuntimePermissionResult;
 import '../../steps/presentation/steps_providers.dart';
 import '../data/android_lock_screen_channel.dart';
 import '../data/lock_screen_channel.dart';
@@ -83,6 +84,24 @@ LockScreenPreferenceRepository lockScreenPreferenceRepository(Ref ref) =>
 /// mounted — see [build]'s restore step.
 @Riverpod(keepAlive: true)
 class LockScreenController extends _$LockScreenController {
+  /// Completes when the currently-running [refreshStatus] finishes — `null`
+  /// when none is in flight. [enable]/[disable] await this instead of
+  /// bailing out the way the old shared `isBusy` guard used to: a
+  /// resume-triggered background [refreshStatus] (see [build]'s lifecycle
+  /// listener) could otherwise still be running at the exact instant the
+  /// user taps the toggle, and silently eating that tap — no dialog, no
+  /// state change, no error — was indistinguishable from the toggle being
+  /// broken. Internal bookkeeping only, not part of [LockScreenState] —
+  /// same shape as `StepsSync._permissionOpInFlight`.
+  Completer<void>? _refreshCompleter;
+
+  /// Set only while [enable]/[disable] are running, so a resume-triggered
+  /// [refreshStatus] steps aside instead of racing an explicit user action
+  /// and overwriting its result with stale platform state — the direction
+  /// that guard actually matters for; see [_refreshCompleter]'s doc for the
+  /// other direction.
+  bool _userActionInFlight = false;
+
   @override
   LockScreenState build() {
     ref.listen<SelectedQuest?>(selectedJourneyProvider, _onQuestChanged);
@@ -124,11 +143,16 @@ class LockScreenController extends _$LockScreenController {
   /// [restoredEnabled], set only by [_restoreThenRefresh], applies the
   /// value just loaded from drift as part of *this* guarded run rather than
   /// as a separate unguarded write before it — `enable()`/`disable()` guard
-  /// their own writes to `state.enabled` behind `isBusy`, and a write to it
-  /// from here needs the same guard: without it, a build()-time restore
-  /// racing an in-flight `enable()`/`disable()` call could overwrite
+  /// their own writes to `state.enabled` behind [_userActionInFlight], and a
+  /// write to it from here needs the same guard: without it, a build()-time
+  /// restore racing an in-flight `enable()`/`disable()` call could overwrite
   /// whichever of the two `state.enabled` values loses the race, not
   /// necessarily the correct one.
+  ///
+  /// Deliberately never touches [LockScreenState.isBusy] — that field is
+  /// UI-facing (it disables the Настройки toggle) and this is a silent
+  /// background reconciliation the user never asked for and shouldn't see
+  /// the toggle react to; see [_refreshCompleter]'s doc for why.
   Future<void> refreshStatus({bool? restoredEnabled}) async {
     // Called from an unawaited `Future.microtask` in `build()` (via
     // `_restoreThenRefresh`) and from the app-lifecycle resume listener —
@@ -139,8 +163,9 @@ class LockScreenController extends _$LockScreenController {
     // has to be the first thing checked, not just something to guard after
     // an `await` inside the method.
     if (!ref.mounted) return;
-    if (state.isBusy) return;
-    state = state.copyWith(isBusy: true);
+    if (_userActionInFlight) return;
+    final completer = Completer<void>();
+    _refreshCompleter = completer;
     try {
       if (restoredEnabled != null) {
         state = state.copyWith(enabled: restoredEnabled);
@@ -192,7 +217,8 @@ class LockScreenController extends _$LockScreenController {
 
       if (state.enabled && !granted) await _revoke();
     } finally {
-      if (ref.mounted) state = state.copyWith(isBusy: false);
+      _refreshCompleter = null;
+      completer.complete();
     }
   }
 
@@ -211,6 +237,13 @@ class LockScreenController extends _$LockScreenController {
         LockScreenPermissionStatus.notRequested,
       LockScreenPermissionStatus.granted ||
       LockScreenPermissionStatus.denied => LockScreenPermissionStatus.denied,
+      // A background re-check can't re-derive this — only a fresh enable()
+      // call learns whether ACTIVITY_RECOGNITION is still permanently
+      // denied — so leave the "open settings" messaging in place rather
+      // than downgrading it to a plain "denied" that implies retrying the
+      // toggle would show a dialog again.
+      LockScreenPermissionStatus.permanentlyDenied =>
+        LockScreenPermissionStatus.permanentlyDenied,
     };
   }
 
@@ -231,7 +264,18 @@ class LockScreenController extends _$LockScreenController {
   /// immediately if a quest is already active.
   Future<void> enable() async {
     if (state.enabled || state.isBusy) return;
+    // A resume-triggered refreshStatus() (see build()'s lifecycle listener)
+    // can still be running at this exact instant — Health Connect's and
+    // Android settings' permission screens are separate activities, so
+    // every trip through one of them resumes this app right before the
+    // user's next tap. Wait for it instead of bailing out: dropping the
+    // tap here used to be indistinguishable from the toggle being broken —
+    // no dialog, no state change, no error, nothing in the logs.
+    await _refreshCompleter?.future;
+    if (state.enabled || state.isBusy) return;
+
     state = state.copyWith(isBusy: true);
+    _userActionInFlight = true;
     try {
       final channel = ref.read(androidLockScreenChannelProvider);
       final healthAdapter = ref.read(healthAdapterProvider);
@@ -253,22 +297,45 @@ class LockScreenController extends _$LockScreenController {
       final notificationsGranted = await channel
           .requestNotificationPermission();
 
-      // Health Connect only grants READ_HEALTH_DATA_IN_BACKGROUND once the
-      // app already holds the base read permissions (READ_STEPS/
-      // READ_DISTANCE) — requesting it first fails even if the user taps
-      // "Allow" on the system prompt. The Путь tab is the usual place those
-      // get granted, but this toggle is reachable without ever opening it
-      // (fresh install → straight to Настройки), so ensure the prerequisite
-      // here too instead of assuming it's already in place.
-      var stepsGranted = await healthAdapter.hasStepsPermission() ?? false;
-      if (!stepsGranted) {
-        stepsGranted = await healthAdapter.requestStepsPermission();
+      // `ACTIVITY_RECOGNITION` ("Physical activity") is a prerequisite for
+      // Health Connect's own Steps/Distance consent screen — Health Connect
+      // won't grant that screen's request while this is missing, no matter
+      // how many times requestStepsPermission() runs (see
+      // HealthAdapter.hasActivityRecognitionPermission). The Путь tab
+      // requests this first (steps_providers.dart's requestPermission());
+      // this toggle is reachable without ever opening it (fresh install →
+      // straight to Настройки), so it needs the same first step, not just
+      // the base read permission this used to jump straight to.
+      final activityRecognitionResult = await healthAdapter
+          .requestActivityRecognitionPermission();
+
+      var backgroundHealthGranted = false;
+      LockScreenPermissionStatus? blockedStatus;
+
+      switch (activityRecognitionResult) {
+        case RuntimePermissionResult.permanentlyDenied:
+          // Android will not show the dialog again (`USER_FIXED`) —
+          // retrying requestStepsPermission() from here on would silently
+          // no-op every time the toggle is pressed. §7: never a dead end,
+          // so route to the OS settings page instead of pretending another
+          // in-app tap can still work.
+          blockedStatus = LockScreenPermissionStatus.permanentlyDenied;
+        case RuntimePermissionResult.denied:
+          blockedStatus = LockScreenPermissionStatus.denied;
+        case RuntimePermissionResult.granted:
+          var stepsGranted = await healthAdapter.hasStepsPermission() ?? false;
+          if (!stepsGranted) {
+            stepsGranted = await healthAdapter.requestStepsPermission();
+          }
+          backgroundHealthGranted = stepsGranted
+              ? await healthAdapter.requestBackgroundHealthPermission()
+              : false;
       }
 
-      final backgroundHealthGranted = stepsGranted
-          ? await healthAdapter.requestBackgroundHealthPermission()
-          : false;
-      final granted = notificationsGranted && backgroundHealthGranted;
+      final granted =
+          blockedStatus == null &&
+          notificationsGranted &&
+          backgroundHealthGranted;
 
       state = state.copyWith(
         enabled: granted,
@@ -276,7 +343,7 @@ class LockScreenController extends _$LockScreenController {
         backgroundHealthGranted: backgroundHealthGranted,
         permissionStatus: granted
             ? LockScreenPermissionStatus.granted
-            : LockScreenPermissionStatus.denied,
+            : (blockedStatus ?? LockScreenPermissionStatus.denied),
       );
       await ref
           .read(lockScreenPreferenceRepositoryProvider)
@@ -287,6 +354,7 @@ class LockScreenController extends _$LockScreenController {
       await ref.read(androidBackgroundSyncProvider).register();
       await _showCurrentQuestIfActive();
     } finally {
+      _userActionInFlight = false;
       state = state.copyWith(isBusy: false);
     }
   }
@@ -302,7 +370,12 @@ class LockScreenController extends _$LockScreenController {
   /// other permission in this app, the system owns that.
   Future<void> disable() async {
     if (!state.enabled || state.isBusy) return;
+    // Same reasoning as enable() — see its comment above.
+    await _refreshCompleter?.future;
+    if (!state.enabled || state.isBusy) return;
+
     state = state.copyWith(isBusy: true);
+    _userActionInFlight = true;
     try {
       await ref.read(androidBackgroundSyncProvider).cancel();
       await ref.read(lockScreenChannelProvider).end();
@@ -311,9 +384,17 @@ class LockScreenController extends _$LockScreenController {
           .read(lockScreenPreferenceRepositoryProvider)
           .saveEnabled(localOwnerId, false);
     } finally {
+      _userActionInFlight = false;
       state = state.copyWith(isBusy: false);
     }
   }
+
+  /// Opens this app's OS settings page — the only way left to grant
+  /// `ACTIVITY_RECOGNITION` once [LockScreenPermissionStatus.permanentlyDenied]
+  /// has been reached (mirrors `StepsSync.openAppSettings()` for the Путь
+  /// tab's own gate).
+  Future<void> openAppSettings() =>
+      ref.read(healthAdapterProvider).openAppSettings();
 
   Future<void> _showCurrentQuestIfActive() async {
     final quest = ref.read(selectedJourneyProvider);
