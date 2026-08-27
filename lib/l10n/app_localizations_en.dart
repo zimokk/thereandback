@@ -115,11 +115,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get questStatsEtaLabel => 'Estimated Arrival';
 
   @override
-  String get questStatsMapComingSoonTitle => 'Route map';
+  String get questMapSectionTitle => 'Route map';
 
   @override
-  String get questStatsMapComingSoonBody =>
-      'The illustrated map for this quest is on its way — check back in a future update.';
+  String get questMapYouAreHere => 'Your position on the route';
+
+  @override
+  String get questMapIllustrationMissing =>
+      'The drawn map isn\'t in this build yet — below is the route itself, with your position on it.';
+
+  @override
+  String questMapNextLandmark(String name, String distance) {
+    return 'Ahead: $name — $distance to go';
+  }
+
+  @override
+  String get questMapAllLandmarksReached =>
+      'Every landmark on this route is behind you.';
+
+  @override
+  String get questMapLoadFailed => 'This quest\'s map couldn\'t be loaded.';
 
   @override
   String get questStatsEmptyTitle => 'No quest yet';

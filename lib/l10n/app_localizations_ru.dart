@@ -119,11 +119,26 @@ class AppLocalizationsRu extends AppLocalizations {
   String get questStatsEtaLabel => 'Ожидаемое прибытие';
 
   @override
-  String get questStatsMapComingSoonTitle => 'Карта маршрута';
+  String get questMapSectionTitle => 'Карта маршрута';
 
   @override
-  String get questStatsMapComingSoonBody =>
-      'Иллюстрированная карта этого квеста готовится — загляните позже.';
+  String get questMapYouAreHere => 'Ваша позиция на маршруте';
+
+  @override
+  String get questMapIllustrationMissing =>
+      'Рисованная карта ещё не вошла в сборку — ниже сама линия маршрута и ваша позиция на ней.';
+
+  @override
+  String questMapNextLandmark(String name, String distance) {
+    return 'Впереди: $name — осталось $distance';
+  }
+
+  @override
+  String get questMapAllLandmarksReached =>
+      'Все ориентиры этого маршрута уже позади.';
+
+  @override
+  String get questMapLoadFailed => 'Не удалось загрузить карту этого квеста.';
 
   @override
   String get questStatsEmptyTitle => 'Квест ещё не выбран';

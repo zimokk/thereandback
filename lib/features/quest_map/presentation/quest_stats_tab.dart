@@ -10,10 +10,11 @@ import '../../../design/typography.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../journey/domain/quest_progress.dart';
 import '../../journey/presentation/journey_providers.dart';
+import 'quest_map_view.dart';
 
-/// Quest Stats (§6.2) — the "Progress" screen. No drawn map yet: that needs
-/// `map.webp`/`map.json` (Phase 11), which don't exist. This shows the
-/// header stats §6.2 describes and a placeholder panel where the map lands.
+/// Quest Stats (§6.2) — the "Progress" screen: the header stats, then the
+/// drawn map of the route with the traveler's own position on its line
+/// ([QuestMapView]).
 class QuestStatsTab extends ConsumerWidget {
   const QuestStatsTab({super.key});
 
@@ -131,27 +132,9 @@ class _StatsBody extends StatelessWidget {
         const SizedBox(height: AppSpacing.sm),
         _StatRow(label: l10n.questStatsEtaLabel, value: etaLabel),
         const SizedBox(height: AppSpacing.lg),
-        Container(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(AppRadius.card),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.questStatsMapComingSoonTitle,
-                style: AppTypography.label,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                l10n.questStatsMapComingSoonBody,
-                style: AppTypography.bodySecondary,
-              ),
-            ],
-          ),
-        ),
+        Text(l10n.questMapSectionTitle, style: AppTypography.label),
+        const SizedBox(height: AppSpacing.sm),
+        QuestMapView(progressMeters: progressMeters),
       ],
     );
   }
