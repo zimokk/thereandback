@@ -6,7 +6,10 @@ plugins {
 
 android {
     namespace = "com.zimokk.thereandback"
-    compileSdk = flutter.compileSdkVersion
+    // Flutter's own default (flutter.compileSdkVersion) is 36, but the
+    // permission_handler_android plugin (transitive via `health`) compiles
+    // against SDK 37 — compileSdk must be >= the highest plugin requirement.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
