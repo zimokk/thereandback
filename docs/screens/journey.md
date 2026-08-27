@@ -16,24 +16,35 @@ Bottom tab 1 of 4 in this base (CLAUDE.md §6.1). Route: **`/journey`**
     unit line beneath it
   - `pointA → pointB`
   - A narrative placeholder line (see below)
-  - A **`CustomPaint` scene**: solid background + a straight horizontal
-    line + a traveler dot positioned at `progressMeters / totalMeters`
+  - A **`CustomPaint` scene**: solid background + a wavy line + a traveler
+    icon (`Icons.directions_walk`) **pinned at the screen's horizontal
+    centre**, sitting on the line wherever it currently passes through
+    that centre — a `GestureDetector` pans the line horizontally under a
+    finger drag, which is what makes the icon appear to rise and fall as
+    the terrain moves past it. `_wavyPathY()` (`journey_path_view.dart`) is
+    the one function both the painter and the icon's position read, so
+    the two can never disagree about the curve's shape.
 
 ## Deliberate placeholder: no Flame yet
 
 CLAUDE.md §3 fixes **Flame** (`ParallaxComponent`) as the tech for this
 screen — that's still true. What's built here is the screen's *shape*
-without its *art*: one straight line stands in for the multi-layer parallax
+without its *art*: a wavy line stands in for the multi-layer parallax
 route, because there is no quest art yet (§9.1 — art source unpicked) and
 adding the `flame` dependency with nothing for it to render would be an
-unjustified new dependency (§13).
+unjustified new dependency (§13). The pan here is purely a visual camera
+move over that placeholder curve — it does not (yet) change the day/
+distance/narrative labels below it or credit a different position on the
+route; those still only move with real progress, same as before this
+placeholder existed.
 
 **Phase 5** (`flame-scene` skill, `docs/implementation-plan.md`) replaces
-`_StraightPathPainter` in `journey_path_view.dart` with a real
-`ParallaxComponent` scene — free scroll, time-of-day sky, animated
-traveler interpolation, 60fps game loop that pauses off-screen. Nothing
-above the painter (day counter, distance, catalog flow, providers) needs to
-change shape when that happens.
+`_WavyPathPainter` in `journey_path_view.dart` with a real
+`ParallaxComponent` scene — free scroll tied to actual route position, the
+`< Start`/`You >` anchors, time-of-day sky, animated traveler
+interpolation, 60fps game loop that pauses off-screen. Nothing above the
+painter (day counter, distance, catalog flow, providers) needs to change
+shape when that happens.
 
 ## State — providers (`journey_providers.dart`)
 
@@ -90,6 +101,12 @@ beat exists for the visible position.
 catalog renders with nothing selected; path view renders once a quest is
 started; permission-denied state renders the gate instead of a blank
 screen.
+
+`test/features/journey/presentation/journey_path_view_test.dart` covers the
+wavy-line placeholder scene directly: the traveler icon renders pinned at
+the screen's horizontal centre, and dragging the scene moves the icon
+vertically (not horizontally) — the line moving under a fixed icon, not
+the other way round.
 
 `test/features/journey/domain/quest_progress_test.dart` covers `questDay`,
 `paceMetersPerDay`, `estimateArrival` per the §12 mandatory list (local
