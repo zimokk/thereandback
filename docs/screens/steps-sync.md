@@ -169,10 +169,26 @@ applies from the moment of grant — same-day backfill (§5.2's "seed
 ## Platform setup done here
 
 - **iOS** (`ios/Runner/Info.plist`): `NSHealthShareUsageDescription` added.
-  **Not done**: enabling the HealthKit capability in Xcode (Signing &
-  Capabilities → + HealthKit), which creates `Runner.entitlements` and
-  touches `project.pbxproj` — that's a manual Xcode step, not safely
-  automatable from a CLI edit without risking a malformed project file.
+  The HealthKit **capability** — `ios/Runner/Runner.entitlements`
+  (`com.apple.developer.healthkit`, read-only: an empty
+  `com.apple.developer.healthkit.access` array, no write/clinical-records
+  scope) plus `CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;` added to
+  all three `Runner`-target build configurations (Debug/Release/Profile) in
+  `project.pbxproj` — is also now wired. Without it the `Info.plist` string
+  alone doesn't get the app anywhere: `health`'s `requestAuthorization()`
+  can't actually obtain a HealthKit grant. This was a hand-edit of
+  `project.pbxproj` done without Xcode available to verify the project still
+  opens/builds — the edit only touches the existing `Runner` target's
+  per-configuration `buildSettings` (one new key each) and adds one new
+  `PBXFileReference` plus its `Runner` group entry, none of which restructure
+  targets or build phases, but it has **not been opened in Xcode or built on
+  a Mac**. First real build should confirm Xcode opens the project cleanly
+  and Signing & Capabilities shows HealthKit already enabled, not duplicate
+  or reject it.
+  **Still not done**: the Apple Developer portal side (the App ID itself
+  needs the HealthKit capability enabled there too, via an Apple Developer
+  account) — that's account configuration outside this repo, not a file this
+  session can edit either way.
 - **Android** (`android/app/src/main/AndroidManifest.xml`):
   `android.permission.health.READ_STEPS` / `READ_DISTANCE` declared;
   `com.google.android.apps.healthdata` added to `<queries>` for package

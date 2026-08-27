@@ -67,6 +67,30 @@ class StepIntervalRecords extends Table {
   ];
 }
 
+/// Whether the lock-screen/notification-shade toggle (§7) is turned on, per
+/// local owner. `LockScreenState.enabled` (the in-memory Riverpod state) is
+/// **not** durable on its own — a fresh `LockScreenController.build()`
+/// after an app restart used to reset straight to `enabled: false` no
+/// matter what the previous session had, which meant a permission revoked
+/// while the app was closed was never detected: `refreshStatus()`'s
+/// `if (state.enabled && !granted) revoke()` check never fired, because
+/// `state.enabled` didn't know the feature had actually been on. This row
+/// is read back into `state.enabled` before that first `refreshStatus()`
+/// runs, the same way [SelectedQuestRows] is read back into
+/// `selectedJourneyProvider` on restart.
+///
+/// The real notification and `workmanager` periodic task are OS-owned and
+/// keep running across an app restart on their own either way — this row
+/// only makes the *app's own* state agree with that reality again, so the
+/// existing revoke-on-permission-loss logic actually gets a chance to run.
+class LockScreenPreferenceRows extends Table {
+  TextColumn get ownerId => text()();
+  BoolColumn get enabled => boolean()();
+
+  @override
+  Set<Column> get primaryKey => {ownerId};
+}
+
 /// The app's local database (§8: drift/SQLite is the offline-first source
 /// of truth; Firestore is a sync layer added later, never the only store).
 ///
@@ -75,7 +99,9 @@ class StepIntervalRecords extends Table {
 /// instance instead (`testing` skill: never a real drift database in a
 /// test — always an explicit in-memory override via
 /// `app/database_provider.dart`'s `appDatabaseProvider`).
-@DriftDatabase(tables: [SelectedQuestRows, StepIntervalRecords])
+@DriftDatabase(
+  tables: [SelectedQuestRows, StepIntervalRecords, LockScreenPreferenceRows],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
@@ -84,13 +110,20 @@ class AppDatabase extends _$AppDatabase {
   factory AppDatabase.forTesting() => AppDatabase(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
-  // No migrations yet — schemaVersion 1 is the first shipped schema. Bump
-  // this and add a real migration step (per the `codegen` skill) the next
-  // time a table shape changes; never hand-edit existing rows in place.
+  // v1 → v2: added LockScreenPreferenceRows (see its doc comment). A purely
+  // additive migration — existing SelectedQuestRows/StepIntervalRecords
+  // rows are untouched; a device upgrading from v1 just gets the new table
+  // created empty, same as a fresh install.
   @override
-  MigrationStrategy get migration => MigrationStrategy();
+  MigrationStrategy get migration => MigrationStrategy(
+    onUpgrade: (Migrator m, int from, int to) async {
+      if (from < 2) {
+        await m.createTable(lockScreenPreferenceRows);
+      }
+    },
+  );
 
   // Explicit UTC-as-text storage (§5.2) — sidesteps sqlite's lack of a
   // native DateTime type and the ambiguity of drift's legacy unix-epoch

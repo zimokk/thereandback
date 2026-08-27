@@ -3,20 +3,21 @@ import 'package:test/test.dart';
 import 'package:thereandback/data/drift/database.dart';
 
 /// Schema sanity for Phase 3 (`testing` skill: "drift schema migration
-/// test"). `schemaVersion` is 1 — the first shipped schema — so there is no
-/// migration *step* to exercise yet; a real migration test (old schema →
-/// new schema, verified with `package:drift_dev`'s schema tooling) lands the
-/// first time `schemaVersion` bumps past 1 (see the `codegen` skill's
-/// "Drift migration test fails" row). This locks in today's baseline so
-/// that future change is visible as a diff, not a surprise.
+/// test"). The real migration test itself (old schema → new schema,
+/// verified with `package:drift_dev`'s schema tooling) is
+/// `migration_test.dart`, alongside this file — it started once
+/// `schemaVersion` first bumped past 1 (see the `codegen` skill's "Drift
+/// migration test fails" row). This file locks in today's table-shape
+/// baseline so a future change is visible as a diff, not a surprise.
 void main() {
   late AppDatabase db;
 
   setUp(() => db = AppDatabase.forTesting());
   tearDown(() => db.close());
 
-  test('schemaVersion is 1 — the first shipped schema', () {
-    expect(db.schemaVersion, 1);
+  test('schemaVersion is 2 — LockScreenPreferenceRows added on top of the '
+      'v1 baseline (see migration_test.dart)', () {
+    expect(db.schemaVersion, 2);
   });
 
   test('selectedQuestRows round-trips a row, keyed on ownerId', () async {
@@ -83,5 +84,30 @@ void main() {
     expect(first, isNotNull);
     expect(second, isNull);
     expect(await db.select(db.stepIntervalRecords).get(), hasLength(1));
+  });
+
+  test('lockScreenPreferenceRows round-trips a row, keyed on ownerId, and '
+      'a second write for the same owner overwrites rather than adding a '
+      'row', () async {
+    await db
+        .into(db.lockScreenPreferenceRows)
+        .insertOnConflictUpdate(
+          LockScreenPreferenceRowsCompanion.insert(
+            ownerId: 'owner-1',
+            enabled: true,
+          ),
+        );
+    await db
+        .into(db.lockScreenPreferenceRows)
+        .insertOnConflictUpdate(
+          LockScreenPreferenceRowsCompanion.insert(
+            ownerId: 'owner-1',
+            enabled: false,
+          ),
+        );
+
+    final rows = await db.select(db.lockScreenPreferenceRows).get();
+    expect(rows, hasLength(1));
+    expect(rows.single.enabled, isFalse);
   });
 }

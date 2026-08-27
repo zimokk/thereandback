@@ -250,6 +250,77 @@ final class LockScreenSupportedProvider
 String _$lockScreenSupportedHash() =>
     r'cf8f318ec19d515e52b24c697e7a5fa36a166c0b';
 
+/// Durable store for [LockScreenState.enabled] — see
+/// `LockScreenPreferenceRows` (`data/drift/database.dart`) for why the
+/// in-memory flag alone isn't enough. Overridden with an in-memory
+/// `AppDatabase` in tests via
+/// `appDatabaseProvider` (`testing` skill), same as every other
+/// drift-backed repository provider in this app.
+
+@ProviderFor(lockScreenPreferenceRepository)
+final lockScreenPreferenceRepositoryProvider =
+    LockScreenPreferenceRepositoryProvider._();
+
+/// Durable store for [LockScreenState.enabled] — see
+/// `LockScreenPreferenceRows` (`data/drift/database.dart`) for why the
+/// in-memory flag alone isn't enough. Overridden with an in-memory
+/// `AppDatabase` in tests via
+/// `appDatabaseProvider` (`testing` skill), same as every other
+/// drift-backed repository provider in this app.
+
+final class LockScreenPreferenceRepositoryProvider
+    extends
+        $FunctionalProvider<
+          LockScreenPreferenceRepository,
+          LockScreenPreferenceRepository,
+          LockScreenPreferenceRepository
+        >
+    with $Provider<LockScreenPreferenceRepository> {
+  /// Durable store for [LockScreenState.enabled] — see
+  /// `LockScreenPreferenceRows` (`data/drift/database.dart`) for why the
+  /// in-memory flag alone isn't enough. Overridden with an in-memory
+  /// `AppDatabase` in tests via
+  /// `appDatabaseProvider` (`testing` skill), same as every other
+  /// drift-backed repository provider in this app.
+  LockScreenPreferenceRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'lockScreenPreferenceRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$lockScreenPreferenceRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<LockScreenPreferenceRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  LockScreenPreferenceRepository create(Ref ref) {
+    return lockScreenPreferenceRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(LockScreenPreferenceRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<LockScreenPreferenceRepository>(
+        value,
+      ),
+    );
+  }
+}
+
+String _$lockScreenPreferenceRepositoryHash() =>
+    r'21e9af391e0919aeabb30faf99da3e2071745e31';
+
 /// Drives the persistent lock-screen / notification-shade display (§7).
 ///
 /// Off by default — turning it on requests two permissions
@@ -265,6 +336,11 @@ String _$lockScreenSupportedHash() =>
 /// [lockScreenChannelProvider], without going through this controller at
 /// all), and on quest completion (§6.1: the scene goes static, so this
 /// stops showing "in progress" too).
+///
+/// `keepAlive: true` (unlike `StepsSync`, which is autoDispose): this
+/// controller must go on reconciling itself against the platform for the
+/// whole app session, not just while the Настройки tab happens to be
+/// mounted — see [build]'s restore step.
 
 @ProviderFor(LockScreenController)
 final lockScreenControllerProvider = LockScreenControllerProvider._();
@@ -284,6 +360,11 @@ final lockScreenControllerProvider = LockScreenControllerProvider._();
 /// [lockScreenChannelProvider], without going through this controller at
 /// all), and on quest completion (§6.1: the scene goes static, so this
 /// stops showing "in progress" too).
+///
+/// `keepAlive: true` (unlike `StepsSync`, which is autoDispose): this
+/// controller must go on reconciling itself against the platform for the
+/// whole app session, not just while the Настройки tab happens to be
+/// mounted — see [build]'s restore step.
 final class LockScreenControllerProvider
     extends $NotifierProvider<LockScreenController, LockScreenState> {
   /// Drives the persistent lock-screen / notification-shade display (§7).
@@ -301,13 +382,18 @@ final class LockScreenControllerProvider
   /// [lockScreenChannelProvider], without going through this controller at
   /// all), and on quest completion (§6.1: the scene goes static, so this
   /// stops showing "in progress" too).
+  ///
+  /// `keepAlive: true` (unlike `StepsSync`, which is autoDispose): this
+  /// controller must go on reconciling itself against the platform for the
+  /// whole app session, not just while the Настройки tab happens to be
+  /// mounted — see [build]'s restore step.
   LockScreenControllerProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
         name: r'lockScreenControllerProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -329,7 +415,7 @@ final class LockScreenControllerProvider
 }
 
 String _$lockScreenControllerHash() =>
-    r'7ae163f01f3d10c3f989b8d28d17e837ceef9400';
+    r'db7c6e3257579ced7ad74b9b545c5c0093adc6ae';
 
 /// Drives the persistent lock-screen / notification-shade display (§7).
 ///
@@ -346,6 +432,11 @@ String _$lockScreenControllerHash() =>
 /// [lockScreenChannelProvider], without going through this controller at
 /// all), and on quest completion (§6.1: the scene goes static, so this
 /// stops showing "in progress" too).
+///
+/// `keepAlive: true` (unlike `StepsSync`, which is autoDispose): this
+/// controller must go on reconciling itself against the platform for the
+/// whole app session, not just while the Настройки tab happens to be
+/// mounted — see [build]'s restore step.
 
 abstract class _$LockScreenController extends $Notifier<LockScreenState> {
   LockScreenState build();

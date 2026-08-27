@@ -39,12 +39,14 @@ class AndroidLockScreenChannel implements LockScreenChannel {
   static const _notificationId = 7301;
   static const _channelId = 'lock_screen_progress';
 
-  /// `res/drawable*/ic_notification_status.xml` — a thin monochrome
-  /// status-bar icon per Android's notification-icon guidelines (the
-  /// full-color launcher icon can't be used there). The launcher icon is
-  /// reused as [DrawableResourceAndroidBitmap] for the *large* icon
-  /// instead, which is what actually renders on the right ("иконку
-  /// приложения справа").
+  /// `res/drawable-{density}/ic_notification_status.png` — an alpha-mask
+  /// silhouette per Android's notification-icon guidelines (the full-color
+  /// launcher icon can't be used there; the OS re-tints whatever's opaque
+  /// to solid white/accent regardless of source color, so only the alpha
+  /// channel matters). Source art: `assets/branding/notification_icon_source.jpg`.
+  /// The launcher icon is reused as [DrawableResourceAndroidBitmap] for the
+  /// *large* icon instead, which is what actually renders on the right
+  /// ("иконку приложения справа").
   static const _statusBarIcon = 'ic_notification_status';
 
   /// `res/drawable/ic_launcher_notification.xml` — a `drawable`-type alias

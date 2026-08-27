@@ -1,19 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../design/colors.dart';
+import '../features/journey/presentation/lock_screen_controller.dart';
 import '../l10n/app_localizations.dart';
 
 /// The bottom nav shell wrapping all four tab branches (§6, trimmed to the
 /// four this base ships — no Friends tab yet). One `BottomNavigationBar`
 /// index per `StatefulShellBranch` in `router.dart`.
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Eagerly keeps `LockScreenController` alive (and its build()-time
+    // restore-then-refreshStatus running) for the whole app session,
+    // starting the moment the app opens — not only once the user happens to
+    // visit Настройки. See that provider's doc comment for why a restart
+    // needs this to reconcile a permission revoked while the app was
+    // closed. The value itself isn't used here.
+    ref.watch(lockScreenControllerProvider);
+
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
