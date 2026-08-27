@@ -31,9 +31,23 @@ network, fully offline):
    that is what makes `map.json`'s normalized `(0..1, 0..1)` coordinates
    land where they were traced.
 2. The route polyline on top: **solid gold behind** the traveler, **dashed
-   ahead** of them (§6.2), split by `splitRouteAt`.
+   ahead** of them (§6.2), split by `splitRouteAt`. Traced tight against the
+   illustration's own dashed line (see
+   `assets/journeys/odyssey-ithaca/README.md`'s re-trace procedure), so the
+   solid/dashed switch reads as a point *on* the drawn route, not near it.
 3. The traveler's position, `metersToPoint(polyline, progressMeters)` — a
-   gold dot on a dark disc so it stays readable over the ink drawing.
+   small gold Corinthian-helmet silhouette (front view: the T-shaped
+   eye/nose slit cut out of the dome, a low crest ridge on top), on a dark
+   halo so it stays readable over the ink drawing. Vector, not an emoji —
+   there is no helmet emoji, and a hand-drawn silhouette matches §9's
+   "solid-fill silhouette, no gradients" art direction the way a borrowed
+   glyph wouldn't.
+4. Each landmark from `map.json`, marked with an emoji picked for what it
+   is (`emojiForLandmarkId` — 🐖 for Circe, who turns Odysseus's crew into
+   pigs; 🪷 for the Lotus-Eaters; and so on), on the same dark halo. An id
+   the map doesn't have an emoji for falls back to a plain pin (📍) rather
+   than crashing — future quests will hit that fallback until someone picks
+   glyphs for their landmarks too.
 
 Under the map: the next landmark still ahead and how far it is
 (`nextLandmark` + `formatDistance`), or a line saying every landmark is
@@ -119,7 +133,12 @@ section — that one reads the real bundled `map.json`, so it also covers the
 `test/features/quest_map/presentation/quest_map_view_test.dart`: overlay and
 `InteractiveViewer` render, the marker's semantics label is there, the next
 landmark caption and its end-of-route variant, the no-illustration fallback,
-and the no-`map.json` notice — all against a fake bundle.
+and the no-`map.json` notice — all against a fake bundle. Plus
+`emojiForLandmarkId` on its own: every shipped Odyssey id gets a distinct
+emoji, and an unknown id falls back to a pin. (The helmet and the emoji
+glyphs themselves are painted on canvas, not widgets — nothing here asserts
+on their pixels; that was eyeballed against a real render during
+development, the way the route trace itself was.)
 
 `test/features/quest_map/data/quest_map_repository_test.dart`: `map.json`
 parsing and every invariant it rejects, plus checks on the shipped Odyssey

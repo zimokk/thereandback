@@ -97,6 +97,7 @@ class _LoadedMap extends StatelessWidget {
                     key: const Key('questMapRouteOverlay'),
                     painter: _RouteOverlayPainter(
                       polyline: map.polyline,
+                      landmarks: map.landmarks,
                       progressMeters: progressMeters,
                     ),
                   ),
@@ -168,23 +169,57 @@ class _MapNotice extends StatelessWidget {
   }
 }
 
-/// Radius of the gold dot marking the traveler, in logical pixels.
-const double _travelerDotRadius = 5.5;
-
-/// Radius of the thin ring drawn around that dot.
-const double _travelerRingRadius = 10;
-
 /// Dash and gap lengths of the not-yet-walked stretch, in logical pixels.
 const double _dashLength = 6;
 const double _dashGap = 5;
 
+/// Emoji standing in for each landmark on the map, keyed by
+/// [MapLandmark.id] — a small piece of presentation styling, not quest
+/// content, so it lives here rather than in `map.json` (§11: the id itself
+/// is the stable, content-authored key; what glyph represents it on this
+/// screen is a display decision). An id this map doesn't know about (a
+/// future quest's landmarks) falls back to [_defaultLandmarkEmoji] rather
+/// than throwing — new quest content should never crash the map.
+const Map<String, String> _landmarkEmoji = {
+  'troy': '🏛️',
+  'aeaea-circe': '🐖', // Circe turns Odysseus's crew into pigs.
+  'lotus-eaters': '🪷',
+  'calypso': '🏝️',
+  'scylla-charybdis': '🌀',
+  'sirens': '🧜‍♀️',
+  'ithaca': '🏠',
+};
+const String _defaultLandmarkEmoji = '📍';
+
+/// The emoji marker for one landmark id. Exposed at the top level (rather
+/// than folded straight into the painter) so the mapping itself — every
+/// shipped id resolves to something, the fallback pin catches the rest —
+/// has a unit test that doesn't need a canvas.
+@visibleForTesting
+String emojiForLandmarkId(String landmarkId) =>
+    _landmarkEmoji[landmarkId] ?? _defaultLandmarkEmoji;
+
+/// Font size of a landmark's emoji marker, in logical pixels.
+const double _landmarkEmojiSize = 16;
+
+/// Radius of the dark halo painted behind a landmark emoji, so it stays
+/// legible over both the pale ink lines and the black background.
+const double _landmarkHaloRadius = 11;
+
+/// On-screen height, in logical pixels, of the traveler's helmet marker
+/// (crest included) — [_travelerHelmetBounds] gives its shape in local
+/// units, this is what that gets scaled to.
+const double _travelerIconHeight = 20;
+
 class _RouteOverlayPainter extends CustomPainter {
   const _RouteOverlayPainter({
     required this.polyline,
+    required this.landmarks,
     required this.progressMeters,
   });
 
   final RoutePolyline polyline;
+  final List<MapLandmark> landmarks;
   final int progressMeters;
 
   @override
@@ -214,27 +249,56 @@ class _RouteOverlayPainter extends CustomPainter {
         ..strokeWidth = AppStroke.path + 1,
     );
 
+    for (final landmark in landmarks) {
+      _paintLandmark(
+        canvas,
+        toOffset(MapPoint(x: landmark.x, y: landmark.y)),
+        landmark,
+      );
+    }
+
     final here = toOffset(metersToPoint(polyline, progressMeters));
-    // A dark disc under the marker so it stays readable wherever it lands
-    // on the ink drawing.
+    _paintTraveler(canvas, here);
+  }
+
+  void _paintLandmark(Canvas canvas, Offset at, MapLandmark landmark) {
     canvas.drawCircle(
-      here,
-      _travelerRingRadius - 1,
+      at,
+      _landmarkHaloRadius,
+      Paint()..color = AppColors.background.withValues(alpha: 0.55),
+    );
+    final painter = TextPainter(
+      text: TextSpan(
+        text: emojiForLandmarkId(landmark.id),
+        style: const TextStyle(fontSize: _landmarkEmojiSize),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    painter.paint(canvas, at - Offset(painter.width / 2, painter.height / 2));
+  }
+
+  /// Paints the traveler's position as a small gold Corinthian-helmet
+  /// silhouette (front view: a domed shield with the T-shaped eye/nose
+  /// slit and a low crest ridge) instead of a plain dot, on a dark halo so
+  /// it stays readable over the ink drawing.
+  void _paintTraveler(Canvas canvas, Offset at) {
+    final bounds = _travelerHelmetBounds;
+    final scale = _travelerIconHeight / bounds.height;
+    final origin = at - Offset(bounds.center.dx, bounds.center.dy) * scale;
+
+    canvas.drawCircle(
+      at,
+      bounds.longestSide * scale / 2 + 3,
       Paint()..color = AppColors.background.withValues(alpha: 0.7),
     );
-    canvas.drawCircle(
-      here,
-      _travelerDotRadius,
-      Paint()..color = AppColors.gold,
-    );
-    canvas.drawCircle(
-      here,
-      _travelerRingRadius,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = AppStroke.icon
-        ..color = AppColors.gold.withValues(alpha: 0.7),
-    );
+
+    canvas.save();
+    canvas.translate(origin.dx, origin.dy);
+    canvas.scale(scale);
+    final gold = Paint()..color = AppColors.gold;
+    canvas.drawPath(_travelerHelmetCrest, gold);
+    canvas.drawPath(_travelerHelmetDome, gold);
+    canvas.restore();
   }
 
   Path _polylinePath(List<Offset> points) {
@@ -286,5 +350,48 @@ class _RouteOverlayPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _RouteOverlayPainter oldDelegate) =>
       oldDelegate.progressMeters != progressMeters ||
-      oldDelegate.polyline != polyline;
+      oldDelegate.polyline != polyline ||
+      // landmarks comes from the same immutable QuestMap.landmarks list for
+      // the life of a loaded map — reference inequality is enough to catch
+      // the one case that matters, a freshly (re)loaded map.
+      !identical(oldDelegate.landmarks, landmarks);
 }
+
+/// The helmet's dome + T-slit, in a local coordinate box (front view, eyes
+/// and nose exposed through the slit). [PathFillType.evenOdd] cuts the two
+/// slit rectangles out of the dome — one fill call paints gold everywhere
+/// except the slit.
+final Path _travelerHelmetDome = () {
+  final path = Path()
+    ..moveTo(14, 1)
+    ..cubicTo(20, 1, 25, 4, 25, 10)
+    ..lineTo(23, 20)
+    ..cubicTo(23, 23.5, 20, 26, 16, 26)
+    ..lineTo(12, 26)
+    ..cubicTo(8, 26, 5, 23.5, 5, 20)
+    ..lineTo(3, 10)
+    ..cubicTo(3, 4, 8, 1, 14, 1)
+    ..close();
+  path.fillType = PathFillType.evenOdd;
+  path.addRect(const Rect.fromLTRB(6.5, 10.5, 21.5, 13.5)); // eye bar
+  path.addRect(const Rect.fromLTRB(12.5, 10.5, 15.5, 26)); // nose guard
+  return path;
+}();
+
+/// The low crest ridge sitting on top of [_travelerHelmetDome], in the same
+/// local coordinate box — the detail that reads as "Corinthian" rather than
+/// a plain dome, even at marker size.
+final Path _travelerHelmetCrest = () {
+  return Path()
+    ..moveTo(8, 1.5)
+    ..quadraticBezierTo(14, -5, 20, 1.5)
+    ..quadraticBezierTo(14, -1.5, 8, 1.5)
+    ..close();
+}();
+
+/// Bounding box of the dome + crest together, in the same local units —
+/// what [_paintTraveler] scales to [_travelerIconHeight] and centers on the
+/// traveler's map point.
+final Rect _travelerHelmetBounds = _travelerHelmetDome
+    .getBounds()
+    .expandToInclude(_travelerHelmetCrest.getBounds());

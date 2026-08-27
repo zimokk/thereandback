@@ -28,16 +28,42 @@ illustration isn't in the build (`questMapIllustrationMissing`).
 
 ## Re-tracing the route
 
-If the illustration is redrawn, `map.json` has to be re-traced against it:
-read pixel coordinates of the drawn route off the new art (reading them off
-a crop with a 50 px coordinate grid drawn over it is the quickest way),
-snap them onto the drawn line, divide by the image's width/height, and keep
-`meters` non-decreasing from `0` at Troy to `totalMeters` at Ithaca. Check
-the result by compositing the polyline over the art and looking at it — the
-line should sit on the drawn dashes the whole way.
+If the illustration is redrawn, `map.json` has to be re-traced against it.
+Reading points off the art by eye is not tight enough — the drawn line has
+to be *hugged*, not approximated — so the trace goes through three passes:
+
+1. **Rough trace.** Read pixel coordinates of the drawn route off crops of
+   the new art with a 50 px coordinate grid drawn over them (the quickest
+   way to place points accurately by eye). A few dozen points is enough.
+2. **Snap.** Densify that rough trace (a point every ~4 px), then at each
+   point search perpendicular to the local direction for the brightest
+   pixels — the drawn dashes — within about a 13 px radius, and move the
+   point onto them. This is what actually pulls the trace onto the line;
+   pass 1 only has to be close enough for the search radius to find it.
+3. **Simplify.** Run Douglas–Peucker (tolerance ~0.8 px) on the snapped,
+   smoothed trace to drop redundant points without losing the shape — the
+   current `map.json` has 333 vertices from this pass, most of it doing real
+   work following the drawing's own wobble, not noise.
+
+Whatever the exact tooling, divide the final pixel coordinates by the
+image's width/height, and keep `meters` non-decreasing from `0` at Troy to
+`totalMeters` at Ithaca. Check the result by compositing the polyline over
+the art at real size and at a few zoomed-in crops — the line should sit on
+the drawn dashes the whole way, not just look right zoomed out.
 `test/features/quest_map/data/quest_map_repository_test.dart` checks the
 invariants and that the file still matches the catalog's route length, but
-it cannot see a route traced onto the wrong drawing.
+it cannot see a route traced loosely, or onto the wrong drawing.
+
+## The traveler marker and landmark emoji
+
+`QuestMapView` marks the traveler's position with a small vector Corinthian
+helmet (painted, not an emoji — there is no helmet emoji, and a hand-drawn
+silhouette fits §9's art direction) and each landmark with an emoji picked
+for what it is, in `emojiForLandmarkId`
+(`lib/features/quest_map/presentation/quest_map_view.dart`). Adding a
+landmark to `map.json` — for the Odyssey or a future quest — that isn't in
+that lookup is safe (it falls back to a plain pin, 📍) but loses the
+per-landmark identity; add its id and an emoji to the lookup too.
 
 ## Known gap
 

@@ -179,4 +179,27 @@ void main() {
 
     expect(find.byKey(const Key('questMapRouteOverlay')), findsNothing);
   });
+
+  group('emojiForLandmarkId', () {
+    // Every id the shipped Odyssey map.json actually uses — see
+    // assets/journeys/odyssey-ithaca/map.json.
+    const shippedIds = [
+      'troy',
+      'aeaea-circe',
+      'lotus-eaters',
+      'calypso',
+      'scylla-charybdis',
+      'sirens',
+      'ithaca',
+    ];
+
+    test('gives every shipped landmark its own, distinct emoji', () {
+      final emoji = shippedIds.map(emojiForLandmarkId).toSet();
+      expect(emoji, hasLength(shippedIds.length));
+    });
+
+    test('falls back to a plain pin for an id it does not know', () {
+      expect(emojiForLandmarkId('some-future-quests-landmark'), '📍');
+    });
+  });
 }
