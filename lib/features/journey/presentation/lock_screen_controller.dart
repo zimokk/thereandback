@@ -130,6 +130,15 @@ class LockScreenController extends _$LockScreenController {
   /// whichever of the two `state.enabled` values loses the race, not
   /// necessarily the correct one.
   Future<void> refreshStatus({bool? restoredEnabled}) async {
+    // Called from an unawaited `Future.microtask` in `build()` (via
+    // `_restoreThenRefresh`) and from the app-lifecycle resume listener —
+    // both fire-and-forget call sites that can still be pending after
+    // whoever owns this controller has gone away (see the longer note
+    // further down, at the `healthConnectAvailability()` await). Even the
+    // very first `state` read below throws once that's happened, so this
+    // has to be the first thing checked, not just something to guard after
+    // an `await` inside the method.
+    if (!ref.mounted) return;
     if (state.isBusy) return;
     state = state.copyWith(isBusy: true);
     try {
@@ -145,21 +154,34 @@ class LockScreenController extends _$LockScreenController {
       // Connect isn't installed" from "installed but not granted" — both
       // used to read as a flat `denied`, which sends the user back to a
       // permission screen Health Connect has nowhere to show yet.
-      if (Platform.isAndroid &&
-          await healthAdapter.healthConnectAvailability() ==
-              HealthConnectAvailability.notInstalled) {
-        state = state.copyWith(
-          permissionStatus: LockScreenPermissionStatus.healthConnectMissing,
-        );
-        if (state.enabled) await _revoke();
-        return;
+      if (Platform.isAndroid) {
+        final availability = await healthAdapter.healthConnectAvailability();
+        // `build()` kicks this method off from an unawaited
+        // `Future.microtask` (see `_restoreThenRefresh`), so this call can
+        // still be in flight after whoever owns this controller has gone
+        // away — a torn-down widget tree in the app, or, in a test, a
+        // `ProviderContainer` a `tearDown` already disposed. Riverpod
+        // throws on any further `state` write once that happens
+        // (`Ref.mounted`'s own doc comment recommends exactly this guard
+        // after an `await`), so bail out instead of letting that throw
+        // escape asynchronously into whatever happens to run next.
+        if (!ref.mounted) return;
+        if (availability == HealthConnectAvailability.notInstalled) {
+          state = state.copyWith(
+            permissionStatus: LockScreenPermissionStatus.healthConnectMissing,
+          );
+          if (state.enabled) await _revoke();
+          return;
+        }
       }
 
       final notificationsGranted = await ref
           .read(androidLockScreenChannelProvider)
           .hasNotificationPermission();
+      if (!ref.mounted) return;
       final backgroundHealthGranted = await healthAdapter
           .hasBackgroundHealthPermission();
+      if (!ref.mounted) return;
       final granted = notificationsGranted && backgroundHealthGranted;
 
       state = state.copyWith(
@@ -170,7 +192,7 @@ class LockScreenController extends _$LockScreenController {
 
       if (state.enabled && !granted) await _revoke();
     } finally {
-      state = state.copyWith(isBusy: false);
+      if (ref.mounted) state = state.copyWith(isBusy: false);
     }
   }
 

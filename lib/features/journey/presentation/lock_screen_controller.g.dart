@@ -415,7 +415,7 @@ final class LockScreenControllerProvider
 }
 
 String _$lockScreenControllerHash() =>
-    r'db7c6e3257579ced7ad74b9b545c5c0093adc6ae';
+    r'a56a30142693eaaa8a05ce5b2cef6a17721b7a15';
 
 /// Drives the persistent lock-screen / notification-shade display (§7).
 ///

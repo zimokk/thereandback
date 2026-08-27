@@ -437,7 +437,7 @@ abstract class AppLocalizations {
   /// Shown instead of the denied text when Health Connect itself isn't installed (Android), distinct from a plain permission denial
   ///
   /// In en, this message translates to:
-  /// **'Health Connect isn't installed. Install it to read your steps in the background and show progress on the lock screen.'**
+  /// **'Health Connect isn\'t installed. Install it to read your steps in the background and show progress on the lock screen.'**
   String get lockScreenHealthConnectMissingBody;
 
   /// Android notification channel name for the ongoing lock-screen/shade notification (shown in system notification settings, not in-app)
