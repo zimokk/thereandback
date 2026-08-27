@@ -204,7 +204,7 @@ class _RouteOverlayPainter extends CustomPainter {
     canvas.drawPath(
       _dashed(ahead),
       line
-        ..color = AppColors.gold.withValues(alpha: 0.35)
+        ..color = AppColors.gold.withValues(alpha: 0.5)
         ..strokeWidth = AppStroke.path,
     );
     canvas.drawPath(

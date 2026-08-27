@@ -64,5 +64,8 @@ void main() {
     expect(find.text('Route map'), findsOneWidget);
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('questMapRouteOverlay')), findsOneWidget);
+    // The illustration itself is bundled too, so the overlay renders over
+    // the drawing rather than over the no-art fallback.
+    expect(find.byType(Image), findsOneWidget);
   });
 }

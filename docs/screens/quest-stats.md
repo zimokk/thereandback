@@ -41,12 +41,12 @@ behind you.
 
 ### When the art isn't there
 
-The illustration is not in the repo (see
-`assets/journeys/odyssey-ithaca/README.md`). `loadQuestMap` resolves that
-up front against the asset manifest, so the screen renders the route line
-and the position over a plain background and says so, instead of failing an
-image load mid-build. A quest with no usable `map.json` at all falls back to
-a one-line notice (`questMapLoadFailed`).
+A quest can ship a `map.json` without its illustration. `loadQuestMap`
+resolves that up front against the asset manifest, so the screen renders the
+route line and the position over a plain background and says so, instead of
+failing an image load mid-build. A quest with no usable `map.json` at all
+falls back to a one-line notice (`questMapLoadFailed`). The Odyssey ships
+both (see `assets/journeys/odyssey-ithaca/README.md`).
 
 ## Deliberately not built here
 
