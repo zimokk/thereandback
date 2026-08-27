@@ -44,7 +44,7 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView> {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final selected = ref.watch(selectedJourneyProvider);
     final journey = ref.watch(selectedJourneyDetailsProvider);
     final l10n = AppLocalizations.of(context)!;
