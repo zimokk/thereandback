@@ -5,6 +5,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:thereandback/app/theme.dart';
 import 'package:thereandback/features/journey/data/android_lock_screen_channel.dart';
 import 'package:thereandback/features/journey/presentation/lock_screen_controller.dart';
+import 'package:thereandback/features/journey/presentation/lock_screen_state.dart';
 import 'package:thereandback/features/profile/presentation/locale_provider.dart';
 import 'package:thereandback/features/profile/presentation/settings_tab.dart';
 import 'package:thereandback/features/steps/data/health_adapter.dart';
@@ -14,6 +15,21 @@ import 'package:thereandback/l10n/app_localizations.dart';
 class _MockChannel extends Mock implements AndroidLockScreenChannel {}
 
 class _MockHealthAdapter extends Mock implements HealthAdapter {}
+
+/// A `LockScreenController` with a fixed state — same fake pattern
+/// `permission_gate_test.dart` uses for `StepsSync` — so the
+/// `healthConnectMissing` render below doesn't depend on
+/// `Platform.isAndroid` (which reflects the host actually running the
+/// test, not a simulated target — see `steps_providers_test.dart`'s
+/// equivalent note) ever steering the real controller into that state.
+class _FixedLockScreenController extends LockScreenController {
+  _FixedLockScreenController(this._state);
+
+  final LockScreenState _state;
+
+  @override
+  LockScreenState build() => _state;
+}
 
 /// The lock-screen toggle re-reads both permissions as soon as its
 /// controller is built, so these have to be faked even in tests that only
@@ -162,6 +178,51 @@ void main() {
       );
       expect(
         find.text('Не хватает разрешения на показ уведомлений.'),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets(
+    'Health Connect missing renders an install prompt, not a plain denial '
+    "— the card used to say 'permission not granted' even when Health "
+    "Connect wasn't installed for the permission to be granted on",
+    (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            lockScreenSupportedProvider.overrideWithValue(true),
+            lockScreenControllerProvider.overrideWith(
+              () => _FixedLockScreenController(
+                const LockScreenState(
+                  permissionStatus:
+                      LockScreenPermissionStatus.healthConnectMissing,
+                ),
+              ),
+            ),
+          ],
+          child: MaterialApp(
+            theme: buildAppTheme(),
+            locale: const Locale('ru'),
+            supportedLocales: AppLocalizations.supportedLocales,
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            home: const SettingsTab(),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.text(
+          'Health Connect не установлен. Установите его, чтобы читать шаги '
+          'в фоне и показывать прогресс на экране блокировки.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Установить Health Connect'), findsOneWidget);
+      expect(
+        find.text('Разрешение не получено, отображение на экране блокировки '
+            'выключено. Его можно включить снова в любой момент.'),
         findsNothing,
       );
     },

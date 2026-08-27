@@ -8,6 +8,7 @@ import '../../../app/app_lifecycle.dart';
 import '../../../app/database_provider.dart';
 import '../../../core/local_owner.dart';
 import '../../steps/data/android_background_sync.dart';
+import '../../steps/data/health_adapter.dart' show HealthConnectAvailability;
 import '../../steps/presentation/steps_providers.dart';
 import '../data/android_lock_screen_channel.dart';
 import '../data/lock_screen_channel.dart';
@@ -136,11 +137,28 @@ class LockScreenController extends _$LockScreenController {
         state = state.copyWith(enabled: restoredEnabled);
       }
 
+      final healthAdapter = ref.read(healthAdapterProvider);
+
+      // Checked separately from the permission calls below, and before
+      // them: unlike `hasStepsPermission()`/`requestStepsPermission()`,
+      // `hasBackgroundHealthPermission()` doesn't itself distinguish "Health
+      // Connect isn't installed" from "installed but not granted" — both
+      // used to read as a flat `denied`, which sends the user back to a
+      // permission screen Health Connect has nowhere to show yet.
+      if (Platform.isAndroid &&
+          await healthAdapter.healthConnectAvailability() ==
+              HealthConnectAvailability.notInstalled) {
+        state = state.copyWith(
+          permissionStatus: LockScreenPermissionStatus.healthConnectMissing,
+        );
+        if (state.enabled) await _revoke();
+        return;
+      }
+
       final notificationsGranted = await ref
           .read(androidLockScreenChannelProvider)
           .hasNotificationPermission();
-      final backgroundHealthGranted = await ref
-          .read(healthAdapterProvider)
+      final backgroundHealthGranted = await healthAdapter
           .hasBackgroundHealthPermission();
       final granted = notificationsGranted && backgroundHealthGranted;
 
@@ -163,7 +181,11 @@ class LockScreenController extends _$LockScreenController {
     if (granted) return LockScreenPermissionStatus.granted;
     return switch (state.permissionStatus) {
       LockScreenPermissionStatus.unknown ||
-      LockScreenPermissionStatus.notRequested =>
+      LockScreenPermissionStatus.notRequested ||
+      // Health Connect just became available again (e.g. the user installed
+      // it) — the user hasn't been asked for anything yet on this round, so
+      // this isn't a fresh refusal either.
+      LockScreenPermissionStatus.healthConnectMissing =>
         LockScreenPermissionStatus.notRequested,
       LockScreenPermissionStatus.granted ||
       LockScreenPermissionStatus.denied => LockScreenPermissionStatus.denied,
@@ -191,6 +213,20 @@ class LockScreenController extends _$LockScreenController {
     try {
       final channel = ref.read(androidLockScreenChannelProvider);
       final healthAdapter = ref.read(healthAdapterProvider);
+
+      // Same check as `refreshStatus()` — bail out before asking for
+      // anything (including the notification prompt) rather than let the
+      // user grant notifications only to land on a background-health
+      // denial that Health Connect, not being installed, could never have
+      // granted in the first place.
+      if (Platform.isAndroid &&
+          await healthAdapter.healthConnectAvailability() ==
+              HealthConnectAvailability.notInstalled) {
+        state = state.copyWith(
+          permissionStatus: LockScreenPermissionStatus.healthConnectMissing,
+        );
+        return;
+      }
 
       final notificationsGranted = await channel
           .requestNotificationPermission();
@@ -232,6 +268,12 @@ class LockScreenController extends _$LockScreenController {
       state = state.copyWith(isBusy: false);
     }
   }
+
+  /// Deep-links to the Play Store listing for Health Connect — the action
+  /// behind [LockScreenPermissionStatus.healthConnectMissing]'s card.
+  /// Mirrors `StepsSync.openHealthConnectInstall()`.
+  Future<void> openHealthConnectInstall() =>
+      ref.read(healthAdapterProvider).openHealthConnectInstall();
 
   /// Turns the feature off: stops the background task and clears the
   /// display. Does not revoke the OS permissions themselves — same as every

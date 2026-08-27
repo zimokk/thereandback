@@ -14,6 +14,14 @@ import 'package:thereandback/features/steps/data/android_background_sync.dart';
 import 'package:thereandback/features/steps/data/health_adapter.dart';
 import 'package:thereandback/features/steps/presentation/steps_providers.dart';
 
+/// `enable()`/`refreshStatus()`'s `Platform.isAndroid` guard around
+/// [LockScreenPermissionStatus.healthConnectMissing] is not exercised in
+/// this file: `Platform.isAndroid` reflects the host actually running the
+/// test (Linux, here), not a simulated target, so that branch can't be
+/// reached without refactoring the notifier to take an injectable platform
+/// check — same limitation `steps_providers_test.dart` documents for
+/// `StepsSync`. `settings_tab_test.dart` covers that state's *rendering*
+/// directly via a fixed-state fake instead.
 class _MockChannel extends Mock implements AndroidLockScreenChannel {}
 
 class _MockBackgroundSync extends Mock implements AndroidBackgroundSync {}
@@ -50,6 +58,9 @@ void main() {
         .thenAnswer((_) async => true);
     when(() => healthAdapter.requestBackgroundHealthPermission())
         .thenAnswer((_) async => true);
+    when(() => healthAdapter.healthConnectAvailability()).thenAnswer(
+      (_) async => HealthConnectAvailability.available,
+    );
     // `build()` kicks off a status read immediately, so these are reached by
     // every test here, not only the ones that assert on them.
     when(() => channel.hasNotificationPermission())
@@ -193,6 +204,17 @@ void main() {
     expect(container.read(lockScreenControllerProvider).enabled, isFalse);
     verify(() => backgroundSync.cancel()).called(1);
     verify(() => channel.end()).called(1);
+  });
+
+  test('openHealthConnectInstall() delegates to the adapter', () async {
+    when(() => healthAdapter.openHealthConnectInstall())
+        .thenAnswer((_) async {});
+
+    await container
+        .read(lockScreenControllerProvider.notifier)
+        .openHealthConnectInstall();
+
+    verify(() => healthAdapter.openHealthConnectInstall()).called(1);
   });
 
   test('refreshStatus() reads both permissions back from the platform instead '

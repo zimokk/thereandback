@@ -64,6 +64,7 @@
   "lockScreenPermissionDeniedBody": "Разрешение не получено, отображение на экране блокировки выключено. Его можно включить снова в любой момент.",
   "lockScreenPermissionMissingNotifications": "Не хватает разрешения на показ уведомлений.",
   "lockScreenPermissionMissingBackgroundHealth": "Не хватает разрешения читать шаги в фоне. Оно выдаётся на экране разрешений Health Connect.",
+  "lockScreenHealthConnectMissingBody": "Health Connect не установлен. Установите его, чтобы читать шаги в фоне и показывать прогресс на экране блокировки.",
 
   "lockScreenChannelName": "Прогресс похода",
   "lockScreenChannelDescription": "Показывает текущий прогресс похода в шторке уведомлений и на экране блокировки.",
