@@ -19,6 +19,14 @@ enum LockScreenPermissionStatus {
   /// [denied] so the card can offer "install Health Connect" instead of
   /// re-requesting a permission Health Connect has nowhere to grant yet.
   healthConnectMissing,
+
+  /// Android only: `ACTIVITY_RECOGNITION` ("Physical activity") — a
+  /// prerequisite for Health Connect's own Steps/Distance consent screen,
+  /// see `HealthAdapter.hasActivityRecognitionPermission` — hit Android's
+  /// two-denials-means-"don't ask again" rule (`USER_FIXED`). Requesting it
+  /// again shows no dialog at all, so the toggle must offer the OS settings
+  /// page instead of another "try again" (§7).
+  permanentlyDenied,
 }
 
 @freezed

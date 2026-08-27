@@ -8,7 +8,8 @@ import 'package:thereandback/features/journey/presentation/lock_screen_controlle
 import 'package:thereandback/features/journey/presentation/lock_screen_state.dart';
 import 'package:thereandback/features/profile/presentation/locale_provider.dart';
 import 'package:thereandback/features/profile/presentation/settings_tab.dart';
-import 'package:thereandback/features/steps/data/health_adapter.dart';
+import 'package:thereandback/features/steps/data/health_adapter.dart'
+    show HealthAdapter, RuntimePermissionResult;
 import 'package:thereandback/features/steps/presentation/steps_providers.dart';
 import 'package:thereandback/l10n/app_localizations.dart';
 
@@ -41,6 +42,8 @@ Widget _wrap(
   bool lockScreenSupported = false,
   bool notificationsGranted = false,
   bool backgroundHealthGranted = false,
+  RuntimePermissionResult activityRecognitionResult =
+      RuntimePermissionResult.granted,
 }) {
   final channel = _MockChannel();
   final healthAdapter = _MockHealthAdapter();
@@ -52,6 +55,9 @@ Widget _wrap(
   // permission picture the test asked for.
   when(() => channel.requestNotificationPermission())
       .thenAnswer((_) async => notificationsGranted);
+  when(() => healthAdapter.requestActivityRecognitionPermission())
+      .thenAnswer((_) async => activityRecognitionResult);
+  when(() => healthAdapter.openAppSettings()).thenAnswer((_) async {});
   when(() => healthAdapter.hasStepsPermission()).thenAnswer((_) async => true);
   when(() => healthAdapter.requestStepsPermission())
       .thenAnswer((_) async => true);
@@ -227,6 +233,83 @@ void main() {
         ),
         findsNothing,
       );
+    },
+  );
+
+  testWidgets(
+    'permanentlyDenied ACTIVITY_RECOGNITION offers an "open settings" '
+    'button instead of the ordinary denial copy — the toggle can no longer '
+    'trigger a dialog, so retrying it would be a dead end (§7)',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const SettingsTab(),
+          lockScreenSupported: true,
+          notificationsGranted: true,
+          activityRecognitionResult: RuntimePermissionResult.permanentlyDenied,
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.byType(SwitchListTile));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'После пары отказов Android больше не показывает запрос сам — '
+          'откройте настройки приложения, разрешите «Физическая '
+          'активность» и включите тумблер снова.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Открыть настройки'), findsOneWidget);
+      expect(
+        find.text(
+          'Не хватает разрешения читать шаги в фоне. '
+          'Оно выдаётся на экране разрешений Health Connect.',
+        ),
+        findsNothing,
+      );
+
+      // Tapping it must not throw — openAppSettings() is stubbed by _wrap,
+      // so reaching it without a MissingStubError is what proves the button
+      // is wired to the controller's openAppSettings(), not just painted.
+      await tester.tap(find.text('Открыть настройки'));
+      await tester.pumpAndSettle();
+    },
+  );
+
+  testWidgets(
+    'once the toggle is on, a link opens the lock-screen troubleshooting '
+    'sheet — every permission this app can request/check is granted at '
+    'that point, so a manufacturer-specific display block (mainly MIUI) is '
+    'the only thing left this app has no API to detect or fix (§7: never a '
+    'dead end)',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const SettingsTab(),
+          lockScreenSupported: true,
+          notificationsGranted: true,
+          backgroundHealthGranted: true,
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Не видно на экране блокировки?'), findsNothing);
+
+      await tester.tap(find.byType(SwitchListTile));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Не видно на экране блокировки?'), findsOneWidget);
+
+      await tester.tap(find.text('Не видно на экране блокировки?'));
+      await tester.pumpAndSettle();
+
+      // The link (still in the tree, under the sheet) and the sheet's own
+      // title use the same copy by design — both match now.
+      expect(find.text('Не видно на экране блокировки?'), findsNWidgets(2));
+      expect(find.text('Закрыть'), findsOneWidget);
     },
   );
 }

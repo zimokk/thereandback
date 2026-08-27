@@ -221,6 +221,26 @@ class AppLocalizationsEn extends AppLocalizations {
       'Health Connect isn\'t installed. Install it to read your steps in the background and show progress on the lock screen.';
 
   @override
+  String get lockScreenPermissionPermanentlyDeniedBody =>
+      'Android won\'t ask again after a couple of tries — open this app\'s settings and allow Physical activity, then turn this back on.';
+
+  @override
+  String get lockScreenPermissionOpenSettings => 'Open settings';
+
+  @override
+  String get lockScreenTroubleshootLink => 'Not showing on the lock screen?';
+
+  @override
+  String get lockScreenTroubleshootTitle => 'Not showing on the lock screen?';
+
+  @override
+  String get lockScreenTroubleshootBody =>
+      'This app already asks Android to show it on the lock screen — some phone makers (Xiaomi/MIUI and others) add their own separate setting on top that can still block it, with no way for an app to check or request it directly. If it shows in the notification shade but not on the lock screen, check on your phone:\n\n1. A phone-wide \"Notifications on lock screen\" setting — usually under Settings → Lock screen or Settings → Notifications — set to show content, not hidden.\n2. This app\'s own lock-screen permission — under Settings → Apps → There and Back → Permissions.\n3. Autostart and battery saver for this app — set to unrestricted.\n4. After changing any of these, turn the toggle above off and back on, then restart the phone.\n5. Make sure Do Not Disturb is off.';
+
+  @override
+  String get lockScreenTroubleshootClose => 'Close';
+
+  @override
   String get lockScreenChannelName => 'Quest progress';
 
   @override
