@@ -174,7 +174,7 @@ final class SelectedJourneyProvider
   }
 }
 
-String _$selectedJourneyHash() => r'869d6bc69d6bc3f8f99ae616d7b86712dcac9309';
+String _$selectedJourneyHash() => r'5cbab43040352c1da67eb219af473df604ed10a8';
 
 /// The currently selected/started quest, or `null` before the user picks
 /// one, or before the persisted quest (if any) has finished loading.

@@ -85,3 +85,97 @@ MapPoint metersToPoint(RoutePolyline polyline, int meters) {
   final last = vertices.last;
   return MapPoint(x: last.x, y: last.y);
 }
+
+/// A drawn landmark's hotspot on the map (§6.2): where its illustration
+/// sits on `map.webp`, in the same normalized `(0..1, 0..1)` space as
+/// [RouteVertex], and how far along the route the traveler has to walk to
+/// reach it.
+///
+/// [name] is quest data, not UI copy — it comes from `map.json` alongside
+/// the coordinates, the same way `Journey.pointA`/`pointB` do, so it is
+/// not an l10n key (§11).
+@freezed
+abstract class MapLandmark with _$MapLandmark {
+  const factory MapLandmark({
+    required String id,
+    required String name,
+    required double x,
+    required double y,
+    required int meters,
+  }) = _MapLandmark;
+}
+
+/// One quest's drawn map (§6.2): the illustration to show, the route
+/// polyline traced over it, and the landmark hotspots along that route.
+///
+/// This is the parsed form of `assets/journeys/{journeyId}/map.json`.
+/// [imageWidth] / [imageHeight] are the source illustration's pixel size —
+/// only their ratio matters, since every coordinate here is normalized, but
+/// keeping the numbers makes it obvious which art the trace was made
+/// against.
+@freezed
+abstract class QuestMap with _$QuestMap {
+  const factory QuestMap({
+    required String journeyId,
+    required String imageAsset,
+    required int imageWidth,
+    required int imageHeight,
+    required int totalMeters,
+    required RoutePolyline polyline,
+    required List<MapLandmark> landmarks,
+  }) = _QuestMap;
+}
+
+/// The route split at [meters] into the stretch already walked and the
+/// stretch still ahead — what the map overlay strokes solid and dashed
+/// (§6.2).
+///
+/// Both lists share the point at [meters] (the last walked point is the
+/// first remaining point), so the two strokes meet with no visible gap.
+/// [meters] is clamped exactly as [metersToPoint] clamps it.
+typedef SplitRoute = ({List<MapPoint> walked, List<MapPoint> remaining});
+
+/// Splits [polyline] at [meters] — see [SplitRoute].
+SplitRoute splitRouteAt(RoutePolyline polyline, int meters) {
+  final vertices = polyline.vertices;
+  assert(
+    vertices.isNotEmpty,
+    'a route polyline always has at least one vertex',
+  );
+
+  final maxMeters = vertices.last.cumulativeMeters;
+  final target = meters < 0 ? 0 : (meters > maxMeters ? maxMeters : meters);
+  final here = metersToPoint(polyline, target);
+
+  final walked = <MapPoint>[];
+  final remaining = <MapPoint>[];
+  for (final vertex in vertices) {
+    final point = MapPoint(x: vertex.x, y: vertex.y);
+    if (vertex.cumulativeMeters < target) {
+      walked.add(point);
+    } else if (vertex.cumulativeMeters > target) {
+      remaining.add(point);
+    } else {
+      // A vertex exactly at the split is the shared point, added below —
+      // never twice.
+      continue;
+    }
+  }
+
+  walked.add(here);
+  remaining.insert(0, here);
+  return (walked: walked, remaining: remaining);
+}
+
+/// The first landmark the traveler has not reached yet, or `null` once
+/// every landmark is behind them (the quest's end included).
+///
+/// Landmarks are compared by their own [MapLandmark.meters]; the list is
+/// scanned in `map.json` order, which is sorted by distance along the
+/// route.
+MapLandmark? nextLandmark(QuestMap map, int meters) {
+  for (final landmark in map.landmarks) {
+    if (landmark.meters > meters) return landmark;
+  }
+  return null;
+}

@@ -43,3 +43,10 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   generate: true
+
+  # Quest content (§4). Listed as a directory, not file by file, so dropping
+  # a journey's drawn map (map.webp) into it is enough to bundle it — a
+  # missing file inside a listed directory is not a build error, a missing
+  # file listed by name is.
+  assets:
+    - assets/journeys/odyssey-ithaca/

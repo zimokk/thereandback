@@ -254,17 +254,41 @@ abstract class AppLocalizations {
   /// **'Estimated Arrival'**
   String get questStatsEtaLabel;
 
-  /// Title of the placeholder panel where the drawn map lands (Phase 11)
+  /// Heading over the drawn quest map on the stats tab (§6.2)
   ///
   /// In en, this message translates to:
   /// **'Route map'**
-  String get questStatsMapComingSoonTitle;
+  String get questMapSectionTitle;
 
-  /// Body of the placeholder map panel
+  /// Accessibility label of the route overlay drawn over the map — the marker itself is painted, not a widget with text
   ///
   /// In en, this message translates to:
-  /// **'The illustrated map for this quest is on its way — check back in a future update.'**
-  String get questStatsMapComingSoonBody;
+  /// **'Your position on the route'**
+  String get questMapYouAreHere;
+
+  /// Shown under the map when map.json is bundled but its illustration (map.webp) isn't, so only the route line renders
+  ///
+  /// In en, this message translates to:
+  /// **'The drawn map isn\'t in this build yet — below is the route itself, with your position on it.'**
+  String get questMapIllustrationMissing;
+
+  /// Caption under the map naming the next landmark on the route and how far it still is; the landmark name is quest data, not translated copy (§11)
+  ///
+  /// In en, this message translates to:
+  /// **'Ahead: {name} — {distance} to go'**
+  String questMapNextLandmark(String name, String distance);
+
+  /// Caption under the map once the traveler has passed the last landmark
+  ///
+  /// In en, this message translates to:
+  /// **'Every landmark on this route is behind you.'**
+  String get questMapAllLandmarksReached;
+
+  /// Shown in place of the map when the quest's map.json is missing or unusable
+  ///
+  /// In en, this message translates to:
+  /// **'This quest\'s map couldn\'t be loaded.'**
+  String get questMapLoadFailed;
 
   /// Title shown on the stats tab before any quest is selected
   ///

@@ -56,5 +56,13 @@ void main() {
     // Zero progress means zero pace, which renders a dash, never a date
     // (§5.3).
     expect(find.text('—'), findsOneWidget);
+
+    // The drawn map section follows the stats. This one reads the real
+    // bundled `assets/journeys/odyssey-ithaca/map.json` (no bundle override
+    // here on purpose), so it also proves the asset is wired into
+    // pubspec.yaml — QuestMapView's own test covers the rendering states.
+    expect(find.text('Route map'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('questMapRouteOverlay')), findsOneWidget);
   });
 }
