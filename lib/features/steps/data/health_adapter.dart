@@ -107,9 +107,23 @@ class HealthPackageAdapter implements HealthAdapter {
 
   final Health _health;
 
-  static const _types = [
+  /// `DISTANCE_WALKING_RUNNING` is a HealthKit (iOS) identifier — the
+  /// `health` package's own `dataTypeKeysAndroid` list doesn't include it at
+  /// all; Android's equivalent is `DISTANCE_DELTA`, which its Kotlin side
+  /// maps to Health Connect's `DistanceRecord` (both report meters, no unit
+  /// conversion needed either way — see `dataTypeToUnit` in the package).
+  /// Requesting the iOS-only type on Android used to make every
+  /// `hasPermissions`/`requestAuthorization` call warn
+  /// ("Datatype DISTANCE_WALKING_RUNNING not found in HC") and come back
+  /// incomplete — the STEPS half of the same batch request was affected too,
+  /// not just the distance half.
+  static HealthDataType get _walkingDistanceType => Platform.isAndroid
+      ? HealthDataType.DISTANCE_DELTA
+      : HealthDataType.DISTANCE_WALKING_RUNNING;
+
+  static List<HealthDataType> get _types => [
     HealthDataType.STEPS,
-    HealthDataType.DISTANCE_WALKING_RUNNING,
+    _walkingDistanceType,
   ];
   static const _readPermissions = [
     HealthDataAccess.READ,
@@ -163,7 +177,7 @@ class HealthPackageAdapter implements HealthAdapter {
     final steps = await _health.getTotalStepsInInterval(from, to) ?? 0;
 
     final distancePoints = await _health.getHealthDataFromTypes(
-      types: const [HealthDataType.DISTANCE_WALKING_RUNNING],
+      types: [_walkingDistanceType],
       startTime: from,
       endTime: to,
     );
@@ -177,8 +191,9 @@ class HealthPackageAdapter implements HealthAdapter {
           total += value.numericValue.toDouble();
         }
       }
-      // HealthDataType.DISTANCE_WALKING_RUNNING is reported in meters
-      // (health package's own unit mapping) — no conversion needed.
+      // Both DISTANCE_WALKING_RUNNING (iOS) and DISTANCE_DELTA (Android) are
+      // reported in meters (health package's own unit mapping) — no
+      // conversion needed either way.
       walkingDistanceMeters = total.round();
     }
 
