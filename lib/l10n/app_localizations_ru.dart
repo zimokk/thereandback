@@ -221,6 +221,10 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не хватает разрешения читать шаги в фоне. Оно выдаётся на экране разрешений Health Connect.';
 
   @override
+  String get lockScreenHealthConnectMissingBody =>
+      'Health Connect не установлен. Установите его, чтобы читать шаги в фоне и показывать прогресс на экране блокировки.';
+
+  @override
   String get lockScreenChannelName => 'Прогресс похода';
 
   @override

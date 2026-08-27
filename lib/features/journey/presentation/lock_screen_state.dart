@@ -13,6 +13,12 @@ enum LockScreenPermissionStatus {
   notRequested,
   granted,
   denied,
+
+  /// Android only: Health Connect itself isn't installed on the device —
+  /// mirrors `StepsPermissionStatus.healthConnectMissing`. Distinct from
+  /// [denied] so the card can offer "install Health Connect" instead of
+  /// re-requesting a permission Health Connect has nowhere to grant yet.
+  healthConnectMissing,
 }
 
 @freezed

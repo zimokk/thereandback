@@ -189,10 +189,36 @@ class HealthPackageAdapter implements HealthAdapter {
   }
 
   @override
-  Future<bool> hasBackgroundHealthPermission() =>
-      _health.isHealthDataInBackgroundAuthorized();
+  Future<bool> hasBackgroundHealthPermission() async {
+    await _ensureHealthConnectReady();
+    return _health.isHealthDataInBackgroundAuthorized();
+  }
 
   @override
-  Future<bool> requestBackgroundHealthPermission() =>
-      _health.requestHealthDataInBackgroundAuthorization();
+  Future<bool> requestBackgroundHealthPermission() async {
+    await _ensureHealthConnectReady();
+    return _health.requestHealthDataInBackgroundAuthorization();
+  }
+
+  /// Forces the `health` plugin's native side to (re-)check Health Connect
+  /// availability before a background-permission call.
+  ///
+  /// The plugin only (re-)creates its Health-Connect-backed native helpers
+  /// inside the handler for `getHealthConnectSdkStatus` — which
+  /// `_health.isHealthConnectAvailable()` calls. [hasStepsPermission] and
+  /// [requestStepsPermission] go through `_health.hasPermissions()` /
+  /// `requestAuthorization()`, which both call that same check as their own
+  /// first step, so they self-heal. `isHealthDataInBackgroundAuthorized()` /
+  /// `requestHealthDataInBackgroundAuthorization()` do not — they call
+  /// straight into the native background-permission methods. If Health
+  /// Connect wasn't installed yet when this app's process started, those
+  /// native helpers stay uninitialized for the rest of that process's
+  /// lifetime unless something else happens to trigger the check first —
+  /// so even after the user installs Health Connect and grants the
+  /// permission, this adapter kept reporting `false` until the app was
+  /// killed and restarted. Calling this first closes that gap.
+  Future<void> _ensureHealthConnectReady() async {
+    if (!Platform.isAndroid) return;
+    await _health.isHealthConnectAvailable();
+  }
 }

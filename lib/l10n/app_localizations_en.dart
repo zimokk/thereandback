@@ -217,6 +217,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Still missing: permission to read your steps in the background. Health Connect grants it on its own permission screen.';
 
   @override
+  String get lockScreenHealthConnectMissingBody =>
+      'Health Connect isn\'t installed. Install it to read your steps in the background and show progress on the lock screen.';
+
+  @override
   String get lockScreenChannelName => 'Quest progress';
 
   @override

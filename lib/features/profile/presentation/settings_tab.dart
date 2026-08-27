@@ -168,6 +168,34 @@ class _LockScreenSection extends ConsumerWidget {
                             .read(lockScreenControllerProvider.notifier)
                             .disable(),
           ),
+          if (state.permissionStatus ==
+              LockScreenPermissionStatus.healthConnectMissing)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.sm),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.lockScreenHealthConnectMissingBody,
+                    style: AppTypography.bodySecondary,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: FilledButton(
+                      onPressed: () => ref
+                          .read(lockScreenControllerProvider.notifier)
+                          .openHealthConnectInstall(),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.gold,
+                        foregroundColor: AppColors.background,
+                      ),
+                      child: Text(l10n.stepsHealthConnectInstall),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           if (state.permissionStatus == LockScreenPermissionStatus.denied) ...[
             Padding(
               padding: const EdgeInsets.only(top: AppSpacing.sm),

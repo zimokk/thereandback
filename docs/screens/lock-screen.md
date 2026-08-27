@@ -153,6 +153,45 @@ battery managers can still kill the task early — both are inherent to
   what's already shown in-app (day, distance, a coarse position label),
   consistent with §7's privacy rule.
 
+## Health Connect missing/just-installed — the card used to lie
+
+Two related gaps, both traced from a real device report where the card kept
+saying "permission not granted" no matter what was actually granted:
+
+- **Health Connect not installed at all.** Unlike the Путь tab's
+  `StepsPermissionGate` (`steps_sync_state.dart`'s
+  `StepsPermissionStatus.healthConnectMissing`), `LockScreenController`
+  never checked `HealthAdapter.healthConnectAvailability()` before
+  `enable()`/`refreshStatus()` went straight to requesting/checking
+  permissions Health Connect had nowhere to grant. The result collapsed
+  into a plain `denied`, sending the user back to a permission screen that
+  didn't exist yet instead of telling them to install Health Connect.
+  `LockScreenPermissionStatus` gained `healthConnectMissing` (mirroring the
+  Путь tab's enum) — checked first in both `enable()` and `refreshStatus()`
+  — and the Настройки card renders it as an install prompt
+  (`lockScreenHealthConnectMissingBody` + a button calling the controller's
+  new `openHealthConnectInstall()`, which just forwards to
+  `HealthAdapter.openHealthConnectInstall()`, same as `StepsSync`'s).
+- **Health Connect installed *after* this app's process already started.**
+  The `health` plugin's native side only (re-)creates its Health-Connect-
+  backed helper objects inside the handler for `getHealthConnectSdkStatus`
+  — which `hasStepsPermission()`/`requestStepsPermission()` trigger as
+  their own first step (via `_checkIfHealthConnectAvailableOnAndroid()`
+  inside the `health` package), so they self-heal once Health Connect
+  becomes available. `hasBackgroundHealthPermission()`/
+  `requestBackgroundHealthPermission()` did not — they called straight into
+  the native background-permission methods, which stayed silently
+  uninitialized (swallowed to `false`, not thrown) for the rest of that
+  process's lifetime if Health Connect wasn't installed yet when the app
+  first launched. A user who installed Health Connect afterward, granted
+  every permission it offered, and even fully restarted the app while it
+  was still in that state would keep seeing "no access" — because the
+  restart that would have fixed it needs to happen *after* Health Connect
+  is installed, and nothing in the UI said so. `HealthPackageAdapter` now
+  calls `_health.isHealthConnectAvailable()` (which triggers that native
+  re-init) before both background-permission calls, closing the gap
+  without requiring a special restart sequence to work around it.
+
 ## `enabled` is now durable — a cold restart used to forget it was ever on
 
 `LockScreenState.enabled` is in-memory Riverpod state; the real notification
@@ -223,7 +262,9 @@ the real platform channel — by the same `testing`-skill policy that keeps
 `settingsLockScreenSectionTitle`, `settingsLockScreenToggleTitle`,
 `settingsLockScreenToggleSubtitle`, `lockScreenPermissionExplainTitle`,
 `lockScreenPermissionExplainBody`, `lockScreenPermissionAllow`,
-`lockScreenPermissionDeniedBody`, `lockScreenChannelName`,
+`lockScreenPermissionDeniedBody`, `lockScreenPermissionMissingNotifications`,
+`lockScreenPermissionMissingBackgroundHealth`,
+`lockScreenHealthConnectMissingBody`, `lockScreenChannelName`,
 `lockScreenChannelDescription`, `lockScreenBody`.
 
 ## Tests
@@ -277,7 +318,15 @@ the real platform channel — by the same `testing`-skill policy that keeps
 - `test/features/profile/presentation/settings_tab_test.dart` — extended:
   the toggle is hidden where `lockScreenSupportedProvider` is `false`
   (this suite's own host, Linux, by default) and renders off by default
-  where it's overridden to `true`.
+  where it's overridden to `true`; and (for the Health-Connect-missing fix
+  above) `healthConnectMissing` renders the install prompt instead of the
+  plain-denial text, via a fixed-state `LockScreenController` fake —
+  `enable()`/`refreshStatus()`'s own `Platform.isAndroid` guard around that
+  branch can't be reached from this host, same limitation `steps-sync.md`
+  documents for `StepsSync`'s equivalent check.
+- `test/features/journey/presentation/lock_screen_controller_test.dart` —
+  also extended: `openHealthConnectInstall()` delegates to the adapter
+  (mirroring `StepsSync`'s own test for the same method).
 - `test/features/steps/data/steps_sync_engine_test.dart` (see
   `steps-sync.md`) — the algorithm this feature's background task actually
   runs.
