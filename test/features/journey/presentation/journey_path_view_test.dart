@@ -105,43 +105,38 @@ void main() {
   );
 
   group('achievement markers (§6.1 — start/end line, markers ahead)', () {
-    testWidgets(
-      'markers sit in one flat row pinned to the top of the scene, '
-      'regardless of how far along the route they are',
-      (tester) async {
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
-            ],
-            child: _app(const JourneyPathView()),
-          ),
-        );
+    testWidgets('markers sit in one flat row pinned to the top of the scene, '
+        'regardless of how far along the route they are', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+          ],
+          child: _app(const JourneyPathView()),
+        ),
+      );
 
-        final container = ProviderScope.containerOf(
-          tester.element(find.byType(JourneyPathView)),
-        );
-        container
-            .read(selectedJourneyProvider.notifier)
-            .start('odyssey-ithaca', now: DateTime.now());
-        await tester.pump();
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(JourneyPathView)),
+      );
+      container
+          .read(selectedJourneyProvider.notifier)
+          .start('odyssey-ithaca', now: DateTime.now());
+      await tester.pump();
 
-        // 'first-steps' (1000 m) and 'journeys-end' (2 850 000 m — the
-        // quest's full length) sit at very different points along the
-        // route, so if their marker's top ever depended on the wavy
-        // placeholder line's height at that x, these two would differ.
-        final firstStepsTop = tester
-            .getTopLeft(find.byKey(const Key('achievementMarker-first-steps')))
-            .dy;
-        final journeysEndTop = tester
-            .getTopLeft(
-              find.byKey(const Key('achievementMarker-journeys-end')),
-            )
-            .dy;
+      // 'first-steps' (1000 m) and 'journeys-end' (2 850 000 m — the
+      // quest's full length) sit at very different points along the
+      // route, so if their marker's top ever depended on the wavy
+      // placeholder line's height at that x, these two would differ.
+      final firstStepsTop = tester
+          .getTopLeft(find.byKey(const Key('achievementMarker-first-steps')))
+          .dy;
+      final journeysEndTop = tester
+          .getTopLeft(find.byKey(const Key('achievementMarker-journeys-end')))
+          .dy;
 
-        expect(journeysEndTop, moreOrLessEquals(firstStepsTop, epsilon: 0.5));
-      },
-    );
+      expect(journeysEndTop, moreOrLessEquals(firstStepsTop, epsilon: 0.5));
+    });
 
     testWidgets(
       'a marker ahead of progress renders muted, then gold once progress '
@@ -264,10 +259,7 @@ void main() {
             .getCenter(find.byIcon(Icons.directions_walk))
             .dy;
 
-        expect(
-          afterSecondDrag,
-          moreOrLessEquals(afterFirstDrag, epsilon: 0.5),
-        );
+        expect(afterSecondDrag, moreOrLessEquals(afterFirstDrag, epsilon: 0.5));
       },
     );
 
