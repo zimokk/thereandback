@@ -134,6 +134,11 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String questMapLandmarkBehindCaption(String name, String distance) {
+    return 'Позади: $name — $distance назад';
+  }
+
+  @override
   String get questMapAllLandmarksReached =>
       'Все ориентиры этого маршрута уже позади.';
 
@@ -154,10 +159,38 @@ class AppLocalizationsRu extends AppLocalizations {
   String get achievementFirstStepsTitle => 'Первые шаги';
 
   @override
+  String get achievementFirstLeagueTitle => 'Первая лига';
+
+  @override
   String get achievementHalfDayMarchTitle => 'Полдня в пути';
 
   @override
+  String get achievementCenturyMarkTitle => 'Сто километров';
+
+  @override
   String get achievementSeasonedWandererTitle => 'Бывалый путник';
+
+  @override
+  String get achievementReachedCirceTitle => 'Добрался до Цирцеи';
+
+  @override
+  String get achievementReachedLotusEatersTitle => 'Побывал у лотофагов';
+
+  @override
+  String get achievementHalfwayThereTitle => 'Половина пути';
+
+  @override
+  String get achievementReachedCalypsoTitle => 'Добрался до Калипсо';
+
+  @override
+  String get achievementLongHaulerTitle => 'Долгий путь';
+
+  @override
+  String get achievementPassedScyllaCharybdisTitle =>
+      'Миновал Сциллу и Харибду';
+
+  @override
+  String get achievementPassedSirensTitle => 'Миновал сирен';
 
   @override
   String get achievementJourneysEndTitle => 'Конец пути';

@@ -76,12 +76,34 @@ Future<void> _startQuest(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
+/// The screen point for a normalized `(nx, ny)` map coordinate, computed
+/// from the route overlay's actual laid-out size rather than a hardcoded
+/// pixel guess — the same mapping [QuestMapView] itself uses.
+Offset _pointOn(WidgetTester tester, double nx, double ny) {
+  final rect = tester.getRect(find.byKey(const Key('questMapRouteOverlay')));
+  return rect.topLeft + Offset(rect.width * nx, rect.height * ny);
+}
+
+/// Grows the test surface enough that the whole map (taller than it is
+/// wide — the illustration's own 2:3 ratio) lays out without the `ListView`
+/// scrolling any of it off-screen. `tester.tapAt` dispatches at a raw
+/// screen coordinate — a point past the default 800×600 surface's edge
+/// silently hits nothing, which only the tap-driven tests below need to
+/// worry about (`find.text` walks the element tree regardless of what's
+/// actually painted, so every other test here is unaffected either way).
+void _growViewportForTapping(WidgetTester tester) {
+  tester.view.physicalSize = const Size(1100, 1900);
+  tester.view.devicePixelRatio = 2.0;
+  addTearDown(tester.view.reset);
+}
+
 void main() {
-  testWidgets('draws the route overlay over the quest map', (tester) async {
+  testWidgets('renders the overlay and illustration, with no route line '
+      'drawn — the traveler moves along it invisibly', (tester) async {
     final semantics = tester.ensureSemantics();
     await tester.pumpWidget(
       _wrap(
-        const QuestMapView(progressMeters: 0),
+        QuestMapView(progressMeters: 0, startedAt: DateTime.now()),
         bundle: _FakeBundle({
           'assets/journeys/odyssey-ithaca/map.json': _mapJson,
         }),
@@ -103,7 +125,7 @@ void main() {
     await tester.pumpWidget(
       _wrap(
         // A quarter of the way to Calypso, the first landmark ahead.
-        const QuestMapView(progressMeters: 425000),
+        QuestMapView(progressMeters: 425000, startedAt: DateTime.now()),
         bundle: _FakeBundle({
           'assets/journeys/odyssey-ithaca/map.json': _mapJson,
         }),
@@ -119,7 +141,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       _wrap(
-        const QuestMapView(progressMeters: 2850000),
+        QuestMapView(progressMeters: 2850000, startedAt: DateTime.now()),
         bundle: _FakeBundle({
           'assets/journeys/odyssey-ithaca/map.json': _mapJson,
         }),
@@ -133,12 +155,12 @@ void main() {
     );
   });
 
-  testWidgets('still draws the route when the illustration is not bundled', (
+  testWidgets('still draws the overlay when the illustration is not bundled', (
     tester,
   ) async {
     await tester.pumpWidget(
       _wrap(
-        const QuestMapView(progressMeters: 100000),
+        QuestMapView(progressMeters: 100000, startedAt: DateTime.now()),
         bundle: _FakeBundle({
           'assets/journeys/odyssey-ithaca/map.json': _mapJson,
         }),
@@ -158,7 +180,10 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      _wrap(const QuestMapView(progressMeters: 0), bundle: _FakeBundle({})),
+      _wrap(
+        QuestMapView(progressMeters: 0, startedAt: DateTime.now()),
+        bundle: _FakeBundle({}),
+      ),
     );
     await _startQuest(tester);
 
@@ -169,7 +194,7 @@ void main() {
   testWidgets('renders nothing before a quest is selected', (tester) async {
     await tester.pumpWidget(
       _wrap(
-        const QuestMapView(progressMeters: 0),
+        QuestMapView(progressMeters: 0, startedAt: DateTime.now()),
         bundle: _FakeBundle({
           'assets/journeys/odyssey-ithaca/map.json': _mapJson,
         }),
@@ -178,6 +203,146 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('questMapRouteOverlay')), findsNothing);
+  });
+
+  group('tapping the traveler marker', () {
+    testWidgets('opens a stat bubble with the day and distance walked', (
+      tester,
+    ) async {
+      _growViewportForTapping(tester);
+      await tester.pumpWidget(
+        _wrap(
+          // Started right now, so this is unambiguously Day 1 regardless
+          // of what the calendar date happens to be at test time.
+          QuestMapView(progressMeters: 500000, startedAt: DateTime.now()),
+          bundle: _FakeBundle({
+            'assets/journeys/odyssey-ithaca/map.json': _mapJson,
+          }),
+        ),
+      );
+      await _startQuest(tester);
+      expect(find.byKey(const Key('questMapTravelerTooltip')), findsNothing);
+
+      // 500 000 m is 500 000 / 1 425 000 of the way from Troy (0.9, 0.4) to
+      // Calypso (0.5, 0.6), the path's first vertex pair.
+      await tester.tapAt(_pointOn(tester, 0.75965, 0.47018));
+      await tester.pump();
+
+      expect(find.byKey(const Key('questMapTravelerTooltip')), findsOneWidget);
+      expect(find.text('Day 1'), findsOneWidget);
+      expect(find.text('500 kilometers'), findsOneWidget);
+    });
+
+    testWidgets('tapping the traveler again closes the bubble', (tester) async {
+      _growViewportForTapping(tester);
+      await tester.pumpWidget(
+        _wrap(
+          QuestMapView(progressMeters: 0, startedAt: DateTime.now()),
+          bundle: _FakeBundle({
+            'assets/journeys/odyssey-ithaca/map.json': _mapJson,
+          }),
+        ),
+      );
+      await _startQuest(tester);
+
+      final travelerPoint = _pointOn(tester, 0.9, 0.4); // Troy — 0 m.
+      await tester.tapAt(travelerPoint);
+      await tester.pump();
+      expect(find.byKey(const Key('questMapTravelerTooltip')), findsOneWidget);
+
+      await tester.tapAt(travelerPoint);
+      await tester.pump();
+      expect(find.byKey(const Key('questMapTravelerTooltip')), findsNothing);
+    });
+  });
+
+  group('tapping a landmark', () {
+    testWidgets('ahead of the traveler shows how far it still is', (
+      tester,
+    ) async {
+      _growViewportForTapping(tester);
+      await tester.pumpWidget(
+        _wrap(
+          QuestMapView(progressMeters: 425000, startedAt: DateTime.now()),
+          bundle: _FakeBundle({
+            'assets/journeys/odyssey-ithaca/map.json': _mapJson,
+          }),
+        ),
+      );
+      await _startQuest(tester);
+
+      await tester.tapAt(_pointOn(tester, 0.5, 0.6)); // Calypso — 1 425 000 m.
+      await tester.pump();
+
+      expect(find.byKey(const Key('questMapLandmarkTooltip')), findsOneWidget);
+      expect(find.text('Ahead: Calypso — 1000 kilometers to go'), findsWidgets);
+    });
+
+    testWidgets('already behind the traveler shows how far past it they '
+        'are', (tester) async {
+      _growViewportForTapping(tester);
+      await tester.pumpWidget(
+        _wrap(
+          QuestMapView(progressMeters: 425000, startedAt: DateTime.now()),
+          bundle: _FakeBundle({
+            'assets/journeys/odyssey-ithaca/map.json': _mapJson,
+          }),
+        ),
+      );
+      await _startQuest(tester);
+
+      await tester.tapAt(_pointOn(tester, 0.9, 0.4)); // Troy — 0 m.
+      await tester.pump();
+
+      expect(find.byKey(const Key('questMapLandmarkTooltip')), findsOneWidget);
+      expect(find.text('Behind: Troy — 425 kilometers ago'), findsOneWidget);
+    });
+
+    testWidgets('tapping empty water dismisses an open tooltip', (
+      tester,
+    ) async {
+      _growViewportForTapping(tester);
+      await tester.pumpWidget(
+        _wrap(
+          QuestMapView(progressMeters: 425000, startedAt: DateTime.now()),
+          bundle: _FakeBundle({
+            'assets/journeys/odyssey-ithaca/map.json': _mapJson,
+          }),
+        ),
+      );
+      await _startQuest(tester);
+
+      await tester.tapAt(_pointOn(tester, 0.9, 0.4)); // Troy.
+      await tester.pump();
+      expect(find.byKey(const Key('questMapLandmarkTooltip')), findsOneWidget);
+
+      await tester.tapAt(_pointOn(tester, 0.05, 0.9)); // Empty corner.
+      await tester.pump();
+      expect(find.byKey(const Key('questMapLandmarkTooltip')), findsNothing);
+    });
+
+    testWidgets('selecting a different landmark switches the tooltip '
+        'directly, without needing a dismiss tap first', (tester) async {
+      _growViewportForTapping(tester);
+      await tester.pumpWidget(
+        _wrap(
+          QuestMapView(progressMeters: 425000, startedAt: DateTime.now()),
+          bundle: _FakeBundle({
+            'assets/journeys/odyssey-ithaca/map.json': _mapJson,
+          }),
+        ),
+      );
+      await _startQuest(tester);
+
+      await tester.tapAt(_pointOn(tester, 0.9, 0.4)); // Troy.
+      await tester.pump();
+      expect(find.text('Behind: Troy — 425 kilometers ago'), findsOneWidget);
+
+      await tester.tapAt(_pointOn(tester, 0.5, 0.6)); // Calypso.
+      await tester.pump();
+      expect(find.text('Behind: Troy — 425 kilometers ago'), findsNothing);
+      expect(find.text('Ahead: Calypso — 1000 kilometers to go'), findsWidgets);
+    });
   });
 
   group('emojiForLandmarkId', () {
