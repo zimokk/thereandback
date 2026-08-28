@@ -1,7 +1,7 @@
 import '../../../core/local_owner.dart';
 import '../../journey/domain/quest_selection.dart';
 import '../domain/stride.dart';
-import 'health_adapter.dart';
+import 'step_counting_service.dart';
 import 'step_sample_repository.dart';
 
 /// The outcome of one [StepsSyncEngine.sync] call: the new progress total to
@@ -26,16 +26,16 @@ class StepsSyncResult {
 /// through the exact same idempotency key, so a background tick and a later
 /// foreground sync of the same interval can never double-credit distance.
 ///
-/// No platform-channel or Riverpod dependency here — just the health
-/// adapter and the drift-backed idempotency log, both already
-/// interface-typed for testing (`testing` skill).
+/// No platform-channel or Riverpod dependency here — just the
+/// step-counting service and the drift-backed idempotency log, both
+/// already interface-typed for testing (`testing` skill).
 class StepsSyncEngine {
   StepsSyncEngine({
-    required this.healthAdapter,
+    required this.stepCountingService,
     required this.stepSampleRepository,
   });
 
-  final HealthAdapter healthAdapter;
+  final StepCountingService stepCountingService;
   final StepSampleRepository stepSampleRepository;
 
   /// Fetches the delta since [quest]'s `lastSyncedAt`, resolves it to meters
@@ -53,7 +53,7 @@ class StepsSyncEngine {
   }) async {
     final intervalStart = quest.lastSyncedAt;
     final interval = now.difference(intervalStart);
-    final delta = await healthAdapter.fetchDelta(intervalStart, now);
+    final delta = await stepCountingService.fetchDelta(intervalStart, now);
 
     final flagged = isImplausiblePace(steps: delta.steps, interval: interval);
 

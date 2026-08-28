@@ -62,8 +62,11 @@ shape when that happens.
 
 - `Journey` (`domain/journey.dart`) — id, name, pointA, pointB, totalMeters.
 - `SelectedQuest` (`domain/quest_selection.dart`) — see table above.
-- `questDay` (`domain/quest_progress.dart`) — local-calendar-date day
-  counter (§5.3).
+- `QuestTimeService.questDay` (`domain/quest_time_service.dart`) —
+  local-calendar-date day counter (§5.3). The same service also carries
+  `paceMetersPerDay`/`estimateArrival`, but this screen only ever needs
+  the day counter — see [`quest-stats.md`](quest-stats.md) for the
+  pace/ETA half.
 
 ## l10n keys
 
@@ -108,10 +111,10 @@ the screen's horizontal centre, and dragging the scene moves the icon
 vertically (not horizontally) — the line moving under a fixed icon, not
 the other way round.
 
-`test/features/journey/domain/quest_progress_test.dart` covers `questDay`,
-`paceMetersPerDay`, `estimateArrival` per the §12 mandatory list (local
-calendar dates, DST-shaped date jump, zero-pace dash, clamped negative
-day-diff).
+`test/features/journey/domain/quest_time_service_test.dart` covers
+`questDay`, `paceMetersPerDay`, `estimateArrival` per the §12 mandatory
+list (local calendar dates, DST-shaped date jump, zero-pace dash, clamped
+negative day-diff, the 7-day rolling window and its under-3-days fallback).
 
 `test/features/journey/presentation/journey_providers_test.dart` covers
 `SelectedJourney.build()`'s restore-from-disk branch directly (see

@@ -24,7 +24,7 @@ void main() {
       final snapshot = buildLockScreenSnapshot(
         quest: quest,
         journey: journey,
-        now: DateTime(2026, 3, 14), // Day 5, matching quest_progress_test.
+        now: DateTime(2026, 3, 14), // Day 5, matching quest_time_service_test.
       );
 
       expect(snapshot.questDay, 5);

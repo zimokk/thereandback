@@ -7,11 +7,11 @@ import 'package:thereandback/app/database_provider.dart';
 import 'package:thereandback/core/local_owner.dart';
 import 'package:thereandback/data/drift/database.dart';
 import 'package:thereandback/features/journey/presentation/journey_providers.dart';
-import 'package:thereandback/features/steps/data/health_adapter.dart';
+import 'package:thereandback/features/steps/data/step_counting_service.dart';
 import 'package:thereandback/features/steps/presentation/steps_providers.dart';
 import 'package:thereandback/features/steps/presentation/steps_sync_state.dart';
 
-class _MockHealthAdapter extends Mock implements HealthAdapter {}
+class _MockStepCountingService extends Mock implements StepCountingService {}
 
 /// A [StepsSync] that starts out already granted, skipping the real
 /// `build()`'s health-plugin-touching `refreshStatus()` call — this test
@@ -37,14 +37,14 @@ class _FixedStepsSync extends StepsSync {
 }
 
 void main() {
-  late _MockHealthAdapter adapter;
+  late _MockStepCountingService adapter;
   late ProviderContainer container;
 
   setUp(() {
-    adapter = _MockHealthAdapter();
+    adapter = _MockStepCountingService();
     container = ProviderContainer(
       overrides: [
-        healthAdapterProvider.overrideWithValue(adapter),
+        stepCountingServiceProvider.overrideWithValue(adapter),
         stepsSyncProvider.overrideWith(() => _GrantedStepsSync()),
         // `testing` skill: never a real drift database in a test.
         appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
@@ -201,14 +201,14 @@ void _realStepsSyncGroup() {
   group(
     'StepsSync.build() / refreshStatus() — the real, un-overridden class',
     () {
-      late _MockHealthAdapter adapter;
+      late _MockStepCountingService adapter;
       late ProviderContainer container;
 
       setUp(() {
-        adapter = _MockHealthAdapter();
+        adapter = _MockStepCountingService();
         container = ProviderContainer(
           overrides: [
-            healthAdapterProvider.overrideWithValue(adapter),
+            stepCountingServiceProvider.overrideWithValue(adapter),
             appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
           ],
         );
@@ -264,14 +264,14 @@ void _realStepsSyncGroup() {
 
   group('StepsSync.requestPermission() / openHealthConnectInstall() — real '
       'methods on a fixed-build fake', () {
-    late _MockHealthAdapter adapter;
+    late _MockStepCountingService adapter;
     late ProviderContainer container;
 
     setUp(() {
-      adapter = _MockHealthAdapter();
+      adapter = _MockStepCountingService();
       container = ProviderContainer(
         overrides: [
-          healthAdapterProvider.overrideWithValue(adapter),
+          stepCountingServiceProvider.overrideWithValue(adapter),
           appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
           // Only build() is faked here (same pattern as `_GrantedStepsSync`
           // above) — the real build() would kick off its own

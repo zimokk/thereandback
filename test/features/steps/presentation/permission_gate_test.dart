@@ -5,7 +5,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:thereandback/app/database_provider.dart';
 import 'package:thereandback/app/theme.dart';
 import 'package:thereandback/data/drift/database.dart';
-import 'package:thereandback/features/steps/data/health_adapter.dart';
+import 'package:thereandback/features/steps/data/step_counting_service.dart';
 import 'package:thereandback/features/steps/presentation/permission_gate.dart';
 import 'package:thereandback/features/steps/presentation/steps_providers.dart';
 import 'package:thereandback/features/steps/presentation/steps_sync_state.dart';
@@ -17,7 +17,7 @@ import 'package:thereandback/l10n/app_localizations.dart';
 /// `granted` and `denied`). `notRequested`, `healthConnectMissing`, and the
 /// granted-and-flagged notice were never rendered by any test at all — the
 /// gap this file closes.
-class _MockHealthAdapter extends Mock implements HealthAdapter {}
+class _MockStepCountingService extends Mock implements StepCountingService {}
 
 /// A [StepsSync] with a fixed state — same fake pattern
 /// `journey_tab_test.dart` uses, so these tests exercise the widget's
@@ -152,7 +152,7 @@ void main() {
   testWidgets('tapping "Try again" on the denied card re-requests permission', (
     tester,
   ) async {
-    final adapter = _MockHealthAdapter();
+    final adapter = _MockStepCountingService();
     when(() => adapter.requestActivityRecognitionPermission())
         .thenAnswer((_) async => RuntimePermissionResult.granted);
     when(() => adapter.requestStepsPermission()).thenAnswer((_) async => true);
@@ -173,7 +173,7 @@ void main() {
   testWidgets(
     'tapping "Allow access" on the notRequested card requests permission',
     (tester) async {
-      final adapter = _MockHealthAdapter();
+      final adapter = _MockStepCountingService();
       when(() => adapter.requestActivityRecognitionPermission())
           .thenAnswer((_) async => RuntimePermissionResult.granted);
       when(() => adapter.requestStepsPermission())
@@ -192,7 +192,7 @@ void main() {
 
   testWidgets('tapping "Open settings" on the permanentlyDenied card opens app '
       "settings, not another permission request", (tester) async {
-    final adapter = _MockHealthAdapter();
+    final adapter = _MockStepCountingService();
     when(() => adapter.openAppSettings()).thenAnswer((_) async {});
 
     await tester.pumpWidget(
@@ -211,7 +211,7 @@ void main() {
   testWidgets('tapping "Install Health Connect" delegates to the adapter', (
     tester,
   ) async {
-    final adapter = _MockHealthAdapter();
+    final adapter = _MockStepCountingService();
     when(() => adapter.openHealthConnectInstall()).thenAnswer((_) async {});
 
     await tester.pumpWidget(
@@ -225,15 +225,18 @@ void main() {
   });
 }
 
-/// Like [_wrap], but with an injectable [HealthAdapter] mock so a tap test
-/// can verify which real `StepsSync` method a button actually calls —
+/// Like [_wrap], but with an injectable [StepCountingService] mock so a tap
+/// test can verify which real `StepsSync` method a button actually calls —
 /// `_FixedStepsSync` only overrides `build()`, so tapping a button in these
 /// tests exercises the real `requestPermission()`/`openHealthConnectInstall()`.
-Widget _wrapWithAdapter(StepsPermissionStatus status, HealthAdapter adapter) {
+Widget _wrapWithAdapter(
+  StepsPermissionStatus status,
+  StepCountingService adapter,
+) {
   return ProviderScope(
     overrides: [
       appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
-      healthAdapterProvider.overrideWithValue(adapter),
+      stepCountingServiceProvider.overrideWithValue(adapter),
       stepsSyncProvider.overrideWith(
         () => _FixedStepsSync(StepsSyncState(permissionStatus: status)),
       ),

@@ -9,7 +9,7 @@ import '../../../design/components/distance_text.dart';
 import '../../../design/spacing.dart';
 import '../../../design/typography.dart';
 import '../../../l10n/app_localizations.dart';
-import '../domain/quest_progress.dart';
+import '../domain/quest_time_service.dart';
 import 'journey_providers.dart';
 
 /// The Путь tab's scene (§6.1) — today, a deliberate placeholder: a wavy
@@ -56,7 +56,10 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView> {
       return const SizedBox.shrink();
     }
 
-    final day = questDay(startedAt: selected.startedAt, now: DateTime.now());
+    final day = questTimeService.questDay(
+      startedAt: selected.startedAt,
+      now: DateTime.now(),
+    );
     final distance = formatDistance(selected.progressMeters);
 
     return ColoredBox(

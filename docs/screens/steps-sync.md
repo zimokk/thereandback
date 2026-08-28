@@ -58,20 +58,23 @@ manifest) is now declared because of that second caller — see
 | File | Layer | Responsibility |
 |---|---|---|
 | `steps/domain/stride.dart` | domain (pure Dart) | `stepsToMeters`, `resolveDistanceMeters` (platform distance beats steps×stride, §5.1), `clampNonDecreasing` (monotonic progress), `isImplausiblePace` (>250 steps/min flag, §5.2 — called from `StepsSyncEngine.sync()`, not just unit-tested in isolation) |
-| `steps/data/health_adapter.dart` | data | `HealthAdapter` interface + `HealthPackageAdapter` wrapping the `health` package (HealthKit/Health Connect), including the background-permission pair used by `lock-screen.md` |
+| `steps/data/step_counting_service.dart` | data | `StepCountingService` interface + shared types + the `HealthPackagePedometer` mixin both platform classes use, including the background-permission pair used by `lock-screen.md` |
+| `steps/data/android_step_counting_service.dart` | data | `AndroidStepCountingService` — Health Connect via the `health` package. Shipped, no account gate (see the architecture plan this split came from). |
+| `steps/data/ios_step_counting_service.dart` | data | `IosStepCountingService` — **temporarily** Core Motion (`CMPedometer`, via a first-party `MethodChannel`, not a pub package — see below) instead of HealthKit: HealthKit needs a paid Apple Developer Program membership CMPedometer doesn't (§3, §7, CLAUDE.md §14). TODO in the file itself covers migrating back. |
+| `steps/data/ios_pedometer_channel.dart` | data | `IosPedometerChannel` — thin wrapper over the `com.zimokk.thereandback/pedometer` `MethodChannel`, the Dart half of `ios/Runner/AppDelegate.swift`'s `CMPedometer` handler. |
 | `steps/data/step_sample_repository.dart` | data | `StepSampleRepository` + `DriftStepSampleRepository` — the idempotency log (see below) |
 | `steps/data/steps_sync_engine.dart` | data | `StepsSyncEngine` — the fetch/resolve/record algorithm itself, no `Ref`; shared by `StepsSync.sync()` (below) and the Android background task (`lock-screen.md`) |
 | `data/drift/database.dart` | data (shared, not steps-specific) | `AppDatabase`: `SelectedQuestRows` + `StepIntervalRecords` tables |
 | `features/journey/data/progress_repository.dart` | data | `ProgressRepository` — derives `SelectedQuest` from the interval log |
 | `steps/presentation/steps_sync_state.dart` | presentation | `StepsPermissionStatus` enum + `StepsSyncState` (freezed) |
-| `steps/presentation/steps_providers.dart` | presentation | `healthAdapterProvider`, `stepSampleRepositoryProvider`, `StepsSync` notifier (permission flow; `sync()` now just builds a `StepsSyncEngine` and applies its result) |
+| `steps/presentation/steps_providers.dart` | presentation | `createStepCountingService` (the one `Platform.isAndroid` switch in this feature), `stepCountingServiceProvider`, `stepSampleRepositoryProvider`, `StepsSync` notifier (permission flow; `sync()` now just builds a `StepsSyncEngine` and applies its result) |
 | `steps/presentation/permission_gate.dart` | presentation | The three-state gate card |
 
 ## State — providers
 
 | Provider | Shape | Notes |
 |---|---|---|
-| `healthAdapterProvider` | `HealthAdapter` | Defaults to `HealthPackageAdapter()`. **Always override with a fake in tests** — never the real plugin in a widget test (`testing` skill). |
+| `stepCountingServiceProvider` | `StepCountingService` | Defaults to `createStepCountingService()` — `AndroidStepCountingService()` or `IosStepCountingService()` by platform. **Always override with a fake in tests** — never the real plugin in a widget test (`testing` skill). |
 | `stepsSyncProvider` | `StepsSyncState` (Notifier) | `permissionStatus` + `isSyncing` + `lastSyncFlagged` (§5.2 pace check result — surfaced by `_FlaggedPaceNotice`, doesn't affect crediting). |
 
 ## Phase 3 — durable persistence (drift)
@@ -127,7 +130,7 @@ half, so `ACTIVITY_RECOGNITION` silently stayed ungranted forever: tapping
 user accepted it, and the gate still reported denied — because Health Connect
 itself wasn't actually able to hand over the grant.
 
-`HealthAdapter.hasActivityRecognitionPermission()` /
+`StepCountingService.hasActivityRecognitionPermission()` /
 `requestActivityRecognitionPermission()` (via `permission_handler` — the
 `health` package does not request this permission itself) wrap that OS
 prompt. `StepsSync.requestPermission()` now requests it first and only asks
@@ -142,7 +145,7 @@ button would look broken from the third tap on. `requestActivityRecognitionPermi
 returns a three-way `RuntimePermissionResult` (`granted` / `denied` /
 `permanentlyDenied`), not a bool, so `requestPermission()` can tell the two
 apart: `permanentlyDenied` routes to its own `StepsPermissionStatus`, whose
-gate card offers `HealthAdapter.openAppSettings()` (this app's OS settings
+gate card offers `StepCountingService.openAppSettings()` (this app's OS settings
 page — the only place left to grant it) instead of another request that
 would never show anything.
 
@@ -169,27 +172,45 @@ not blocked by this.
 
 ## Platform setup done here
 
-- **iOS** (`ios/Runner/Info.plist`): `NSHealthShareUsageDescription` added.
-  The HealthKit **capability** — `ios/Runner/Runner.entitlements`
-  (`com.apple.developer.healthkit`, read-only: an empty
-  `com.apple.developer.healthkit.access` array, no write/clinical-records
-  scope) plus `CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;` added to
-  all three `Runner`-target build configurations (Debug/Release/Profile) in
-  `project.pbxproj` — is also now wired. Without it the `Info.plist` string
-  alone doesn't get the app anywhere: `health`'s `requestAuthorization()`
-  can't actually obtain a HealthKit grant. This was a hand-edit of
-  `project.pbxproj` done without Xcode available to verify the project still
-  opens/builds — the edit only touches the existing `Runner` target's
-  per-configuration `buildSettings` (one new key each) and adds one new
-  `PBXFileReference` plus its `Runner` group entry, none of which restructure
-  targets or build phases, but it has **not been opened in Xcode or built on
-  a Mac**. First real build should confirm Xcode opens the project cleanly
-  and Signing & Capabilities shows HealthKit already enabled, not duplicate
-  or reject it.
-  **Still not done**: the Apple Developer portal side (the App ID itself
-  needs the HealthKit capability enabled there too, via an Apple Developer
-  account) — that's account configuration outside this repo, not a file this
-  session can edit either way.
+- **iOS — HealthKit setup is done but currently disabled** (§3, §14: iOS is
+  temporarily on CMPedometer, see below). `ios/Runner/Info.plist`'s
+  `NSHealthShareUsageDescription` and `ios/Runner/Runner.entitlements`'
+  `com.apple.developer.healthkit`/`com.apple.developer.healthkit.access`
+  keys are both **commented out, not deleted** — restoring HealthKit (see
+  `ios_step_counting_service.dart`'s TODO) is uncommenting them, not
+  redoing the setup. Reason for disabling: leaving the HealthKit
+  entitlement active blocks signing *any* iOS build without a paid Apple
+  Developer Program membership — `CODE_SIGN_STYLE = Automatic` tries to
+  enable that capability on the App ID regardless of whether the Dart code
+  actually calls HealthKit, so a free/Personal-Team build would fail before
+  ever reaching the health feature. `CODE_SIGN_ENTITLEMENTS = Runner/
+  Runner.entitlements;` itself (all three Debug/Release/Profile
+  configurations in `project.pbxproj`) stays wired either way — an
+  entitlements file with everything commented out is a valid, capability-
+  free entitlements file.
+  **Still not done, either direction**: the Apple Developer portal side
+  (the App ID needs the HealthKit capability enabled there too, via a paid
+  account) — that's account configuration outside this repo.
+- **iOS — CMPedometer setup, added for the temporary swap**:
+  `ios/Runner/Info.plist`'s `NSMotionUsageDescription` added (Core Motion's
+  own usage string — unrelated to `NSHealthShareUsageDescription` above).
+  `ios/Runner/AppDelegate.swift` gained the `com.zimokk.thereandback/pedometer`
+  `MethodChannel` (see above) — the only iOS-native file this touches; no
+  new Xcode target, no `Info.plist` background-mode entries.
+  **Not done, and cannot be done in this sandbox (no Xcode/CocoaPods)**:
+  `ios/Podfile` does not exist yet in this repo — Flutter generates it on
+  the first `pod install`/`flutter build ios`. Once it exists, its
+  `post_install` block needs a `GCC_PREPROCESSOR_DEFINITIONS` entry
+  enabling `permission_handler`'s `sensors` permission group —
+  `'PERMISSION_SENSORS=1'` — per `permission_handler`'s own README
+  (`https://github.com/Baseflow/flutter-permission-handler`, "iOS" setup
+  section: the same file lists every other permission group's flag and
+  Info.plist key, e.g. `PERMISSION_CAMERA`/`NSCameraUsageDescription`, in
+  case another permission is ever added the same way). Without that flag,
+  `Permission.sensors` calls silently do the wrong thing on iOS
+  (unimplemented/always-denied, depending on the plugin version) even
+  though `NSMotionUsageDescription` is present — the two are independent
+  gates and both are required.
 - **Android** (`android/app/src/main/AndroidManifest.xml`):
   `android.permission.health.READ_STEPS` / `READ_DISTANCE` declared;
   `com.google.android.apps.healthdata` added to `<queries>` for package
@@ -208,6 +229,35 @@ not blocked by this.
   runtime-permission request, and writing a custom `MethodChannel` for it
   would just re-implement what this package already handles across OS
   versions. See "Android permission flow is two runtime prompts" above.
+  Now also used for iOS's `Permission.sensors` (see `IosStepCountingService`)
+  — one dependency covering the runtime-permission side of both platforms.
+- **`CMPedometer` access is a first-party `MethodChannel`, not a pub
+  package** (§3, §14). `health` doesn't cover this — on iOS it only wraps
+  HealthKit, and Core Motion is a different framework entirely. The more
+  popular `pedometer` package was considered and rejected on its own
+  merits first: it only exposes a live step-count *stream* from whenever
+  the app starts listening, with no way to query an arbitrary historical
+  `[from, to)` range, so it can't answer "how many steps since
+  `lastSyncedAt`" across an app restart the way this app's delta-sync
+  model needs. `CMPedometer.queryPedometerData(from:to:)` is the one-shot
+  historical query that actually fits — `cm_pedometer` (`^1.2.0`) wraps
+  exactly that and was added first, but **broke CI**: `flutter pub get`
+  failed with "The plugin `cm_pedometer` doesn't have a main class
+  defined" — its own `pubspec.yaml` declares `androidPackage:
+  com.hieutv.cm_pedometer` pointing at a Java/Kotlin class that doesn't
+  exist in the published package. Flutter's plugin resolution checks every
+  platform a plugin claims to support, not just the ones the app's own
+  code touches — so this Android-side bug broke the build even though
+  nothing here uses `cm_pedometer` on Android at all. Removed from
+  `pubspec.yaml`.
+  Replaced with `com.zimokk.thereandback/pedometer`: a plain
+  `FlutterMethodChannel` registered in `ios/Runner/AppDelegate.swift`
+  (holds one `CMPedometer()`, answers a `queryPedometerData` call with
+  `{steps, distanceMeters}`), wrapped on the Dart side by
+  `IosPedometerChannel` (`ios_pedometer_channel.dart`). Core Motion is a
+  system framework — this needs no CocoaPods entry, so `ios/Podfile` is
+  now only relevant for `PERMISSION_SENSORS` below, not for CMPedometer
+  access itself.
 - **`android/app/build.gradle.kts`**: `minSdk` raised to **26**
   (from Flutter's default 24) — the `health` package's Android module
   itself requires API 26+ for Health Connect; leaving the default would
@@ -233,6 +283,29 @@ device/emulator to close out. Phase 3's own criteria (drift schema test,
 idempotent-sync test) are unit/widget-level and **are** covered and green
 in this environment — see Tests below.
 
+**The CMPedometer swap is a level below that**: unlike the rest of this
+document, it was written in a sandbox with no Dart/Flutter SDK at all — not
+just no simulator/emulator, no `flutter analyze`/`flutter pub get` either.
+This caveat was not theoretical: the first version of this swap added
+`cm_pedometer` as a dependency, confirmed only against its pub.dev
+documentation — and that package turned out to have a real, CI-breaking
+bug (its Android plugin registration doesn't match its own file layout;
+see above). It was caught by an actual `flutter pub get` run in GitHub
+Actions CI, not by anything checkable in this sandbox. The replacement
+(`ios/Runner/AppDelegate.swift` + `IosPedometerChannel`) avoids third-party
+plugin registration entirely, but its own correctness — the exact
+`CMPedometer.queryPedometerData(from:to:)`/`CMPedometerData` Swift API,
+the `FlutterImplicitEngineBridge.applicationRegistrar.messenger()` channel
+setup for this project's UIScene-based `AppDelegate`, and the
+`MethodChannel` argument/result encoding on both sides — is likewise
+confirmed only against documentation and public code samples, not a
+compiled build. `permission_handler`'s `Permission.sensors` ↔
+`NSMotionUsageDescription` mapping is the one piece here that *was*
+cross-checked directly against `permission_handler`'s own README.
+Treat `ios_step_counting_service.dart`, `ios_pedometer_channel.dart`, and
+`AppDelegate.swift` as unverified until they've been built and run once on
+a machine with Xcode.
+
 The `ACTIVITY_RECOGNITION` fix above was diagnosed from a real device's
 symptoms (system settings showing "Physical activity"/"Fitness and wellness"
 ungranted despite tapping Allow) but, same as everything else in this list,
@@ -245,15 +318,21 @@ Every line of this module's own logic is covered except the lines that
 structurally *require* a real device or a real file to run at all — these
 are the same kind of gap as the health plugin itself, not oversights:
 
-- `steps/data/health_adapter.dart` (0%) — `HealthPackageAdapter`, the real
-  `health`-package wrapper. Never touched by a test, by policy (`testing`
-  skill: never the real health plugin in a test). `hasActivityRecognitionPermission()`/
+- `steps/data/android_step_counting_service.dart`,
+  `ios_step_counting_service.dart`, and `ios_pedometer_channel.dart` (0%
+  each) — the real platform wrappers, one per platform (split out of a
+  single `HealthPackageAdapter` by the architecture plan this session;
+  `IosStepCountingService`'s internals later swapped from `health`/
+  HealthKit to Core Motion, see above). Never touched by a test, by policy
+  (`testing` skill: never the real health/motion plugin in a test).
+  `hasActivityRecognitionPermission()`/
   `requestActivityRecognitionPermission()`/`openAppSettings()` (the
   `permission_handler` wrapper added for the two-runtime-prompts fix above)
   fall in the same excluded set for the same reason — real plugin, not
   unit-testable.
-- `steps/presentation/steps_providers.dart`: `healthAdapterProvider`'s body
-  (constructs the real `HealthPackageAdapter()`) — same reason. Also
+- `steps/presentation/steps_providers.dart`: `stepCountingServiceProvider`'s
+  body (`createStepCountingService()`, constructing whichever of the two
+  real services matches the platform) — same reason. Also
   `refreshStatus()`'s `if (Platform.isAndroid)` branch — `Platform.isAndroid`
   reflects the machine actually running the test suite (Linux, here and in
   CI), not a simulated target, so this branch cannot be reached without
@@ -286,14 +365,14 @@ clamp on a negative delta, >250 steps/min flagged not dropped, threshold
 boundary).
 
 Engine: `test/features/steps/data/steps_sync_engine_test.dart` covers
-`StepsSyncEngine.sync()` directly against a mocked `HealthAdapter` and a
+`StepsSyncEngine.sync()` directly against a mocked `StepCountingService` and a
 real in-memory `AppDatabase`-backed `StepSampleRepository` — realistic vs.
 implausible pace, platform-distance preference over steps×stride, duplicate
 intervals, and the non-decreasing clamp. This is what both `StepsSync.sync()`
 and the Android background task (`lock-screen.md`) actually run.
 
 Provider-level: `test/features/steps/presentation/steps_providers_test.dart`
-exercises `StepsSync.sync()` end to end against a mocked `HealthAdapter`
+exercises `StepsSync.sync()` end to end against a mocked `StepCountingService`
 and an in-memory `AppDatabase` — a realistic pace leaves `lastSyncFlagged`
 false, an implausible one (a huge step count over a short
 `lastSyncedAt`-to-now window) sets it true, and **either way the distance

@@ -8,7 +8,7 @@ import '../../../design/components/distance_text.dart';
 import '../../../design/spacing.dart';
 import '../../../design/typography.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../journey/domain/quest_progress.dart';
+import '../../journey/domain/quest_time_service.dart';
 import '../../journey/presentation/journey_providers.dart';
 import 'quest_map_view.dart';
 
@@ -22,6 +22,15 @@ class QuestStatsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(selectedJourneyProvider);
     final journey = ref.watch(selectedJourneyDetailsProvider);
+    // `.value ?? []`, not `.when(loading: ...)`: while the history is still
+    // loading (or a quest just started, before any interval exists), an
+    // empty list is already the right input — `QuestTimeService` treats
+    // "no matching intervals yet" the same as "none exist", not as an error
+    // state to show a spinner for. (This riverpod version's `AsyncValue`
+    // has no `valueOrNull` — `.value` itself is already the nullable one.)
+    final recentIntervals =
+        ref.watch(recentMeteredIntervalsProvider).value ??
+        const <MeteredInterval>[];
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
@@ -34,6 +43,7 @@ class QuestStatsTab extends ConsumerWidget {
                 progressMeters: selected.progressMeters,
                 totalMeters: journey.totalMeters,
                 pointB: journey.pointB,
+                recentIntervals: recentIntervals,
                 l10n: l10n,
               ),
       ),
@@ -87,6 +97,7 @@ class _StatsBody extends StatelessWidget {
     required this.progressMeters,
     required this.totalMeters,
     required this.pointB,
+    required this.recentIntervals,
     required this.l10n,
   });
 
@@ -94,6 +105,7 @@ class _StatsBody extends StatelessWidget {
   final int progressMeters;
   final int totalMeters;
   final String pointB;
+  final List<MeteredInterval> recentIntervals;
   final AppLocalizations l10n;
 
   @override
@@ -101,7 +113,8 @@ class _StatsBody extends StatelessWidget {
     final locale = Localizations.localeOf(context).toString();
     final now = DateTime.now();
     final total = formatDistance(totalMeters);
-    final eta = estimateArrival(
+    final eta = questTimeService.estimateArrival(
+      recentIntervals: recentIntervals,
       progressMeters: progressMeters,
       totalMeters: totalMeters,
       startedAt: startedAt,

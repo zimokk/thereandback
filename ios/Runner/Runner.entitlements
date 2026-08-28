@@ -2,11 +2,20 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Temporarily disabled (CLAUDE.md §3, §14): IosStepCountingService
+	     reads steps via CMPedometer/Core Motion, not HealthKit, until this
+	     app has a paid Apple Developer Program membership — the HealthKit
+	     capability itself requires one to sign, even just for local device
+	     testing, unlike the plain runtime permission CMPedometer uses.
+	     Leaving this active with no paid account blocks *every* iOS build,
+	     not just the health feature. Uncomment when migrating
+	     IosStepCountingService back to HealthKit (see that file's TODO).
 	<key>com.apple.developer.healthkit</key>
 	<true/>
-	<!-- Read-only app (§7, CLAUDE.md): no HealthKit write access, so this
-	     stays empty rather than declaring a clinical-records or write scope. -->
+	Read-only app (§7, CLAUDE.md): no HealthKit write access, so this stays
+	empty rather than declaring a clinical-records or write scope.
 	<key>com.apple.developer.healthkit.access</key>
 	<array/>
+	-->
 </dict>
 </plist>

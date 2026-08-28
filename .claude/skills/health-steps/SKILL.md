@@ -5,14 +5,15 @@ description: Integrate or change step/health data in There and Back — the heal
 
 # Steps & health integration
 
-One package — `health` ^13.x — over HealthKit (iOS) and Health Connect (Android) (§3). **Never propose Google Fit**: the API is dead (new registrations closed 2024-05-01) and support was removed from `health` in 11.0.0 (§3, §13).
+`health` ^13.x wraps Health Connect on Android (§3). iOS is **temporarily** on Core Motion (`CMPedometer.queryPedometerData`) instead of `health`'s HealthKit path — HealthKit needs a paid Apple Developer Program membership to sign at all, CMPedometer doesn't (§3, §14, decided 2026-08-28 by explicit request). Access is a first-party `MethodChannel` (`ios/Runner/AppDelegate.swift` ↔ `ios_pedometer_channel.dart`), **not** the `cm_pedometer` pub package — that package's Android plugin registration doesn't match its own file layout and breaks `flutter pub get` for any app depending on it, iOS-only usage or not; it broke this project's CI before being removed. Never add it back without fixing that first. `ios_step_counting_service.dart` carries the TODO for migrating to HealthKit once a paid account exists; the HealthKit-based implementation it replaced is in git history, not deleted code to rewrite. **Never propose Google Fit**: the API is dead (new registrations closed 2024-05-01) and support was removed from `health` in 11.0.0 (§3, §13).
 
 **Plan first.** Permissions and privacy are §13 plan-before-code territory. Show the approach and get agreement before editing.
 
 ## Permission flow (§7)
 
 - Ask **at quest start**, not at app launch, behind a screen explaining *why*.
-- iOS: `NSHealthShareUsageDescription` in `Info.plist`. The app **only reads** — no HealthKit write permission, ever.
+- iOS (current, CMPedometer): `NSMotionUsageDescription` in `Info.plist`, requested through `permission_handler`'s `Permission.sensors` — not `Permission.activityRecognition`, which has no iOS mapping at all. `NSHealthShareUsageDescription` and the HealthKit entitlement are commented out, not deleted, for the same reason as below.
+- iOS (HealthKit, disabled for now — see above): `NSHealthShareUsageDescription` in `Info.plist`. The app **only reads** — no HealthKit write permission, ever.
 - Android: Health Connect permissions `READ_STEPS`, `READ_DISTANCE`; background reads need `READ_HEALTH_DATA_IN_BACKGROUND`.
 - **Health Connect may not be installed** — handle it explicitly with a deep link to the Play Store listing.
 - **Denial is not a dead end**: the app keeps working, shows a "no step data" state and a re-request button. Cover this path with a widget test (§12, Phase 4).
@@ -51,7 +52,7 @@ No "which device wins" logic needed — merging is additive through the existing
 
 ## Layering (§4)
 
-`features/steps/data/health_adapter.dart` wraps the plugin and returns domain `StepSample`s. Conversion and progress math stay in `domain/` (see `domain-math`). The permission gate is `features/steps/presentation/permission_gate.dart`; UI reads a Riverpod provider, never the adapter.
+`StepCountingService` (`features/steps/data/step_counting_service.dart`) is the interface, one per-platform class implementing it — `AndroidStepCountingService` (shipped, Health Connect via `health`, no account gate) and `IosStepCountingService` (shipped, CMPedometer via a first-party `MethodChannel` — `IosPedometerChannel` in `ios_pedometer_channel.dart` — temporarily replacing HealthKit; see above). `HealthPackagePedometer` (same file) is the shared `health`-package plumbing, used only by the Android class today; kept general so a future HealthKit-based `IosStepCountingService` can mix it back in. `createStepCountingService()` (`steps/presentation/steps_providers.dart`) is the only `Platform.isAndroid` check in the feature. Conversion and progress math stay in `domain/` (see `domain-math`). The permission gate is `features/steps/presentation/permission_gate.dart`; UI reads a Riverpod provider (`stepCountingServiceProvider`), never a concrete service class.
 
 ## Testing (§12, Phase 4)
 

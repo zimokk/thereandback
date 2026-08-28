@@ -111,8 +111,12 @@ delta rows are out of scope here — see `docs/screens/README.md`).
 
 ## State — providers
 
-Reads `selectedJourneyProvider` and `selectedJourneyDetailsProvider` from
-`journey_providers.dart` (see [`journey.md`](journey.md)).
+Reads `selectedJourneyProvider`, `selectedJourneyDetailsProvider` and
+`recentMeteredIntervalsProvider` from `journey_providers.dart` (see
+[`journey.md`](journey.md)) — the last of these is a `FutureProvider` over
+`ProgressRepository.recentMeteredIntervals`, feeding the §5.3 rolling-pace
+window (see "Domain" below); `.valueOrNull ?? []` while it loads or before
+any interval exists, never a spinner.
 
 The map adds two of its own, in
 `lib/features/quest_map/presentation/quest_map_providers.dart`:
@@ -124,7 +128,13 @@ The map adds two of its own, in
 
 ## Domain
 
-- `estimateArrival`, and indirectly `paceMetersPerDay` (`domain/quest_progress.dart`, §5.3).
+- `QuestTimeService.estimateArrival`, and internally
+  `QuestTimeService.paceMetersPerDay` (`domain/quest_time_service.dart`,
+  §5.3) — the true 7-day rolling mean, falling back to the whole-quest
+  average under 3 elapsed calendar days. `journey.md` covers the service
+  in full (it also supplies `questDay` to the Путь tab and the lock
+  screen); this screen is the one place its pace/ETA output actually
+  reaches the user.
 - `formatDistance`, `formatDate`, `formatEtaDate` (`core/formatters.dart`, §5.4).
 - `metersToPoint`, `nextLandmark` (`quest_map/domain/route_mapping.dart`,
   §6.2) — the map math actually in use, pure and unit-tested; the painter
@@ -133,17 +143,20 @@ The map adds two of its own, in
   walked/remaining stretches for the overlay line this screen no longer
   draws — but nothing here calls it today.
 
-### Known simplification: pace is a whole-quest average, not a 7-day window
+### Where the pace window's raw data comes from
 
-§5.3 specifies pace as a rolling mean over the last 7 calendar days,
-falling back to the whole-quest average under 3 days of data.
-`paceMetersPerDay` always computes the whole-quest average — the
-7-day-window branch needs a persisted per-day history that doesn't exist
-yet (Phase 3). The **Estimated Arrival** date on this screen inherits that
-simplification: it reacts slower to a recent pace change than §5.3
-describes, until Phase 3 lands. This is disclosed in the function's own
-doc comment in `quest_progress.dart`; noted here too since this screen is
-where the difference is actually visible to a user.
+`QuestTimeService.paceMetersPerDay` is pure — it takes a
+`List<MeteredInterval>` rather than touching drift itself (§13 layer
+purity). `recentMeteredIntervalsProvider` (`journey_providers.dart`) is
+what actually fetches that list: `ProgressRepository.recentMeteredIntervals`
+queries `StepIntervalRecords` for the active journey back to `now - 8`
+days (a UTC-instant filter, no calendar-day math in the query itself) and
+maps each row to a `MeteredInterval`. The 8-day margin over the 7-day
+window absorbs any timezone offset; `QuestTimeService` does the exact
+local-calendar-day filtering and windowing on top of that raw list. This
+was the "known simplification" this doc used to describe (a whole-quest
+average standing in for the 7-day window until Phase 3's drift history
+existed) — Phase 3 landed, so it no longer applies.
 
 ## l10n keys
 

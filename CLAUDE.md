@@ -87,7 +87,7 @@ Country, перешёл ручей по узкому мостику». Числ�
 | Модели / DTO | `freezed` + `json_serializable` |
 | Навигация | `go_router` |
 | Локальное хранилище | `drift` (SQLite) — источник правды офлайн |
-| Шаги | `health` (^13.x) — HealthKit на iOS, Health Connect на Android |
+| Шаги | `health` (^13.x) — Health Connect на Android. iOS **временно** на Core Motion (`CMPedometer`) через свой `MethodChannel`, не на HealthKit из `health` — см. «Почему так» и §14 |
 | Карта | **своя рисованная иллюстрация**, `InteractiveViewer` (см. §6.2) |
 | Бэкенд | **Firebase**: Auth, Cloud Firestore, Cloud Functions, FCM |
 | Аналитика/краши | Firebase Analytics + Crashlytics |
@@ -111,6 +111,25 @@ Country, перешёл ручей по узкому мостику». Числ�
 - **Health Connect, не Google Fit** — Google Fit API устарел (регистрация новых
   приложений закрыта с 1 мая 2024), в `health` его поддержка удалена начиная с
   версии 11.0.0. **Никогда не предлагать Google Fit.**
+- **iOS временно на Core Motion (`CMPedometer`), не на HealthKit — явный,
+  осознанный отход от «единого API» выше, по прямому запросу (2026-08-28,
+  §14).** HealthKit — Apple capability, требующая платного Apple Developer
+  Program аккаунта даже для локальной сборки на свой телефон; Core Motion —
+  обычное runtime-разрешение (`NSMotionUsageDescription`), работает с
+  бесплатным Personal Team. Доступ — через **свой `MethodChannel`**
+  (`ios/Runner/AppDelegate.swift` ↔ `ios_pedometer_channel.dart`), не через
+  пакет `cm_pedometer`: тот единственный существующий пакет-обёртка над
+  `CMPedometer.queryPedometerData(from:to:)` ломает `flutter pub get` для
+  любого проекта, который на него подписан (битая Android-регистрация
+  плагина — `androidPackage` указывает на несуществующий класс), даже если
+  Android его вообще не использует (§14, обнаружено в CI). Плата за
+  Core Motion в любом случае: только шаги этого iPhone (без агрегации с
+  Apple Watch), дистанция — оценка Core Motion, а не HealthKit-агрегат.
+  Считать временным решением — TODO на миграцию обратно на HealthKit лежит
+  в `ios_step_counting_service.dart` и в §14; ради него
+  `AndroidStepCountingService` и `IosStepCountingService` за одним
+  интерфейсом `StepCountingService` специально разведены по независимым
+  классам (§14, 2026-08-28).
 - **Firebase** — Auth + Firestore + FCM закрывают друзей, синк и пуши в MVP без
   своего сервера.
 
@@ -520,6 +539,43 @@ firebase emulators:start                                    # Firestore + Functi
 - Публичные API доменного слоя документировать `///`.
 - Один PR — одна фича. Feature-ветки от `main`.
 
+### 11.1 Версионирование до релиза
+
+Единственный источник версии — поле `version:` в `pubspec.yaml`
+(`MAJOR.MINOR.PATCH+BUILD`). Ни в `build.gradle.kts`, ни в `Info.plist`, ни в
+коде версию не дублировать — платформы читают её из pubspec.
+
+Текущая версия — **0.0.1+1**. До первого публичного релиза в сторах мажор
+остаётся **0**.
+
+Как поднимать (пока мажор — 0):
+
+| Что произошло | Что поднимаем | Пример |
+|---|---|---|
+| Обычная работа: фича внутри фазы, багфикс, рефакторинг, доки | ничего | `0.0.1+1` |
+| Завершена **фаза** из `docs/implementation-plan.md` (Phase 0–12) | `PATCH` | `0.0.1` → `0.0.2` |
+| Завершён **майлстоун** M1–M4 | `MINOR`, `PATCH` → 0 | `0.0.7` → `0.1.0` |
+| Сборка отдаётся наружу (TestFlight / internal track / APK тестировщику) | `+BUILD` +1 | `0.1.0+3` → `0.1.0+4` |
+| Первый публичный релиз в сторах | `1.0.0` | только по явному решению |
+
+Правила:
+
+- **`BUILD` монотонно растёт и никогда не сбрасывается** — даже когда меняется
+  `MAJOR.MINOR.PATCH`. Сторы не принимают повторный номер сборки.
+- Претендент на релиз до 1.0.0 маркируется **только номером сборки**
+  (`0.4.0+12`), суффиксы вида `-beta`/`-rc` не используем: `pubspec` отдаёт их
+  в нативные версии платформ, где они ломают сравнение версий.
+- Версию поднимаем **отдельным коммитом** `chore: bump version to X.Y.Z+N`,
+  не смешивая с фичей — так по истории видно, что вошло в сборку.
+- Claude поднимает `PATCH` и `BUILD` сам по таблице выше. `MINOR`, и тем более
+  выход на `1.0.0`, — **только по явному запросу**; молча уходить с нулевого
+  мажора нельзя.
+- Понижать версию нельзя. Ошибочный bump исправляется следующим bump'ом
+  вперёд, а не откатом номера.
+- Тегов и `CHANGELOG.md` до 1.0.0 не заводим — источник истории версий это
+  git-лог bump-коммитов. Появится нужда в теге — сначала решение, потом код
+  (§13).
+
 ---
 
 ## 12. Тестирование
@@ -623,6 +679,81 @@ firebase emulators:start                                    # Firestore + Functi
   и background-путь буквально выполняли один и тот же код через один и тот
   же ключ идемпотентности.
 
+Решено 2026-08-28 (§11.1):
+
+- **Версия проекта — 0.0.1+1.** До релиза мажор остаётся 0; `PATCH` — за
+  завершённую фазу, `MINOR` — за завершённый майлстоун, `+BUILD` — за каждую
+  сборку наружу и никогда не сбрасывается. Уход на `1.0.0` — только по явному
+  решению. Полные правила — §11.1.
+
+Решено 2026-08-28 (§3, §7 — архитектура подсчёта шагов):
+
+- **`HealthAdapter`/`HealthPackageAdapter` разделены на один интерфейс и
+  две независимые платформенные реализации.** Раньше один класс
+  (`HealthPackageAdapter`) ветвился внутри себя по `Platform.isAndroid` в
+  четырёх местах. Теперь: `StepCountingService`
+  (`features/steps/data/step_counting_service.dart`) — интерфейс + общий
+  `HealthPackagePedometer` mixin (переиспользуемая обвязка над пакетом
+  `health`, деталь реализации, не часть контракта); `AndroidStepCountingService`
+  (`android_step_counting_service.dart`) и `IosStepCountingService`
+  (`ios_step_counting_service.dart`) — по одному классу на платформу, без
+  единого `Platform.isAndroid` внутри них. `createStepCountingService()`
+  (`steps/presentation/steps_providers.dart`) — единственная точка ветвления
+  по платформе во всей фиче. Стек не поменялся — обе реализации всё ещё
+  через пакет `health` (§3); это структурный рефакторинг слоя `data/`, не
+  новая зависимость.
+- **Android реализован и не требует платного аккаунта** — Health Connect
+  бесплатен, ограничений уровня Apple Developer Program у него нет.
+- **iOS (`IosStepCountingService`) сначала был реализован через HealthKit
+  (`health`), тем же интерфейсом, что и Android** — но не был верифицирован
+  на устройстве: HealthKit — Apple capability, требующая платного членства
+  в Apple Developer Program; бесплатного пути для неё, в отличие от Health
+  Connect, не существует (см. также §7 — Live Activity iOS follow-up
+  упирается в ту же самую причину). **В тот же день пересмотрено** — см.
+  следующий пункт.
+- **iOS переведён на Core Motion (`CMPedometer`), временно, по прямому
+  запросу.** `IosStepCountingService` больше не использует `health`/
+  HealthKit — вместо этого `CMPedometer.queryPedometerData(from:to:)`, с
+  разрешением через `permission_handler`'s `Permission.sensors`
+  (`NSMotionUsageDescription` — обычное runtime-разрешение, не capability,
+  работает с бесплатным Personal Team). Полная рабочая HealthKit-реализация
+  того же класса существовала до этого изменения — `git log -p --
+  lib/features/steps/data/ios_step_counting_service.dart` её находит; TODO
+  на миграцию обратно лежит в самом файле (§3, «Почему так»). Плата за
+  бесплатность сейчас: только шаги этого iPhone (без Apple Watch),
+  дистанция — оценка Core Motion, не HealthKit-агрегат.
+  `HealthPackagePedometer` mixin (общая обвязка над `health`) оставлен как
+  есть, используется пока только `AndroidStepCountingService` — на случай
+  будущей миграции iOS обратно на HealthKit восстановление тривиально
+  (снова подмешать mixin), а не переписывание с нуля.
+- **`CMPedometer` доступен через свой `MethodChannel`, не через пакет
+  `cm_pedometer` — та первая попытка сломала CI.** Единственный
+  существующий Flutter-пакет, оборачивающий именно
+  `CMPedometer.queryPedometerData(from:to:)` (`cm_pedometer` ^1.2.0), был
+  сначала добавлен в `pubspec.yaml`; `flutter pub get` на CI упал с «The
+  plugin `cm_pedometer` doesn't have a main class defined» —
+  `androidPackage: com.hieutv.cm_pedometer` в его собственном pubspec.yaml
+  указывает на Java/Kotlin класс, которого в опубликованном пакете физически
+  нет. Flutter-тулинг резолвит регистрацию плагина для **всех** платформ,
+  которые плагин заявляет, независимо от того, какие платформы использует
+  сам код приложения — так что эта Android-поломка ломала сборку и для
+  нашего iOS-only использования тоже. Пакет удалён из `pubspec.yaml`.
+  Вместо него — свой `MethodChannel`
+  (`com.zimokk.thereandback/pedometer`): Swift-обработчик в
+  `ios/Runner/AppDelegate.swift` (держит один `CMPedometer()`, отвечает на
+  `queryPedometerData`) плюс тонкая Dart-обёртка
+  `features/steps/data/ios_pedometer_channel.dart`. Core Motion — системный
+  фреймворк, так что для этого не нужен ни CocoaPods, ни `Podfile`-запись —
+  `pod install`/`Podfile` теперь нужны только ради `PERMISSION_SENSORS` (см.
+  ниже), не ради самого CMPedometer.
+- **Требует ручной донастройки перед сборкой на iOS**, которую нельзя
+  сделать в этой песочнице (нет Xcode/CocoaPods): после первого
+  `pod install` (создаст `ios/Podfile`, которого пока нет в репозитории) —
+  добавить `PERMISSION_SENSORS=1` в `GCC_PREPROCESSOR_DEFINITIONS` его
+  `post_install`-блока (`permission_handler`'s own README задаёт точный
+  сниппет). Без этого `Permission.sensors` не работает на iOS. См.
+  `docs/screens/steps-sync.md`.
+
 Решено 2026-08-27 (пересматривает «Бэкфилл при старте квеста» из
 2026-08-23):
 
@@ -678,6 +809,22 @@ firebase emulators:start                                    # Firestore + Functi
       экране (Live Activity) — Android-часть реализована («Решено
       2026-08-24»); iOS нужен отдельный план: нативный Widget Extension на
       Swift, `ActivityKit`, деградация на iOS <16.1 (§7).
+- [x] Разделение подсчёта шагов на платформенные реализации — решено
+      («Решено 2026-08-28» выше): `StepCountingService` — один интерфейс,
+      `AndroidStepCountingService`/`IosStepCountingService` — независимые
+      реализации. Android реализован и рабочий (Health Connect, бесплатно).
+      iOS временно на Core Motion (`CMPedometer`) вместо HealthKit — тоже
+      рабочий и бесплатный (обычное runtime-разрешение, не capability), но
+      без агрегации с Apple Watch. Доступ — через свой `MethodChannel`
+      (`AppDelegate.swift` ↔ `ios_pedometer_channel.dart`), не через пакет
+      `cm_pedometer`: тот ломает `flutter pub get` битой Android-
+      регистрацией плагина, независимо от платформы использования. TODO на
+      миграцию обратно на HealthKit — в `ios_step_counting_service.dart`,
+      привязан к той же причине (платный Apple Developer Program), что и
+      iOS Live Activity выше. Требует ручной правки `ios/Podfile` после
+      первого `pod install` (для `PERMISSION_SENSORS`, не для CMPedometer
+      самого по себе) — см. «Решено 2026-08-28» выше и
+      `docs/screens/steps-sync.md`.
 
 ---
 

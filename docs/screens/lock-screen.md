@@ -29,7 +29,7 @@ rewrite.
    grants the background-read permission once the base `READ_STEPS`/
    `READ_DISTANCE` permissions are already held — requesting it first fails
    even if the user taps "Allow" — so `enable()` checks/requests those first
-   via the same `HealthAdapter.requestStepsPermission()` the Путь tab uses,
+   via the same `StepCountingService.requestStepsPermission()` the Путь tab uses,
    in case this toggle is reached without ever visiting that tab.
 3. If granted: registers the `workmanager` periodic background task
    ([below](#background-sync-workmanager)) and, if a quest is already
@@ -47,8 +47,9 @@ rewrite.
 
 `features/journey/domain/lock_screen_snapshot.dart`'s pure
 `buildLockScreenSnapshot()` reduces the live quest to: `questDay` (reusing
-`quest_progress.dart`'s `questDay()`, so it never drifts from the Путь
-tab's own counter), `progressMeters`/`totalMeters`, and a `positionLabel`.
+`quest_time_service.dart`'s `QuestTimeService.questDay()`, so it never
+drifts from the Путь tab's own counter), `progressMeters`/`totalMeters`,
+and a `positionLabel`.
 
 **`positionLabel` is a placeholder** — `"→ {pointB}"` — because
 `Segment`/`Landmark`/`map.json` (§6.2, Phase 6/11) don't exist yet; there is
@@ -122,7 +123,9 @@ registers in `main.dart`) runs in a separate background isolate with no
 widget tree and no running `ProviderContainer` — everything it needs is
 constructed fresh: a new `AppDatabase()` connection (same on-disk file
 `_openConnection()` always resolves to, per `steps-sync.md`), a real
-`HealthPackageAdapter`, and a `StepsSyncEngine` — the exact same class
+`AndroidStepCountingService` (constructed directly, not through
+`createStepCountingService()` — this callback only ever runs on Android),
+and a `StepsSyncEngine` — the exact same class
 `StepsSync.sync()` uses in the foreground (see `steps-sync.md`). Both paths
 write through the identical `(ownerId, journeyId, intervalStart)`
 idempotency key, so a background tick and a later foreground sync of the
@@ -144,7 +147,7 @@ battery managers can still kill the task early — both are inherent to
   are both declared in `AndroidManifest.xml` and both requested together
   from `LockScreenController.enable()` — neither is useful alone for this
   feature, so there's one toggle, one explanation, one pair of prompts.
-- `HealthAdapter` gained `hasBackgroundHealthPermission()`/
+- `StepCountingService` gained `hasBackgroundHealthPermission()`/
   `requestBackgroundHealthPermission()`, thin wrappers over the `health`
   package's own `isHealthDataInBackgroundAuthorized()`/
   `requestHealthDataInBackgroundAuthorization()` (both already `true` on
@@ -161,7 +164,7 @@ saying "permission not granted" no matter what was actually granted:
 - **Health Connect not installed at all.** Unlike the Путь tab's
   `StepsPermissionGate` (`steps_sync_state.dart`'s
   `StepsPermissionStatus.healthConnectMissing`), `LockScreenController`
-  never checked `HealthAdapter.healthConnectAvailability()` before
+  never checked `StepCountingService.healthConnectAvailability()` before
   `enable()`/`refreshStatus()` went straight to requesting/checking
   permissions Health Connect had nowhere to grant. The result collapsed
   into a plain `denied`, sending the user back to a permission screen that
@@ -171,7 +174,7 @@ saying "permission not granted" no matter what was actually granted:
   — and the Настройки card renders it as an install prompt
   (`lockScreenHealthConnectMissingBody` + a button calling the controller's
   new `openHealthConnectInstall()`, which just forwards to
-  `HealthAdapter.openHealthConnectInstall()`, same as `StepsSync`'s).
+  `StepCountingService.openHealthConnectInstall()`, same as `StepsSync`'s).
 - **Health Connect installed *after* this app's process already started.**
   The `health` plugin's native side only (re-)creates its Health-Connect-
   backed helper objects inside the handler for `getHealthConnectSdkStatus`
@@ -187,7 +190,7 @@ saying "permission not granted" no matter what was actually granted:
   every permission it offered, and even fully restarted the app while it
   was still in that state would keep seeing "no access" — because the
   restart that would have fixed it needs to happen *after* Health Connect
-  is installed, and nothing in the UI said so. `HealthPackageAdapter` now
+  is installed, and nothing in the UI said so. `AndroidStepCountingService` now
   calls `_health.isHealthConnectAvailable()` (which triggers that native
   re-init) before both background-permission calls, closing the gap
   without requiring a special restart sequence to work around it.
@@ -255,7 +258,7 @@ on-screen notification (layout, icons, lock-screen visibility) and the real
 covered at the unit/provider level. `AndroidLockScreenChannel`'s
 `flutter_local_notifications` calls are tested against a mock plugin, not
 the real platform channel — by the same `testing`-skill policy that keeps
-`HealthPackageAdapter` out of tests in `steps-sync.md`.
+the real `health`-package services out of tests in `steps-sync.md`.
 
 ## l10n keys
 
@@ -285,7 +288,7 @@ the real platform channel — by the same `testing`-skill policy that keeps
   this environment can't provide).
 - `test/features/journey/presentation/lock_screen_controller_test.dart` —
   the state machine against fake `LockScreenChannel`/`AndroidBackgroundSync`/
-  `HealthAdapter`: enable with both permissions granted (registers
+  `StepCountingService`: enable with both permissions granted (registers
   background sync, shows the already-active quest), enable denied (stays
   off, never registers), a same-quest progress update (`update()`, not
   `start()` again), quest completion (`end()` + background-sync

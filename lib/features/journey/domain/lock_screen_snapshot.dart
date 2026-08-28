@@ -1,8 +1,8 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import 'journey.dart';
-import 'quest_progress.dart';
 import 'quest_selection.dart';
+import 'quest_time_service.dart';
 
 part 'lock_screen_snapshot.freezed.dart';
 
@@ -41,16 +41,16 @@ abstract class LockScreenSnapshot with _$LockScreenSnapshot {
 /// Reduces the live quest state to a [LockScreenSnapshot] — the one place
 /// that decides what the lock screen / notification shows.
 ///
-/// Pure: no platform channel, no I/O. Reuses [questDay] from
-/// `quest_progress.dart` so the "Day N" counter never drifts from the one
-/// shown on the Путь tab.
+/// Pure: no platform channel, no I/O. Reuses `QuestTimeService.questDay`
+/// from `quest_time_service.dart` so the "Day N" counter never drifts from
+/// the one shown on the Путь tab.
 LockScreenSnapshot buildLockScreenSnapshot({
   required SelectedQuest quest,
   required Journey journey,
   required DateTime now,
 }) {
   return LockScreenSnapshot(
-    questDay: questDay(startedAt: quest.startedAt, now: now),
+    questDay: questTimeService.questDay(startedAt: quest.startedAt, now: now),
     progressMeters: quest.progressMeters,
     totalMeters: journey.totalMeters,
     // TODO(Phase 6/11): replace with the real landmark/region the traveler

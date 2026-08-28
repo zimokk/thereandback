@@ -251,3 +251,80 @@ final class SelectedJourneyDetailsProvider
 
 String _$selectedJourneyDetailsHash() =>
     r'9bb2a75a0e35422d782a72f5a8ee26cb3f4252be';
+
+/// Raw interval history for the active quest, wide enough to cover
+/// `QuestTimeService.paceMetersPerDay`'s 7-day rolling window (§5.3)
+/// regardless of timezone offset. Re-fetches whenever
+/// [selectedJourneyProvider] changes, so a fresh sync tick keeps the Quest
+/// Stats pace/ETA current.
+///
+/// 8 days of margin, not 7: the window is computed on **local** calendar
+/// days, and the query filter is a plain UTC instant comparison — one extra
+/// day covers the largest realistic UTC offset, and `QuestTimeService` does
+/// the exact local-day filtering afterwards (§13: the DB query lives here in
+/// `data/`, the calendar math stays in `domain/`).
+
+@ProviderFor(recentMeteredIntervals)
+final recentMeteredIntervalsProvider = RecentMeteredIntervalsProvider._();
+
+/// Raw interval history for the active quest, wide enough to cover
+/// `QuestTimeService.paceMetersPerDay`'s 7-day rolling window (§5.3)
+/// regardless of timezone offset. Re-fetches whenever
+/// [selectedJourneyProvider] changes, so a fresh sync tick keeps the Quest
+/// Stats pace/ETA current.
+///
+/// 8 days of margin, not 7: the window is computed on **local** calendar
+/// days, and the query filter is a plain UTC instant comparison — one extra
+/// day covers the largest realistic UTC offset, and `QuestTimeService` does
+/// the exact local-day filtering afterwards (§13: the DB query lives here in
+/// `data/`, the calendar math stays in `domain/`).
+
+final class RecentMeteredIntervalsProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<List<MeteredInterval>>,
+          List<MeteredInterval>,
+          FutureOr<List<MeteredInterval>>
+        >
+    with
+        $FutureModifier<List<MeteredInterval>>,
+        $FutureProvider<List<MeteredInterval>> {
+  /// Raw interval history for the active quest, wide enough to cover
+  /// `QuestTimeService.paceMetersPerDay`'s 7-day rolling window (§5.3)
+  /// regardless of timezone offset. Re-fetches whenever
+  /// [selectedJourneyProvider] changes, so a fresh sync tick keeps the Quest
+  /// Stats pace/ETA current.
+  ///
+  /// 8 days of margin, not 7: the window is computed on **local** calendar
+  /// days, and the query filter is a plain UTC instant comparison — one extra
+  /// day covers the largest realistic UTC offset, and `QuestTimeService` does
+  /// the exact local-day filtering afterwards (§13: the DB query lives here in
+  /// `data/`, the calendar math stays in `domain/`).
+  RecentMeteredIntervalsProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'recentMeteredIntervalsProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$recentMeteredIntervalsHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<List<MeteredInterval>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<List<MeteredInterval>> create(Ref ref) {
+    return recentMeteredIntervals(ref);
+  }
+}
+
+String _$recentMeteredIntervalsHash() =>
+    r'cce3357ac381a9f3f6fe919edcc1c42638a94254';

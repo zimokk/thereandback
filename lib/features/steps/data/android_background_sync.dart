@@ -6,7 +6,7 @@ import '../../journey/data/android_lock_screen_channel.dart';
 import '../../journey/data/journey_catalog.dart';
 import '../../journey/data/progress_repository.dart';
 import '../../journey/domain/lock_screen_snapshot.dart';
-import 'health_adapter.dart';
+import 'android_step_counting_service.dart';
 import 'step_sample_repository.dart';
 import 'steps_sync_engine.dart';
 
@@ -79,15 +79,20 @@ void androidBackgroundSyncCallbackDispatcher() {
       final journey = findJourney(quest.journeyId);
       if (journey == null) return true; // shouldn't happen; not this task's
 
-      final healthAdapter = HealthPackageAdapter();
-      await healthAdapter.configure();
+      // This callback only ever runs as an Android `workmanager` task, so
+      // it constructs the Android service directly rather than going
+      // through the platform factory (`steps_providers.dart`'s
+      // `createStepCountingService`) — it doesn't need to ask which
+      // platform it's on, it already is one.
+      final stepCountingService = AndroidStepCountingService();
+      await stepCountingService.configure();
       // Permission may have been revoked since this task was registered
       // (health onboarding is separate from the lock-screen toggle) — skip
       // this tick rather than let a health-plugin call throw.
-      if (await healthAdapter.hasStepsPermission() != true) return true;
+      if (await stepCountingService.hasStepsPermission() != true) return true;
 
       final engine = StepsSyncEngine(
-        healthAdapter: healthAdapter,
+        stepCountingService: stepCountingService,
         stepSampleRepository: DriftStepSampleRepository(db),
       );
       final now = DateTime.now();

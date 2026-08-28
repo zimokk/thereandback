@@ -26,8 +26,16 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- Temporarily unused (CLAUDE.md §3, §14): IosStepCountingService reads
+	     steps via CMPedometer/NSMotionUsageDescription below, not HealthKit,
+	     until this app has a paid Apple Developer Program membership.
+	     Restore this key when migrating IosStepCountingService back to
+	     HealthKit — the string itself hasn't changed.
 	<key>NSHealthShareUsageDescription</key>
 	<string>There and Back reads your step and walking-distance data to move your traveler along the quest route. It stays on this device except as your total quest progress.</string>
+	-->
+	<key>NSMotionUsageDescription</key>
+	<string>There and Back reads your step count to move your traveler along the quest route. It stays on this device except as your total quest progress.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
