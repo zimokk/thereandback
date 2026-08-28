@@ -17,10 +17,15 @@ import '../domain/route_scale.dart';
 import 'journey_providers.dart';
 
 /// The Путь tab's scene (§6.1) — today, a deliberate placeholder: a wavy
-/// line standing in for real terrain, with the traveler icon pinned at the
-/// screen's horizontal center and the line panned underneath it by a
-/// horizontal drag — so moving the line makes the icon look like it rises
-/// and falls with the terrain, without the icon itself ever leaving centre.
+/// line standing in for real terrain, panned by a horizontal drag, with the
+/// traveler icon resting on it near the screen's horizontal centre. The
+/// icon is the foreground layer, the line is the background one (§6.1 —
+/// "слои двигаются с разной скоростью"): a drag moves both, but the icon
+/// sways only a small, bounded distance opposite the screen direction the
+/// line's own pattern shifts in (see [_travelerOffsetX] and [_wavyPathY]),
+/// which is what makes the two read as different depths instead of one
+/// rigid picture. At rest (`_panMeters == 0`, a freshly started quest) the
+/// icon still sits exactly at centre — the sway only appears once panned.
 ///
 /// The line's *length* is not a placeholder, though: it always spans
 /// exactly `[0, journey.totalMeters]` at this quest's fixed
@@ -139,8 +144,14 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView> {
                   // directly instead, since their layer is pinned to the
                   // top and doesn't follow the line's height.
                   final panOffsetPixels = _panMeters * pixelsPerMeter;
+                  // Foreground (icon) vs. background (line) parallax: see
+                  // the class doc comment and [_travelerOffsetX]. The icon
+                  // reads its height off the line at its *own* x, not at
+                  // centerX, so it still visually sits on the terrain once
+                  // it has swayed off centre.
+                  final travelerX = centerX + _travelerOffsetX(panOffsetPixels);
                   final travelerY = _wavyPathY(
-                    x: centerX,
+                    x: travelerX,
                     panOffset: panOffsetPixels,
                     midY: midY,
                   );
@@ -171,7 +182,7 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView> {
                                     pixelsPerMeter,
                           ),
                       Positioned(
-                        left: centerX - _travelerIconSize / 2,
+                        left: travelerX - _travelerIconSize / 2,
                         top: travelerY - _travelerIconSize / 2,
                         child: const IgnorePointer(
                           child: Icon(
@@ -233,6 +244,37 @@ const double _waveAmplitude = 36;
 /// Horizontal distance, in pixels, over which the placeholder wave
 /// completes one full up-down cycle.
 const double _waveWavelength = 260;
+
+/// Fraction of the pan's screen-space offset the traveler icon sways by,
+/// opposite the direction the line's own pattern moves in — see
+/// [_travelerOffsetX]. Kept well under 1 so the icon (foreground) reads as
+/// closer/faster than the line (background) the way §6.1's parallax layers
+/// do, not as a second copy of the same motion.
+const double _travelerParallaxFactor = 0.15;
+
+/// Maximum horizontal sway of the traveler icon from screen centre, in
+/// logical pixels. Without a bound, [_travelerParallaxFactor] applied to
+/// the raw pan offset would carry the icon off-screen over a long drag —
+/// this keeps it inside a narrow band around `You` instead, which is also
+/// why it saturates quickly rather than tracking the pan 1:1.
+const double _travelerSwayRange = 40.0;
+
+/// Horizontal offset of the traveler icon from screen centre, given the
+/// current pan's screen-space offset ([panOffsetPixels], pixels from
+/// [_wavyPathY]'s own `panOffset` parameter).
+///
+/// The sign is deliberately opposite the line: advancing the pan (dragging
+/// toward B) shifts [_wavyPathY]'s visible pattern to larger x — see that
+/// function's doc comment — so this returns a *negative* offset for a
+/// positive [panOffsetPixels], moving the icon the other way. That is the
+/// parallax cue this function exists for: foreground (icon) and background
+/// (line) visibly moving in different screen directions under the same
+/// drag, not just at different speeds.
+double _travelerOffsetX(double panOffsetPixels) =>
+    (-panOffsetPixels * _travelerParallaxFactor).clamp(
+      -_travelerSwayRange,
+      _travelerSwayRange,
+    );
 
 /// Height of the placeholder wavy path at horizontal screen position [x],
 /// given how far the line has been panned ([panOffset], pixels) and the
