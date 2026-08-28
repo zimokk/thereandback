@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 
 import '../../../data/drift/database.dart';
 import '../domain/quest_selection.dart';
+import '../domain/quest_time_service.dart';
 
 /// Durable storage for the single active [SelectedQuest] per local owner
 /// (CLAUDE.md §5.2, §8) — the drift-backed replacement for the in-memory
@@ -25,6 +26,19 @@ abstract class ProgressRepository {
     String ownerId, {
     required String journeyId,
     required DateTime startedAt,
+  });
+
+  /// Synced intervals for [journeyId] ending at or after [since], reduced to
+  /// what `QuestTimeService.paceMetersPerDay` needs (§5.3's 7-day rolling
+  /// pace). Callers should pass a [since] a little wider than the 7
+  /// calendar days they actually need — this method does no calendar-day
+  /// math itself, it only filters by UTC instant; the exact local-day
+  /// windowing happens in `domain/` (§13: layer purity — the query lives
+  /// here, the math there).
+  Future<List<MeteredInterval>> recentMeteredIntervals(
+    String ownerId, {
+    required String journeyId,
+    required DateTime since,
   });
 }
 
@@ -89,5 +103,30 @@ class DriftProgressRepository implements ProgressRepository {
             startedAt: startedAt.toUtc(),
           ),
         );
+  }
+
+  @override
+  Future<List<MeteredInterval>> recentMeteredIntervals(
+    String ownerId, {
+    required String journeyId,
+    required DateTime since,
+  }) async {
+    final intervals = _db.stepIntervalRecords;
+    final rows =
+        await (_db.select(intervals)..where(
+              (t) =>
+                  t.ownerId.equals(ownerId) &
+                  t.journeyId.equals(journeyId) &
+                  t.intervalEnd.isBiggerOrEqualValue(since.toUtc()),
+            ))
+            .get();
+
+    return [
+      for (final row in rows)
+        MeteredInterval(
+          end: row.intervalEnd.toLocal(),
+          meters: row.resolvedMeters,
+        ),
+    ];
   }
 }

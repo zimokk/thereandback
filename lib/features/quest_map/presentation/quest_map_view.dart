@@ -7,7 +7,7 @@ import '../../../design/components/distance_text.dart';
 import '../../../design/spacing.dart';
 import '../../../design/typography.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../journey/domain/quest_progress.dart';
+import '../../journey/domain/quest_time_service.dart';
 import '../data/quest_map_repository.dart';
 import '../domain/route_mapping.dart';
 import 'quest_map_providers.dart';
@@ -303,7 +303,10 @@ class _TravelerStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final day = questDay(startedAt: startedAt, now: DateTime.now());
+    final day = questTimeService.questDay(
+      startedAt: startedAt,
+      now: DateTime.now(),
+    );
     final distance = formatDistance(progressMeters);
 
     return Column(

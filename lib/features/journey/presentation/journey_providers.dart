@@ -8,6 +8,7 @@ import '../data/journey_catalog.dart';
 import '../data/progress_repository.dart';
 import '../domain/journey.dart';
 import '../domain/quest_selection.dart';
+import '../domain/quest_time_service.dart';
 
 part 'journey_providers.g.dart';
 
@@ -94,4 +95,28 @@ Journey? selectedJourneyDetails(Ref ref) {
   final selected = ref.watch(selectedJourneyProvider);
   if (selected == null) return null;
   return findJourney(selected.journeyId);
+}
+
+/// Raw interval history for the active quest, wide enough to cover
+/// `QuestTimeService.paceMetersPerDay`'s 7-day rolling window (§5.3)
+/// regardless of timezone offset. Re-fetches whenever
+/// [selectedJourneyProvider] changes, so a fresh sync tick keeps the Quest
+/// Stats pace/ETA current.
+///
+/// 8 days of margin, not 7: the window is computed on **local** calendar
+/// days, and the query filter is a plain UTC instant comparison — one extra
+/// day covers the largest realistic UTC offset, and `QuestTimeService` does
+/// the exact local-day filtering afterwards (§13: the DB query lives here in
+/// `data/`, the calendar math stays in `domain/`).
+@riverpod
+Future<List<MeteredInterval>> recentMeteredIntervals(Ref ref) async {
+  final quest = ref.watch(selectedJourneyProvider);
+  if (quest == null) return const [];
+  return ref
+      .watch(progressRepositoryProvider)
+      .recentMeteredIntervals(
+        localOwnerId,
+        journeyId: quest.journeyId,
+        since: DateTime.now().subtract(const Duration(days: 8)),
+      );
 }

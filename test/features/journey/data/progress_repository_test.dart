@@ -93,4 +93,92 @@ void main() {
       expect(await repository.loadSelectedQuest('owner-2'), isNull);
     },
   );
+
+  group('recentMeteredIntervals (§5.3 — raw history for the pace window)', () {
+    test('an interval ending before `since` is excluded', () async {
+      await db
+          .into(db.stepIntervalRecords)
+          .insert(
+            StepIntervalRecordsCompanion.insert(
+              ownerId: 'owner-1',
+              journeyId: 'odyssey-ithaca',
+              intervalStart: DateTime.utc(2026, 3, 1),
+              intervalEnd: DateTime.utc(2026, 3, 1, 0, 10),
+              steps: 100,
+              resolvedMeters: 75,
+              syncedAt: DateTime.utc(2026, 3, 1, 0, 10),
+            ),
+          );
+
+      final result = await repository.recentMeteredIntervals(
+        'owner-1',
+        journeyId: 'odyssey-ithaca',
+        since: DateTime.utc(2026, 3, 5),
+      );
+
+      expect(result, isEmpty);
+    });
+
+    test(
+      'returns matching intervals converted back to local time, ignoring '
+      'other owners and other journeys',
+      () async {
+        await db
+            .into(db.stepIntervalRecords)
+            .insert(
+              StepIntervalRecordsCompanion.insert(
+                ownerId: 'owner-1',
+                journeyId: 'odyssey-ithaca',
+                intervalStart: DateTime.utc(2026, 3, 10),
+                intervalEnd: DateTime.utc(2026, 3, 10, 0, 10),
+                steps: 100,
+                resolvedMeters: 75,
+                syncedAt: DateTime.utc(2026, 3, 10, 0, 10),
+              ),
+            );
+        // A different owner — must never show up in owner-1's history.
+        await db
+            .into(db.stepIntervalRecords)
+            .insert(
+              StepIntervalRecordsCompanion.insert(
+                ownerId: 'owner-2',
+                journeyId: 'odyssey-ithaca',
+                intervalStart: DateTime.utc(2026, 3, 10),
+                intervalEnd: DateTime.utc(2026, 3, 10, 0, 10),
+                steps: 100,
+                resolvedMeters: 75,
+                syncedAt: DateTime.utc(2026, 3, 10, 0, 10),
+              ),
+            );
+        // A different, earlier journey for the same owner — must never
+        // leak into the current journey's pace window.
+        await db
+            .into(db.stepIntervalRecords)
+            .insert(
+              StepIntervalRecordsCompanion.insert(
+                ownerId: 'owner-1',
+                journeyId: 'some-other-quest',
+                intervalStart: DateTime.utc(2026, 3, 10),
+                intervalEnd: DateTime.utc(2026, 3, 10, 0, 10),
+                steps: 100,
+                resolvedMeters: 75,
+                syncedAt: DateTime.utc(2026, 3, 10, 0, 10),
+              ),
+            );
+
+        final result = await repository.recentMeteredIntervals(
+          'owner-1',
+          journeyId: 'odyssey-ithaca',
+          since: DateTime.utc(2026, 3, 1),
+        );
+
+        expect(result, hasLength(1));
+        expect(result.single.meters, 75);
+        expect(
+          result.single.end,
+          DateTime.utc(2026, 3, 10, 0, 10).toLocal(),
+        );
+      },
+    );
+  });
 }

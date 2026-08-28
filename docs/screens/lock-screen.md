@@ -47,8 +47,9 @@ rewrite.
 
 `features/journey/domain/lock_screen_snapshot.dart`'s pure
 `buildLockScreenSnapshot()` reduces the live quest to: `questDay` (reusing
-`quest_progress.dart`'s `questDay()`, so it never drifts from the Путь
-tab's own counter), `progressMeters`/`totalMeters`, and a `positionLabel`.
+`quest_time_service.dart`'s `QuestTimeService.questDay()`, so it never
+drifts from the Путь tab's own counter), `progressMeters`/`totalMeters`,
+and a `positionLabel`.
 
 **`positionLabel` is a placeholder** — `"→ {pointB}"` — because
 `Segment`/`Landmark`/`map.json` (§6.2, Phase 6/11) don't exist yet; there is
