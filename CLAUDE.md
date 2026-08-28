@@ -667,6 +667,34 @@ firebase emulators:start                                    # Firestore + Functi
   сборку наружу и никогда не сбрасывается. Уход на `1.0.0` — только по явному
   решению. Полные правила — §11.1.
 
+Решено 2026-08-28 (§3, §7 — архитектура подсчёта шагов):
+
+- **`HealthAdapter`/`HealthPackageAdapter` разделены на один интерфейс и
+  две независимые платформенные реализации.** Раньше один класс
+  (`HealthPackageAdapter`) ветвился внутри себя по `Platform.isAndroid` в
+  четырёх местах. Теперь: `StepCountingService`
+  (`features/steps/data/step_counting_service.dart`) — интерфейс + общий
+  `HealthPackagePedometer` mixin (переиспользуемая обвязка над пакетом
+  `health`, деталь реализации, не часть контракта); `AndroidStepCountingService`
+  (`android_step_counting_service.dart`) и `IosStepCountingService`
+  (`ios_step_counting_service.dart`) — по одному классу на платформу, без
+  единого `Platform.isAndroid` внутри них. `createStepCountingService()`
+  (`steps/presentation/steps_providers.dart`) — единственная точка ветвления
+  по платформе во всей фиче. Стек не поменялся — обе реализации всё ещё
+  через пакет `health` (§3); это структурный рефакторинг слоя `data/`, не
+  новая зависимость.
+- **Android реализован и не требует платного аккаунта** — Health Connect
+  бесплатен, ограничений уровня Apple Developer Program у него нет.
+- **iOS (`IosStepCountingService`) реализован по тому же интерфейсу, но не
+  проверен на реальном устройстве** — HealthKit является Apple capability,
+  требующей платного членства в Apple Developer Program; бесплатного пути
+  для него, в отличие от Health Connect, не существует (см. также §7 —
+  Live Activity iOS follow-up упирается в ту же самую причину: недоступность
+  полноценной iOS-разработки без платного аккаунта/Xcode в этой песочнице).
+  Код не удалён и не оставлен заглушкой — он рабочий, просто не
+  верифицирован сквозным тестом на устройстве; включить его в реальную
+  проверку — вопрос заведения аккаунта, а не написания кода.
+
 Решено 2026-08-27 (пересматривает «Бэкфилл при старте квеста» из
 2026-08-23):
 
@@ -722,6 +750,15 @@ firebase emulators:start                                    # Firestore + Functi
       экране (Live Activity) — Android-часть реализована («Решено
       2026-08-24»); iOS нужен отдельный план: нативный Widget Extension на
       Swift, `ActivityKit`, деградация на iOS <16.1 (§7).
+- [x] Разделение подсчёта шагов на платформенные реализации — решено
+      («Решено 2026-08-28» выше): `StepCountingService` — один интерфейс,
+      `AndroidStepCountingService`/`IosStepCountingService` — независимые
+      реализации. Android реализован и рабочий (Health Connect, бесплатно).
+      iOS реализован по тому же интерфейсу, но не проверен на реальном
+      устройстве — HealthKit требует платного Apple Developer Program
+      аккаунта, которого пока нет; проверка на устройстве остаётся
+      открытым follow-up, привязанным к той же причине, что и iOS Live
+      Activity выше.
 
 ---
 

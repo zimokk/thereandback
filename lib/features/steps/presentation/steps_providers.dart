@@ -7,17 +7,31 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../app/app_lifecycle.dart';
 import '../../../app/database_provider.dart';
 import '../../journey/presentation/journey_providers.dart';
-import '../data/health_adapter.dart';
+import '../data/android_step_counting_service.dart';
+import '../data/ios_step_counting_service.dart';
+import '../data/step_counting_service.dart';
 import '../data/step_sample_repository.dart';
 import '../data/steps_sync_engine.dart';
 import 'steps_sync_state.dart';
 
 part 'steps_providers.g.dart';
 
-/// The `health` package wrapper. Overridden with a fake in tests (`testing`
+/// Picks the platform's `StepCountingService` — the only
+/// `Platform.isAndroid` check anywhere in this feature, since both concrete
+/// classes are unconditional, single-platform code (see
+/// `step_counting_service.dart`'s doc comment). Kept here, not in
+/// `step_counting_service.dart`, so that file has no reason to import
+/// either concrete implementation — only this composition-root-ish spot
+/// needs to know both exist.
+StepCountingService createStepCountingService() =>
+    Platform.isAndroid
+        ? AndroidStepCountingService()
+        : IosStepCountingService();
+
+/// The step-counting service. Overridden with a fake in tests (`testing`
 /// skill: never the real health plugin in a widget test).
 @riverpod
-HealthAdapter healthAdapter(Ref ref) => HealthPackageAdapter();
+StepCountingService stepCountingService(Ref ref) => createStepCountingService();
 
 /// The drift-backed idempotency log for synced intervals (§5.2). Overridden
 /// with an in-memory `AppDatabase` in tests via `appDatabaseProvider`
@@ -73,7 +87,7 @@ class StepsSync extends _$StepsSync {
     if (_permissionOpInFlight) return;
     _permissionOpInFlight = true;
     try {
-      final adapter = ref.read(healthAdapterProvider);
+      final adapter = ref.read(stepCountingServiceProvider);
       await adapter.configure();
 
       if (Platform.isAndroid) {
@@ -108,7 +122,8 @@ class StepsSync extends _$StepsSync {
   /// own Steps/Distance consent screen ("Fitness and wellness") — Health
   /// Connect will not grant that screen's request while it's missing, no
   /// matter how many times the request below runs. See
-  /// `HealthAdapter.hasActivityRecognitionPermission`. A no-op grant on iOS.
+  /// `StepCountingService.hasActivityRecognitionPermission`. A no-op grant
+  /// on iOS.
   ///
   /// A second `ACTIVITY_RECOGNITION` denial is Android's last one — the
   /// third call here shows no dialog at all
@@ -120,7 +135,7 @@ class StepsSync extends _$StepsSync {
     if (_permissionOpInFlight) return;
     _permissionOpInFlight = true;
     try {
-      final adapter = ref.read(healthAdapterProvider);
+      final adapter = ref.read(stepCountingServiceProvider);
 
       final activityRecognitionResult = await adapter
           .requestActivityRecognitionPermission();
@@ -157,10 +172,10 @@ class StepsSync extends _$StepsSync {
   /// `ACTIVITY_RECOGNITION` once [StepsPermissionStatus.permanentlyDenied]
   /// has been reached (called from the gate's "Open settings" button).
   Future<void> openAppSettings() =>
-      ref.read(healthAdapterProvider).openAppSettings();
+      ref.read(stepCountingServiceProvider).openAppSettings();
 
   Future<void> openHealthConnectInstall() =>
-      ref.read(healthAdapterProvider).openHealthConnectInstall();
+      ref.read(stepCountingServiceProvider).openHealthConnectInstall();
 
   /// Fetches the delta since the selected quest's `lastSyncedAt`, resolves
   /// it to meters via `stride.dart`, and writes the new total back into
@@ -185,7 +200,7 @@ class StepsSync extends _$StepsSync {
     state = state.copyWith(isSyncing: true);
     try {
       final engine = StepsSyncEngine(
-        healthAdapter: ref.read(healthAdapterProvider),
+        stepCountingService: ref.read(stepCountingServiceProvider),
         stepSampleRepository: ref.read(stepSampleRepositoryProvider),
       );
       final result = await engine.sync(quest: selected, now: DateTime.now());

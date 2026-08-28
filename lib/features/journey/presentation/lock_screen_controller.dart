@@ -8,7 +8,7 @@ import '../../../app/app_lifecycle.dart';
 import '../../../app/database_provider.dart';
 import '../../../core/local_owner.dart';
 import '../../steps/data/android_background_sync.dart';
-import '../../steps/data/health_adapter.dart'
+import '../../steps/data/step_counting_service.dart'
     show HealthConnectAvailability, RuntimePermissionResult;
 import '../../steps/presentation/steps_providers.dart';
 import '../data/android_lock_screen_channel.dart';
@@ -171,7 +171,7 @@ class LockScreenController extends _$LockScreenController {
         state = state.copyWith(enabled: restoredEnabled);
       }
 
-      final healthAdapter = ref.read(healthAdapterProvider);
+      final stepCountingService = ref.read(stepCountingServiceProvider);
 
       // Checked separately from the permission calls below, and before
       // them: unlike `hasStepsPermission()`/`requestStepsPermission()`,
@@ -180,7 +180,8 @@ class LockScreenController extends _$LockScreenController {
       // used to read as a flat `denied`, which sends the user back to a
       // permission screen Health Connect has nowhere to show yet.
       if (Platform.isAndroid) {
-        final availability = await healthAdapter.healthConnectAvailability();
+        final availability = await stepCountingService
+            .healthConnectAvailability();
         // `build()` kicks this method off from an unawaited
         // `Future.microtask` (see `_restoreThenRefresh`), so this call can
         // still be in flight after whoever owns this controller has gone
@@ -204,7 +205,7 @@ class LockScreenController extends _$LockScreenController {
           .read(androidLockScreenChannelProvider)
           .hasNotificationPermission();
       if (!ref.mounted) return;
-      final backgroundHealthGranted = await healthAdapter
+      final backgroundHealthGranted = await stepCountingService
           .hasBackgroundHealthPermission();
       if (!ref.mounted) return;
       final granted = notificationsGranted && backgroundHealthGranted;
@@ -278,7 +279,7 @@ class LockScreenController extends _$LockScreenController {
     _userActionInFlight = true;
     try {
       final channel = ref.read(androidLockScreenChannelProvider);
-      final healthAdapter = ref.read(healthAdapterProvider);
+      final stepCountingService = ref.read(stepCountingServiceProvider);
 
       // Same check as `refreshStatus()` — bail out before asking for
       // anything (including the notification prompt) rather than let the
@@ -286,7 +287,7 @@ class LockScreenController extends _$LockScreenController {
       // denial that Health Connect, not being installed, could never have
       // granted in the first place.
       if (Platform.isAndroid &&
-          await healthAdapter.healthConnectAvailability() ==
+          await stepCountingService.healthConnectAvailability() ==
               HealthConnectAvailability.notInstalled) {
         state = state.copyWith(
           permissionStatus: LockScreenPermissionStatus.healthConnectMissing,
@@ -301,12 +302,12 @@ class LockScreenController extends _$LockScreenController {
       // Health Connect's own Steps/Distance consent screen — Health Connect
       // won't grant that screen's request while this is missing, no matter
       // how many times requestStepsPermission() runs (see
-      // HealthAdapter.hasActivityRecognitionPermission). The Путь tab
+      // StepCountingService.hasActivityRecognitionPermission). The Путь tab
       // requests this first (steps_providers.dart's requestPermission());
       // this toggle is reachable without ever opening it (fresh install →
       // straight to Настройки), so it needs the same first step, not just
       // the base read permission this used to jump straight to.
-      final activityRecognitionResult = await healthAdapter
+      final activityRecognitionResult = await stepCountingService
           .requestActivityRecognitionPermission();
 
       var backgroundHealthGranted = false;
@@ -323,12 +324,13 @@ class LockScreenController extends _$LockScreenController {
         case RuntimePermissionResult.denied:
           blockedStatus = LockScreenPermissionStatus.denied;
         case RuntimePermissionResult.granted:
-          var stepsGranted = await healthAdapter.hasStepsPermission() ?? false;
+          var stepsGranted =
+              await stepCountingService.hasStepsPermission() ?? false;
           if (!stepsGranted) {
-            stepsGranted = await healthAdapter.requestStepsPermission();
+            stepsGranted = await stepCountingService.requestStepsPermission();
           }
           backgroundHealthGranted = stepsGranted
-              ? await healthAdapter.requestBackgroundHealthPermission()
+              ? await stepCountingService.requestBackgroundHealthPermission()
               : false;
       }
 
@@ -363,7 +365,7 @@ class LockScreenController extends _$LockScreenController {
   /// behind [LockScreenPermissionStatus.healthConnectMissing]'s card.
   /// Mirrors `StepsSync.openHealthConnectInstall()`.
   Future<void> openHealthConnectInstall() =>
-      ref.read(healthAdapterProvider).openHealthConnectInstall();
+      ref.read(stepCountingServiceProvider).openHealthConnectInstall();
 
   /// Turns the feature off: stops the background task and clears the
   /// display. Does not revoke the OS permissions themselves — same as every
@@ -394,7 +396,7 @@ class LockScreenController extends _$LockScreenController {
   /// has been reached (mirrors `StepsSync.openAppSettings()` for the Путь
   /// tab's own gate).
   Future<void> openAppSettings() =>
-      ref.read(healthAdapterProvider).openAppSettings();
+      ref.read(stepCountingServiceProvider).openAppSettings();
 
   Future<void> _showCurrentQuestIfActive() async {
     final quest = ref.read(selectedJourneyProvider);

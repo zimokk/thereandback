@@ -5,7 +5,7 @@ part 'steps_sync_state.freezed.dart';
 /// UI-facing permission state for the steps sync flow (§7). This is an
 /// application/presentation concept — the platform-specific detail it wraps
 /// (HealthKit's undetermined-`null`, Health Connect's install check) lives
-/// behind `steps/data/health_adapter.dart`.
+/// behind `steps/data/step_counting_service.dart`.
 enum StepsPermissionStatus {
   /// Not checked yet.
   unknown,

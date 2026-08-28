@@ -58,20 +58,22 @@ manifest) is now declared because of that second caller — see
 | File | Layer | Responsibility |
 |---|---|---|
 | `steps/domain/stride.dart` | domain (pure Dart) | `stepsToMeters`, `resolveDistanceMeters` (platform distance beats steps×stride, §5.1), `clampNonDecreasing` (monotonic progress), `isImplausiblePace` (>250 steps/min flag, §5.2 — called from `StepsSyncEngine.sync()`, not just unit-tested in isolation) |
-| `steps/data/health_adapter.dart` | data | `HealthAdapter` interface + `HealthPackageAdapter` wrapping the `health` package (HealthKit/Health Connect), including the background-permission pair used by `lock-screen.md` |
+| `steps/data/step_counting_service.dart` | data | `StepCountingService` interface + shared types + the `HealthPackagePedometer` mixin both platform classes use, including the background-permission pair used by `lock-screen.md` |
+| `steps/data/android_step_counting_service.dart` | data | `AndroidStepCountingService` — Health Connect via the `health` package. Shipped, no account gate (see the architecture plan this split came from). |
+| `steps/data/ios_step_counting_service.dart` | data | `IosStepCountingService` — HealthKit via the `health` package. Implemented, not yet verified on a real device: HealthKit needs a paid Apple Developer Program membership (§7, CLAUDE.md §14). |
 | `steps/data/step_sample_repository.dart` | data | `StepSampleRepository` + `DriftStepSampleRepository` — the idempotency log (see below) |
 | `steps/data/steps_sync_engine.dart` | data | `StepsSyncEngine` — the fetch/resolve/record algorithm itself, no `Ref`; shared by `StepsSync.sync()` (below) and the Android background task (`lock-screen.md`) |
 | `data/drift/database.dart` | data (shared, not steps-specific) | `AppDatabase`: `SelectedQuestRows` + `StepIntervalRecords` tables |
 | `features/journey/data/progress_repository.dart` | data | `ProgressRepository` — derives `SelectedQuest` from the interval log |
 | `steps/presentation/steps_sync_state.dart` | presentation | `StepsPermissionStatus` enum + `StepsSyncState` (freezed) |
-| `steps/presentation/steps_providers.dart` | presentation | `healthAdapterProvider`, `stepSampleRepositoryProvider`, `StepsSync` notifier (permission flow; `sync()` now just builds a `StepsSyncEngine` and applies its result) |
+| `steps/presentation/steps_providers.dart` | presentation | `createStepCountingService` (the one `Platform.isAndroid` switch in this feature), `stepCountingServiceProvider`, `stepSampleRepositoryProvider`, `StepsSync` notifier (permission flow; `sync()` now just builds a `StepsSyncEngine` and applies its result) |
 | `steps/presentation/permission_gate.dart` | presentation | The three-state gate card |
 
 ## State — providers
 
 | Provider | Shape | Notes |
 |---|---|---|
-| `healthAdapterProvider` | `HealthAdapter` | Defaults to `HealthPackageAdapter()`. **Always override with a fake in tests** — never the real plugin in a widget test (`testing` skill). |
+| `stepCountingServiceProvider` | `StepCountingService` | Defaults to `createStepCountingService()` — `AndroidStepCountingService()` or `IosStepCountingService()` by platform. **Always override with a fake in tests** — never the real plugin in a widget test (`testing` skill). |
 | `stepsSyncProvider` | `StepsSyncState` (Notifier) | `permissionStatus` + `isSyncing` + `lastSyncFlagged` (§5.2 pace check result — surfaced by `_FlaggedPaceNotice`, doesn't affect crediting). |
 
 ## Phase 3 — durable persistence (drift)
@@ -127,7 +129,7 @@ half, so `ACTIVITY_RECOGNITION` silently stayed ungranted forever: tapping
 user accepted it, and the gate still reported denied — because Health Connect
 itself wasn't actually able to hand over the grant.
 
-`HealthAdapter.hasActivityRecognitionPermission()` /
+`StepCountingService.hasActivityRecognitionPermission()` /
 `requestActivityRecognitionPermission()` (via `permission_handler` — the
 `health` package does not request this permission itself) wrap that OS
 prompt. `StepsSync.requestPermission()` now requests it first and only asks
@@ -142,7 +144,7 @@ button would look broken from the third tap on. `requestActivityRecognitionPermi
 returns a three-way `RuntimePermissionResult` (`granted` / `denied` /
 `permanentlyDenied`), not a bool, so `requestPermission()` can tell the two
 apart: `permanentlyDenied` routes to its own `StepsPermissionStatus`, whose
-gate card offers `HealthAdapter.openAppSettings()` (this app's OS settings
+gate card offers `StepCountingService.openAppSettings()` (this app's OS settings
 page — the only place left to grant it) instead of another request that
 would never show anything.
 
@@ -245,15 +247,21 @@ Every line of this module's own logic is covered except the lines that
 structurally *require* a real device or a real file to run at all — these
 are the same kind of gap as the health plugin itself, not oversights:
 
-- `steps/data/health_adapter.dart` (0%) — `HealthPackageAdapter`, the real
-  `health`-package wrapper. Never touched by a test, by policy (`testing`
-  skill: never the real health plugin in a test). `hasActivityRecognitionPermission()`/
+- `steps/data/android_step_counting_service.dart` and
+  `ios_step_counting_service.dart` (0% each) — the real `health`-package
+  wrappers, one per platform (split out of a single `HealthPackageAdapter`
+  by the architecture plan this session). Never touched by a test, by
+  policy (`testing` skill: never the real health plugin in a test).
+  `hasActivityRecognitionPermission()`/
   `requestActivityRecognitionPermission()`/`openAppSettings()` (the
   `permission_handler` wrapper added for the two-runtime-prompts fix above)
   fall in the same excluded set for the same reason — real plugin, not
-  unit-testable.
-- `steps/presentation/steps_providers.dart`: `healthAdapterProvider`'s body
-  (constructs the real `HealthPackageAdapter()`) — same reason. Also
+  unit-testable. `IosStepCountingService` carries the added caveat that
+  it's never been exercised on a real device at all yet — see the
+  `step_counting_service.dart` doc comment and CLAUDE.md §14.
+- `steps/presentation/steps_providers.dart`: `stepCountingServiceProvider`'s
+  body (`createStepCountingService()`, constructing whichever of the two
+  real services matches the platform) — same reason. Also
   `refreshStatus()`'s `if (Platform.isAndroid)` branch — `Platform.isAndroid`
   reflects the machine actually running the test suite (Linux, here and in
   CI), not a simulated target, so this branch cannot be reached without
@@ -286,14 +294,14 @@ clamp on a negative delta, >250 steps/min flagged not dropped, threshold
 boundary).
 
 Engine: `test/features/steps/data/steps_sync_engine_test.dart` covers
-`StepsSyncEngine.sync()` directly against a mocked `HealthAdapter` and a
+`StepsSyncEngine.sync()` directly against a mocked `StepCountingService` and a
 real in-memory `AppDatabase`-backed `StepSampleRepository` — realistic vs.
 implausible pace, platform-distance preference over steps×stride, duplicate
 intervals, and the non-decreasing clamp. This is what both `StepsSync.sync()`
 and the Android background task (`lock-screen.md`) actually run.
 
 Provider-level: `test/features/steps/presentation/steps_providers_test.dart`
-exercises `StepsSync.sync()` end to end against a mocked `HealthAdapter`
+exercises `StepsSync.sync()` end to end against a mocked `StepCountingService`
 and an in-memory `AppDatabase` — a realistic pace leaves `lastSyncFlagged`
 false, an implausible one (a huge step count over a short
 `lastSyncedAt`-to-now window) sets it true, and **either way the distance

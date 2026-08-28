@@ -51,7 +51,7 @@ No "which device wins" logic needed — merging is additive through the existing
 
 ## Layering (§4)
 
-`features/steps/data/health_adapter.dart` wraps the plugin and returns domain `StepSample`s. Conversion and progress math stay in `domain/` (see `domain-math`). The permission gate is `features/steps/presentation/permission_gate.dart`; UI reads a Riverpod provider, never the adapter.
+`StepCountingService` (`features/steps/data/step_counting_service.dart`) is the interface, one per-platform class implementing it — `AndroidStepCountingService` (shipped, Health Connect, no account gate) and `IosStepCountingService` (implemented, not yet verified on a real device — HealthKit needs a paid Apple Developer Program membership, CLAUDE.md §14). `createStepCountingService()` (`steps/presentation/steps_providers.dart`) is the only `Platform.isAndroid` check in the feature. Conversion and progress math stay in `domain/` (see `domain-math`). The permission gate is `features/steps/presentation/permission_gate.dart`; UI reads a Riverpod provider (`stepCountingServiceProvider`), never a concrete service class.
 
 ## Testing (§12, Phase 4)
 

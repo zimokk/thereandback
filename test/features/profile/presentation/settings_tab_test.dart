@@ -8,14 +8,14 @@ import 'package:thereandback/features/journey/presentation/lock_screen_controlle
 import 'package:thereandback/features/journey/presentation/lock_screen_state.dart';
 import 'package:thereandback/features/profile/presentation/locale_provider.dart';
 import 'package:thereandback/features/profile/presentation/settings_tab.dart';
-import 'package:thereandback/features/steps/data/health_adapter.dart'
-    show HealthAdapter, RuntimePermissionResult;
+import 'package:thereandback/features/steps/data/step_counting_service.dart'
+    show StepCountingService, RuntimePermissionResult;
 import 'package:thereandback/features/steps/presentation/steps_providers.dart';
 import 'package:thereandback/l10n/app_localizations.dart';
 
 class _MockChannel extends Mock implements AndroidLockScreenChannel {}
 
-class _MockHealthAdapter extends Mock implements HealthAdapter {}
+class _MockStepCountingService extends Mock implements StepCountingService {}
 
 /// A `LockScreenController` with a fixed state — same fake pattern
 /// `permission_gate_test.dart` uses for `StepsSync` — so the
@@ -46,29 +46,31 @@ Widget _wrap(
       RuntimePermissionResult.granted,
 }) {
   final channel = _MockChannel();
-  final healthAdapter = _MockHealthAdapter();
+  final stepCountingService = _MockStepCountingService();
   when(() => channel.hasNotificationPermission())
       .thenAnswer((_) async => notificationsGranted);
-  when(() => healthAdapter.hasBackgroundHealthPermission())
+  when(() => stepCountingService.hasBackgroundHealthPermission())
       .thenAnswer((_) async => backgroundHealthGranted);
   // Same answers for the request path, so tapping the toggle resolves to the
   // permission picture the test asked for.
   when(() => channel.requestNotificationPermission())
       .thenAnswer((_) async => notificationsGranted);
-  when(() => healthAdapter.requestActivityRecognitionPermission())
+  when(() => stepCountingService.requestActivityRecognitionPermission())
       .thenAnswer((_) async => activityRecognitionResult);
-  when(() => healthAdapter.openAppSettings()).thenAnswer((_) async {});
-  when(() => healthAdapter.hasStepsPermission()).thenAnswer((_) async => true);
-  when(() => healthAdapter.requestStepsPermission())
+  when(() => stepCountingService.openAppSettings()).thenAnswer((_) async {});
+  when(
+    () => stepCountingService.hasStepsPermission(),
+  ).thenAnswer((_) async => true);
+  when(() => stepCountingService.requestStepsPermission())
       .thenAnswer((_) async => true);
-  when(() => healthAdapter.requestBackgroundHealthPermission())
+  when(() => stepCountingService.requestBackgroundHealthPermission())
       .thenAnswer((_) async => backgroundHealthGranted);
 
   return ProviderScope(
     overrides: [
       lockScreenSupportedProvider.overrideWithValue(lockScreenSupported),
       androidLockScreenChannelProvider.overrideWithValue(channel),
-      healthAdapterProvider.overrideWithValue(healthAdapter),
+      stepCountingServiceProvider.overrideWithValue(stepCountingService),
     ],
     child: Consumer(
       builder: (context, ref, _) {

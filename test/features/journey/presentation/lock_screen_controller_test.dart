@@ -13,8 +13,11 @@ import 'package:thereandback/features/journey/presentation/journey_providers.dar
 import 'package:thereandback/features/journey/presentation/lock_screen_controller.dart';
 import 'package:thereandback/features/journey/presentation/lock_screen_state.dart';
 import 'package:thereandback/features/steps/data/android_background_sync.dart';
-import 'package:thereandback/features/steps/data/health_adapter.dart'
-    show HealthAdapter, HealthConnectAvailability, RuntimePermissionResult;
+import 'package:thereandback/features/steps/data/step_counting_service.dart'
+    show
+        StepCountingService,
+        HealthConnectAvailability,
+        RuntimePermissionResult;
 import 'package:thereandback/features/steps/presentation/steps_providers.dart';
 
 /// `enable()`/`refreshStatus()`'s `Platform.isAndroid` guard around
@@ -29,7 +32,7 @@ class _MockChannel extends Mock implements AndroidLockScreenChannel {}
 
 class _MockBackgroundSync extends Mock implements AndroidBackgroundSync {}
 
-class _MockHealthAdapter extends Mock implements HealthAdapter {}
+class _MockStepCountingService extends Mock implements StepCountingService {}
 
 class _FakeSnapshot extends Fake implements LockScreenSnapshot {}
 
@@ -40,13 +43,13 @@ void main() {
 
   late _MockChannel channel;
   late _MockBackgroundSync backgroundSync;
-  late _MockHealthAdapter healthAdapter;
+  late _MockStepCountingService stepCountingService;
   late ProviderContainer container;
 
   setUp(() {
     channel = _MockChannel();
     backgroundSync = _MockBackgroundSync();
-    healthAdapter = _MockHealthAdapter();
+    stepCountingService = _MockStepCountingService();
 
     when(() => channel.start(any())).thenAnswer((_) async {});
     when(() => channel.update(any())).thenAnswer((_) async {});
@@ -55,29 +58,29 @@ void main() {
         .thenAnswer((_) async => true);
     when(() => backgroundSync.register()).thenAnswer((_) async {});
     when(() => backgroundSync.cancel()).thenAnswer((_) async {});
-    when(() => healthAdapter.requestActivityRecognitionPermission())
+    when(() => stepCountingService.requestActivityRecognitionPermission())
         .thenAnswer((_) async => RuntimePermissionResult.granted);
-    when(() => healthAdapter.openAppSettings()).thenAnswer((_) async {});
-    when(() => healthAdapter.hasStepsPermission())
+    when(() => stepCountingService.openAppSettings()).thenAnswer((_) async {});
+    when(() => stepCountingService.hasStepsPermission())
         .thenAnswer((_) async => true);
-    when(() => healthAdapter.requestStepsPermission())
+    when(() => stepCountingService.requestStepsPermission())
         .thenAnswer((_) async => true);
-    when(() => healthAdapter.requestBackgroundHealthPermission())
+    when(() => stepCountingService.requestBackgroundHealthPermission())
         .thenAnswer((_) async => true);
-    when(() => healthAdapter.healthConnectAvailability())
+    when(() => stepCountingService.healthConnectAvailability())
         .thenAnswer((_) async => HealthConnectAvailability.available);
     // `build()` kicks off a status read immediately, so these are reached by
     // every test here, not only the ones that assert on them.
     when(() => channel.hasNotificationPermission())
         .thenAnswer((_) async => true);
-    when(() => healthAdapter.hasBackgroundHealthPermission())
+    when(() => stepCountingService.hasBackgroundHealthPermission())
         .thenAnswer((_) async => true);
 
     container = ProviderContainer(
       overrides: [
         androidLockScreenChannelProvider.overrideWithValue(channel),
         androidBackgroundSyncProvider.overrideWithValue(backgroundSync),
-        healthAdapterProvider.overrideWithValue(healthAdapter),
+        stepCountingServiceProvider.overrideWithValue(stepCountingService),
         appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
       ],
     );
@@ -105,13 +108,15 @@ void main() {
       "hasn't granted it yet, then background permission — matching "
       'Health Connect requiring the read permission before it will grant '
       'background access', () async {
-    when(() => healthAdapter.hasStepsPermission())
+    when(() => stepCountingService.hasStepsPermission())
         .thenAnswer((_) async => false);
 
     await container.read(lockScreenControllerProvider.notifier).enable();
 
-    verify(() => healthAdapter.requestStepsPermission()).called(1);
-    verify(() => healthAdapter.requestBackgroundHealthPermission()).called(1);
+    verify(() => stepCountingService.requestStepsPermission()).called(1);
+    verify(
+      () => stepCountingService.requestBackgroundHealthPermission(),
+    ).called(1);
     expect(
       container.read(lockScreenControllerProvider).permissionStatus,
       LockScreenPermissionStatus.granted,
@@ -123,14 +128,16 @@ void main() {
     'enable() never requests background permission when the base steps '
     "permission request fails — Health Connect wouldn't grant it anyway",
     () async {
-      when(() => healthAdapter.hasStepsPermission())
+      when(() => stepCountingService.hasStepsPermission())
           .thenAnswer((_) async => false);
-      when(() => healthAdapter.requestStepsPermission())
+      when(() => stepCountingService.requestStepsPermission())
           .thenAnswer((_) async => false);
 
       await container.read(lockScreenControllerProvider.notifier).enable();
 
-      verifyNever(() => healthAdapter.requestBackgroundHealthPermission());
+      verifyNever(
+        () => stepCountingService.requestBackgroundHealthPermission(),
+      );
       expect(
         container.read(lockScreenControllerProvider).permissionStatus,
         LockScreenPermissionStatus.denied,
@@ -146,9 +153,9 @@ void main() {
     () async {
       await container.read(lockScreenControllerProvider.notifier).enable();
 
-      verify(() => healthAdapter.requestActivityRecognitionPermission())
+      verify(() => stepCountingService.requestActivityRecognitionPermission())
           .called(1);
-      verify(() => healthAdapter.hasStepsPermission()).called(1);
+      verify(() => stepCountingService.hasStepsPermission()).called(1);
     },
   );
 
@@ -156,13 +163,13 @@ void main() {
       'ACTIVITY_RECOGNITION is denied (not permanently) — Health Connect '
       "wouldn't grant it anyway, and status is the ordinary denied, not "
       'permanentlyDenied', () async {
-    when(() => healthAdapter.requestActivityRecognitionPermission())
+    when(() => stepCountingService.requestActivityRecognitionPermission())
         .thenAnswer((_) async => RuntimePermissionResult.denied);
 
     await container.read(lockScreenControllerProvider.notifier).enable();
 
-    verifyNever(() => healthAdapter.hasStepsPermission());
-    verifyNever(() => healthAdapter.requestStepsPermission());
+    verifyNever(() => stepCountingService.hasStepsPermission());
+    verifyNever(() => stepCountingService.requestStepsPermission());
     expect(
       container.read(lockScreenControllerProvider).permissionStatus,
       LockScreenPermissionStatus.denied,
@@ -175,12 +182,12 @@ void main() {
     "ACTIVITY_RECOGNITION hit Android's two-denials 'don't ask again' rule, "
     'so the UI can offer settings instead of another dead-end retry',
     () async {
-      when(() => healthAdapter.requestActivityRecognitionPermission())
+      when(() => stepCountingService.requestActivityRecognitionPermission())
           .thenAnswer((_) async => RuntimePermissionResult.permanentlyDenied);
 
       await container.read(lockScreenControllerProvider.notifier).enable();
 
-      verifyNever(() => healthAdapter.hasStepsPermission());
+      verifyNever(() => stepCountingService.hasStepsPermission());
       expect(
         container.read(lockScreenControllerProvider).permissionStatus,
         LockScreenPermissionStatus.permanentlyDenied,
@@ -197,7 +204,7 @@ void main() {
         .read(lockScreenControllerProvider.notifier)
         .openAppSettings();
 
-    verify(() => healthAdapter.openAppSettings()).called(1);
+    verify(() => stepCountingService.openAppSettings()).called(1);
     // Drains build()'s own restore-then-refresh microtask before
     // container.dispose() runs in tearDown — same reason the
     // refreshStatus() tests above do this (see their comment).
@@ -218,7 +225,7 @@ void main() {
     await container.read(lockScreenControllerProvider.notifier).enable();
 
     verify(() => channel.requestNotificationPermission()).called(2);
-    verify(() => healthAdapter.requestActivityRecognitionPermission())
+    verify(() => stepCountingService.requestActivityRecognitionPermission())
         .called(2);
     expect(container.read(lockScreenControllerProvider).enabled, isTrue);
   });
@@ -327,14 +334,14 @@ void main() {
   });
 
   test('openHealthConnectInstall() delegates to the adapter', () async {
-    when(() => healthAdapter.openHealthConnectInstall())
+    when(() => stepCountingService.openHealthConnectInstall())
         .thenAnswer((_) async {});
 
     await container
         .read(lockScreenControllerProvider.notifier)
         .openHealthConnectInstall();
 
-    verify(() => healthAdapter.openHealthConnectInstall()).called(1);
+    verify(() => stepCountingService.openHealthConnectInstall()).called(1);
   });
 
   test('refreshStatus() reads both permissions back from the platform instead '
@@ -373,7 +380,7 @@ void main() {
 
   test('refreshStatus() records which half is missing, so the UI can name it '
       'rather than reporting a flat "not granted"', () async {
-    when(() => healthAdapter.hasBackgroundHealthPermission())
+    when(() => stepCountingService.hasBackgroundHealthPermission())
         .thenAnswer((_) async => false);
 
     await container.read(lockScreenControllerProvider.notifier).refreshStatus();
@@ -408,7 +415,7 @@ void main() {
     clearInteractions(channel);
     clearInteractions(backgroundSync);
 
-    when(() => healthAdapter.hasBackgroundHealthPermission())
+    when(() => stepCountingService.hasBackgroundHealthPermission())
         .thenAnswer((_) async => false);
     await container.read(lockScreenControllerProvider.notifier).refreshStatus();
 
@@ -446,14 +453,14 @@ void main() {
     addTearDown(db.close);
     await DriftLockScreenPreferenceRepository(db)
         .saveEnabled(localOwnerId, true);
-    when(() => healthAdapter.hasBackgroundHealthPermission())
+    when(() => stepCountingService.hasBackgroundHealthPermission())
         .thenAnswer((_) async => false);
 
     final restarted = ProviderContainer(
       overrides: [
         androidLockScreenChannelProvider.overrideWithValue(channel),
         androidBackgroundSyncProvider.overrideWithValue(backgroundSync),
-        healthAdapterProvider.overrideWithValue(healthAdapter),
+        stepCountingServiceProvider.overrideWithValue(stepCountingService),
         appDatabaseProvider.overrideWithValue(db),
       ],
     );
@@ -482,7 +489,7 @@ void main() {
       overrides: [
         androidLockScreenChannelProvider.overrideWithValue(channel),
         androidBackgroundSyncProvider.overrideWithValue(backgroundSync),
-        healthAdapterProvider.overrideWithValue(healthAdapter),
+        stepCountingServiceProvider.overrideWithValue(stepCountingService),
         appDatabaseProvider.overrideWithValue(db),
       ],
     );

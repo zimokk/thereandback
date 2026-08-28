@@ -2,26 +2,26 @@ import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 import 'package:thereandback/data/drift/database.dart';
 import 'package:thereandback/features/journey/domain/quest_selection.dart';
-import 'package:thereandback/features/steps/data/health_adapter.dart';
+import 'package:thereandback/features/steps/data/step_counting_service.dart';
 import 'package:thereandback/features/steps/data/step_sample_repository.dart';
 import 'package:thereandback/features/steps/data/steps_sync_engine.dart';
 
-class _MockHealthAdapter extends Mock implements HealthAdapter {}
+class _MockStepCountingService extends Mock implements StepCountingService {}
 
 void main() {
-  late _MockHealthAdapter adapter;
+  late _MockStepCountingService adapter;
   late AppDatabase db;
   late StepSampleRepository repository;
   late StepsSyncEngine engine;
 
   setUp(() {
-    adapter = _MockHealthAdapter();
+    adapter = _MockStepCountingService();
     // `testing` skill: never a real drift database in a test — same
     // in-memory pattern `step_sample_repository_test.dart` uses.
     db = AppDatabase.forTesting();
     repository = DriftStepSampleRepository(db);
     engine = StepsSyncEngine(
-      healthAdapter: adapter,
+      stepCountingService: adapter,
       stepSampleRepository: repository,
     );
   });

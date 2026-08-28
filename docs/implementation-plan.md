@@ -76,7 +76,7 @@ drift-схема, зеркалящая доменные сущности, с `la
 устройстве обрабатывается диплинком в Play Store. Отказ в разрешении — не
 тупик: карточка «нет данных о шагах» + кнопка перезапроса.
 
-- **Модули:** `features/steps/data/health_adapter.dart`; `features/steps/presentation/permission_gate.dart`
+- **Модули:** `features/steps/data/step_counting_service.dart` (интерфейс + общий mixin), `android_step_counting_service.dart`, `ios_step_counting_service.dart`; `features/steps/presentation/permission_gate.dart`
 - **Готово, когда:** integration_test проходит хотя бы на одной платформе; widget-тест покрывает путь с отказом в разрешении; запись в Firestore батчами, не на каждый тик сенсора (§8).
 - **Зависит от:** Phase 3
 

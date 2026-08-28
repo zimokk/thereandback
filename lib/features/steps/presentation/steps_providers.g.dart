@@ -8,54 +8,61 @@ part of 'steps_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// The `health` package wrapper. Overridden with a fake in tests (`testing`
+/// The step-counting service. Overridden with a fake in tests (`testing`
 /// skill: never the real health plugin in a widget test).
 
-@ProviderFor(healthAdapter)
-final healthAdapterProvider = HealthAdapterProvider._();
+@ProviderFor(stepCountingService)
+final stepCountingServiceProvider = StepCountingServiceProvider._();
 
-/// The `health` package wrapper. Overridden with a fake in tests (`testing`
+/// The step-counting service. Overridden with a fake in tests (`testing`
 /// skill: never the real health plugin in a widget test).
 
-final class HealthAdapterProvider
-    extends $FunctionalProvider<HealthAdapter, HealthAdapter, HealthAdapter>
-    with $Provider<HealthAdapter> {
-  /// The `health` package wrapper. Overridden with a fake in tests (`testing`
+final class StepCountingServiceProvider
+    extends
+        $FunctionalProvider<
+          StepCountingService,
+          StepCountingService,
+          StepCountingService
+        >
+    with $Provider<StepCountingService> {
+  /// The step-counting service. Overridden with a fake in tests (`testing`
   /// skill: never the real health plugin in a widget test).
-  HealthAdapterProvider._()
+  StepCountingServiceProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'healthAdapterProvider',
+        name: r'stepCountingServiceProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$healthAdapterHash();
+  String debugGetCreateSourceHash() => _$stepCountingServiceHash();
 
   @$internal
   @override
-  $ProviderElement<HealthAdapter> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+  $ProviderElement<StepCountingService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
-  HealthAdapter create(Ref ref) {
-    return healthAdapter(ref);
+  StepCountingService create(Ref ref) {
+    return stepCountingService(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(HealthAdapter value) {
+  Override overrideWithValue(StepCountingService value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<HealthAdapter>(value),
+      providerOverride: $SyncValueProvider<StepCountingService>(value),
     );
   }
 }
 
-String _$healthAdapterHash() => r'402c1287b3aae4c179073c0f700e32e018152b49';
+String _$stepCountingServiceHash() =>
+    r'8f3c2a1e6d5b4a7c9f0e1d2c3b4a5968778655c4';
 
 /// The drift-backed idempotency log for synced intervals (§5.2). Overridden
 /// with an in-memory `AppDatabase` in tests via `appDatabaseProvider`

@@ -1,10 +1,7 @@
-import 'dart:io' show Platform;
-
 import 'package:health/health.dart';
-import 'package:permission_handler/permission_handler.dart' as ph;
 
 /// One interval's worth of raw activity data, as reported by the platform.
-/// Not a domain type — this is the shape the adapter hands to
+/// Not a domain type — this is the shape the service hands to
 /// `step_sync_repository.dart`, which runs it through `stride.dart` to get
 /// meters (CLAUDE.md §5.1: the domain layer is the only place that does that
 /// conversion).
@@ -13,8 +10,8 @@ class StepsDelta {
 
   final int steps;
 
-  /// Platform-reported `DISTANCE_WALKING_RUNNING`, in meters, if the
-  /// platform provided one for this interval.
+  /// Platform-reported `DISTANCE_WALKING_RUNNING`/`DISTANCE_DELTA`, in
+  /// meters, if the platform provided one for this interval.
   final int? walkingDistanceMeters;
 }
 
@@ -30,16 +27,26 @@ enum HealthConnectAvailability {
 /// denial of the same permission as "don't ask again" (`USER_FIXED`,
 /// Android 11+): a third request shows no dialog at all and resolves
 /// straight to [permanentlyDenied], so the only way forward is the app's
-/// OS settings page ([HealthAdapter.openAppSettings]), never another
+/// OS settings page ([StepCountingService.openAppSettings]), never another
 /// request. §7: denial is never a dead end, so the two outcomes need to
 /// drive different UI, not both collapse into one "denied" bucket.
 enum RuntimePermissionResult { granted, denied, permanentlyDenied }
 
-/// Abstraction over the `health` package (HealthKit / Health Connect, §3),
-/// so presentation and sync logic can be tested with a fake instead of the
-/// real platform plugin (`testing` skill: never a real health plugin in a
-/// widget test).
-abstract class HealthAdapter {
+/// Abstraction over device step/distance counting (HealthKit on iOS, Health
+/// Connect on Android — §3), so presentation and sync logic can be tested
+/// with a fake instead of a real platform plugin (`testing` skill: never a
+/// real health plugin in a widget test).
+///
+/// Exactly two concrete implementations exist, one per platform —
+/// `AndroidStepCountingService` and `IosStepCountingService`
+/// (`android_step_counting_service.dart`, `ios_step_counting_service.dart`)
+/// — each unconditional, single-platform code with no `Platform.isAndroid`
+/// branching inside it. `createStepCountingService`
+/// (`steps/presentation/steps_providers.dart`) is the only place that
+/// branches, so replacing either platform's implementation later (a
+/// different data source, a different plugin) only ever touches that one
+/// class.
+abstract class StepCountingService {
   /// Must be called once before any other method.
   Future<void> configure();
 
@@ -87,13 +94,13 @@ abstract class HealthAdapter {
   /// Steps and (if available) walking distance for `[from, to)`. Never
   /// negative — a platform quirk that reports a negative delta is the
   /// caller's problem to clamp (`stride.clampNonDecreasing`), not this
-  /// adapter's.
+  /// service's.
   Future<StepsDelta> fetchDelta(DateTime from, DateTime to);
 
   /// Whether Health Connect's background-read permission is granted (§7's
   /// background-sync mechanism, Android only). Always `true` on iOS — there
   /// is no equivalent gate there; HealthKit's own background delivery has
-  /// its own setup, out of scope for this adapter method.
+  /// its own setup, out of scope for this service method.
   Future<bool> hasBackgroundHealthPermission();
 
   /// Shows the OS prompt for Health Connect's background-read permission.
@@ -101,29 +108,30 @@ abstract class HealthAdapter {
   Future<bool> requestBackgroundHealthPermission();
 }
 
-/// Real implementation backed by the `health` package.
-class HealthPackageAdapter implements HealthAdapter {
-  HealthPackageAdapter([Health? health]) : _health = health ?? Health();
+/// Shared `health`-package plumbing between `AndroidStepCountingService` and
+/// `IosStepCountingService`: `configure`, permission checks and `fetchDelta`
+/// are identical apart from which `HealthDataType` carries walking distance
+/// on each platform. An implementation-sharing detail, not part of the
+/// public interface — dropping this mixin from one class later (e.g. to
+/// swap that platform onto a non-`health`-package source) is a one-line
+/// change that doesn't touch the other class.
+mixin HealthPackagePedometer implements StepCountingService {
+  /// The `Health` instance to call into — a getter, not a hardcoded
+  /// `Health()`, so each concrete class can accept an injected fake in its
+  /// own constructor. Neither concrete class's tests need this today, but
+  /// it costs nothing to keep — the single pre-split implementation this
+  /// mixin replaces had the same constructor-injection escape hatch.
+  Health get health;
 
-  final Health _health;
+  /// The `HealthDataType` that carries walking distance on this platform —
+  /// `DISTANCE_WALKING_RUNNING` (HealthKit) or `DISTANCE_DELTA` (Health
+  /// Connect); both report meters, no unit conversion needed either way
+  /// (the `health` package's own unit mapping).
+  HealthDataType get walkingDistanceType;
 
-  /// `DISTANCE_WALKING_RUNNING` is a HealthKit (iOS) identifier — the
-  /// `health` package's own `dataTypeKeysAndroid` list doesn't include it at
-  /// all; Android's equivalent is `DISTANCE_DELTA`, which its Kotlin side
-  /// maps to Health Connect's `DistanceRecord` (both report meters, no unit
-  /// conversion needed either way — see `dataTypeToUnit` in the package).
-  /// Requesting the iOS-only type on Android used to make every
-  /// `hasPermissions`/`requestAuthorization` call warn
-  /// ("Datatype DISTANCE_WALKING_RUNNING not found in HC") and come back
-  /// incomplete — the STEPS half of the same batch request was affected too,
-  /// not just the distance half.
-  static HealthDataType get _walkingDistanceType => Platform.isAndroid
-      ? HealthDataType.DISTANCE_DELTA
-      : HealthDataType.DISTANCE_WALKING_RUNNING;
-
-  static List<HealthDataType> get _types => [
+  List<HealthDataType> get _types => [
     HealthDataType.STEPS,
-    _walkingDistanceType,
+    walkingDistanceType,
   ];
   static const _readPermissions = [
     HealthDataAccess.READ,
@@ -131,53 +139,22 @@ class HealthPackageAdapter implements HealthAdapter {
   ];
 
   @override
-  Future<void> configure() => _health.configure();
+  Future<void> configure() => health.configure();
 
   @override
   Future<bool?> hasStepsPermission() =>
-      _health.hasPermissions(_types, permissions: _readPermissions);
+      health.hasPermissions(_types, permissions: _readPermissions);
 
   @override
   Future<bool> requestStepsPermission() =>
-      _health.requestAuthorization(_types, permissions: _readPermissions);
-
-  @override
-  Future<bool> hasActivityRecognitionPermission() async {
-    if (!Platform.isAndroid) return true;
-    return (await ph.Permission.activityRecognition.status).isGranted;
-  }
-
-  @override
-  Future<RuntimePermissionResult> requestActivityRecognitionPermission() async {
-    if (!Platform.isAndroid) return RuntimePermissionResult.granted;
-    final status = await ph.Permission.activityRecognition.request();
-    if (status.isGranted) return RuntimePermissionResult.granted;
-    if (status.isPermanentlyDenied) {
-      return RuntimePermissionResult.permanentlyDenied;
-    }
-    return RuntimePermissionResult.denied;
-  }
-
-  @override
-  Future<void> openAppSettings() => ph.openAppSettings();
-
-  @override
-  Future<HealthConnectAvailability> healthConnectAvailability() async {
-    final available = await _health.isHealthConnectAvailable();
-    return available
-        ? HealthConnectAvailability.available
-        : HealthConnectAvailability.notInstalled;
-  }
-
-  @override
-  Future<void> openHealthConnectInstall() => _health.installHealthConnect();
+      health.requestAuthorization(_types, permissions: _readPermissions);
 
   @override
   Future<StepsDelta> fetchDelta(DateTime from, DateTime to) async {
-    final steps = await _health.getTotalStepsInInterval(from, to) ?? 0;
+    final steps = await health.getTotalStepsInInterval(from, to) ?? 0;
 
-    final distancePoints = await _health.getHealthDataFromTypes(
-      types: [_walkingDistanceType],
+    final distancePoints = await health.getHealthDataFromTypes(
+      types: [walkingDistanceType],
       startTime: from,
       endTime: to,
     );
@@ -191,9 +168,6 @@ class HealthPackageAdapter implements HealthAdapter {
           total += value.numericValue.toDouble();
         }
       }
-      // Both DISTANCE_WALKING_RUNNING (iOS) and DISTANCE_DELTA (Android) are
-      // reported in meters (health package's own unit mapping) — no
-      // conversion needed either way.
       walkingDistanceMeters = total.round();
     }
 
@@ -201,39 +175,5 @@ class HealthPackageAdapter implements HealthAdapter {
       steps: steps < 0 ? 0 : steps,
       walkingDistanceMeters: walkingDistanceMeters,
     );
-  }
-
-  @override
-  Future<bool> hasBackgroundHealthPermission() async {
-    await _ensureHealthConnectReady();
-    return _health.isHealthDataInBackgroundAuthorized();
-  }
-
-  @override
-  Future<bool> requestBackgroundHealthPermission() async {
-    await _ensureHealthConnectReady();
-    return _health.requestHealthDataInBackgroundAuthorization();
-  }
-
-  /// Forces the `health` plugin's native side to (re-)check Health Connect
-  /// availability before a background-permission call.
-  ///
-  /// The plugin only (re-)creates its Health-Connect-backed native helpers
-  /// inside the handler for `getHealthConnectSdkStatus` — which
-  /// `_health.isHealthConnectAvailable()` calls. [hasStepsPermission] and
-  /// [requestStepsPermission] go through `_health.hasPermissions()` /
-  /// `requestAuthorization()`, which both call that same check as their own
-  /// first step, so they self-heal. `isHealthDataInBackgroundAuthorized()` /
-  /// `requestHealthDataInBackgroundAuthorization()` do not — they call
-  /// straight into the native background-permission methods. If Health
-  /// Connect wasn't installed yet when this app's process started, those
-  /// native helpers stay uninitialized for the rest of that process's
-  /// lifetime unless something else happens to trigger the check first —
-  /// so even after the user installs Health Connect and grants the
-  /// permission, this adapter kept reporting `false` until the app was
-  /// killed and restarted. Calling this first closes that gap.
-  Future<void> _ensureHealthConnectReady() async {
-    if (!Platform.isAndroid) return;
-    await _health.isHealthConnectAvailable();
   }
 }
