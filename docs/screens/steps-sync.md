@@ -60,7 +60,8 @@ manifest) is now declared because of that second caller — see
 | `steps/domain/stride.dart` | domain (pure Dart) | `stepsToMeters`, `resolveDistanceMeters` (platform distance beats steps×stride, §5.1), `clampNonDecreasing` (monotonic progress), `isImplausiblePace` (>250 steps/min flag, §5.2 — called from `StepsSyncEngine.sync()`, not just unit-tested in isolation) |
 | `steps/data/step_counting_service.dart` | data | `StepCountingService` interface + shared types + the `HealthPackagePedometer` mixin both platform classes use, including the background-permission pair used by `lock-screen.md` |
 | `steps/data/android_step_counting_service.dart` | data | `AndroidStepCountingService` — Health Connect via the `health` package. Shipped, no account gate (see the architecture plan this split came from). |
-| `steps/data/ios_step_counting_service.dart` | data | `IosStepCountingService` — **temporarily** Core Motion (`CMPedometer`, via the `cm_pedometer` package) instead of HealthKit: HealthKit needs a paid Apple Developer Program membership CMPedometer doesn't (§3, §7, CLAUDE.md §14). TODO in the file itself covers migrating back. |
+| `steps/data/ios_step_counting_service.dart` | data | `IosStepCountingService` — **temporarily** Core Motion (`CMPedometer`, via a first-party `MethodChannel`, not a pub package — see below) instead of HealthKit: HealthKit needs a paid Apple Developer Program membership CMPedometer doesn't (§3, §7, CLAUDE.md §14). TODO in the file itself covers migrating back. |
+| `steps/data/ios_pedometer_channel.dart` | data | `IosPedometerChannel` — thin wrapper over the `com.zimokk.thereandback/pedometer` `MethodChannel`, the Dart half of `ios/Runner/AppDelegate.swift`'s `CMPedometer` handler. |
 | `steps/data/step_sample_repository.dart` | data | `StepSampleRepository` + `DriftStepSampleRepository` — the idempotency log (see below) |
 | `steps/data/steps_sync_engine.dart` | data | `StepsSyncEngine` — the fetch/resolve/record algorithm itself, no `Ref`; shared by `StepsSync.sync()` (below) and the Android background task (`lock-screen.md`) |
 | `data/drift/database.dart` | data (shared, not steps-specific) | `AppDatabase`: `SelectedQuestRows` + `StepIntervalRecords` tables |
@@ -193,6 +194,9 @@ not blocked by this.
 - **iOS — CMPedometer setup, added for the temporary swap**:
   `ios/Runner/Info.plist`'s `NSMotionUsageDescription` added (Core Motion's
   own usage string — unrelated to `NSHealthShareUsageDescription` above).
+  `ios/Runner/AppDelegate.swift` gained the `com.zimokk.thereandback/pedometer`
+  `MethodChannel` (see above) — the only iOS-native file this touches; no
+  new Xcode target, no `Info.plist` background-mode entries.
   **Not done, and cannot be done in this sandbox (no Xcode/CocoaPods)**:
   `ios/Podfile` does not exist yet in this repo — Flutter generates it on
   the first `pod install`/`flutter build ios`. Once it exists, its
@@ -227,20 +231,33 @@ not blocked by this.
   versions. See "Android permission flow is two runtime prompts" above.
   Now also used for iOS's `Permission.sensors` (see `IosStepCountingService`)
   — one dependency covering the runtime-permission side of both platforms.
-- **`cm_pedometer`** (`^1.2.0`) — temporary, iOS-only dependency for the
-  CMPedometer swap (§3, §14). `health` doesn't cover this: on iOS it only
-  wraps HealthKit, and Core Motion is a different framework entirely. The
-  more popular `pedometer` package was considered and rejected — it only
-  exposes a live step-count *stream* from whenever the app starts
-  listening, with no way to query an arbitrary historical `[from, to)`
-  range, so it can't answer "how many steps since `lastSyncedAt`" across an
-  app restart the way this app's delta-sync model needs.
-  `CMPedometer.queryPedometerData(from:to:)` (what `cm_pedometer` wraps) is
-  the one-shot historical query that actually fits. Trade-off accepted
-  along with it: `cm_pedometer` is a small, low-adoption package (11 likes
-  on pub.dev as of writing) rather than a widely-used one — reasonable for
-  a temporary bridge, worth reconsidering if it ever needs anything beyond
-  what it does today.
+- **`CMPedometer` access is a first-party `MethodChannel`, not a pub
+  package** (§3, §14). `health` doesn't cover this — on iOS it only wraps
+  HealthKit, and Core Motion is a different framework entirely. The more
+  popular `pedometer` package was considered and rejected on its own
+  merits first: it only exposes a live step-count *stream* from whenever
+  the app starts listening, with no way to query an arbitrary historical
+  `[from, to)` range, so it can't answer "how many steps since
+  `lastSyncedAt`" across an app restart the way this app's delta-sync
+  model needs. `CMPedometer.queryPedometerData(from:to:)` is the one-shot
+  historical query that actually fits — `cm_pedometer` (`^1.2.0`) wraps
+  exactly that and was added first, but **broke CI**: `flutter pub get`
+  failed with "The plugin `cm_pedometer` doesn't have a main class
+  defined" — its own `pubspec.yaml` declares `androidPackage:
+  com.hieutv.cm_pedometer` pointing at a Java/Kotlin class that doesn't
+  exist in the published package. Flutter's plugin resolution checks every
+  platform a plugin claims to support, not just the ones the app's own
+  code touches — so this Android-side bug broke the build even though
+  nothing here uses `cm_pedometer` on Android at all. Removed from
+  `pubspec.yaml`.
+  Replaced with `com.zimokk.thereandback/pedometer`: a plain
+  `FlutterMethodChannel` registered in `ios/Runner/AppDelegate.swift`
+  (holds one `CMPedometer()`, answers a `queryPedometerData` call with
+  `{steps, distanceMeters}`), wrapped on the Dart side by
+  `IosPedometerChannel` (`ios_pedometer_channel.dart`). Core Motion is a
+  system framework — this needs no CocoaPods entry, so `ios/Podfile` is
+  now only relevant for `PERMISSION_SENSORS` below, not for CMPedometer
+  access itself.
 - **`android/app/build.gradle.kts`**: `minSdk` raised to **26**
   (from Flutter's default 24) — the `health` package's Android module
   itself requires API 26+ for Health Connect; leaving the default would
@@ -269,14 +286,25 @@ in this environment — see Tests below.
 **The CMPedometer swap is a level below that**: unlike the rest of this
 document, it was written in a sandbox with no Dart/Flutter SDK at all — not
 just no simulator/emulator, no `flutter analyze`/`flutter pub get` either.
-`cm_pedometer`'s API (`CMPedometer.queryPedometerData({DateTime? from,
-DateTime? to}) → Future<CMPedometerData>`, fields `numberOfSteps` (`int`)
-and `distance` (`double?`)) and `permission_handler`'s `Permission.sensors`
-↔ `NSMotionUsageDescription` mapping were confirmed against the packages'
-own pub.dev documentation and README, not against a compiled build —
-`pubspec.lock` has **not** been regenerated for the new dependency either.
-Treat `ios_step_counting_service.dart` as unverified until `flutter pub get`
-and `flutter analyze` both run clean on a machine with the SDK.
+This caveat was not theoretical: the first version of this swap added
+`cm_pedometer` as a dependency, confirmed only against its pub.dev
+documentation — and that package turned out to have a real, CI-breaking
+bug (its Android plugin registration doesn't match its own file layout;
+see above). It was caught by an actual `flutter pub get` run in GitHub
+Actions CI, not by anything checkable in this sandbox. The replacement
+(`ios/Runner/AppDelegate.swift` + `IosPedometerChannel`) avoids third-party
+plugin registration entirely, but its own correctness — the exact
+`CMPedometer.queryPedometerData(from:to:)`/`CMPedometerData` Swift API,
+the `FlutterImplicitEngineBridge.applicationRegistrar.messenger()` channel
+setup for this project's UIScene-based `AppDelegate`, and the
+`MethodChannel` argument/result encoding on both sides — is likewise
+confirmed only against documentation and public code samples, not a
+compiled build. `permission_handler`'s `Permission.sensors` ↔
+`NSMotionUsageDescription` mapping is the one piece here that *was*
+cross-checked directly against `permission_handler`'s own README.
+Treat `ios_step_counting_service.dart`, `ios_pedometer_channel.dart`, and
+`AppDelegate.swift` as unverified until they've been built and run once on
+a machine with Xcode.
 
 The `ACTIVITY_RECOGNITION` fix above was diagnosed from a real device's
 symptoms (system settings showing "Physical activity"/"Fitness and wellness"
@@ -290,13 +318,13 @@ Every line of this module's own logic is covered except the lines that
 structurally *require* a real device or a real file to run at all — these
 are the same kind of gap as the health plugin itself, not oversights:
 
-- `steps/data/android_step_counting_service.dart` and
-  `ios_step_counting_service.dart` (0% each) — the real platform wrappers,
-  one per platform (split out of a single `HealthPackageAdapter` by the
-  architecture plan this session; `IosStepCountingService`'s internals
-  later swapped from `health`/HealthKit to `cm_pedometer`/CMPedometer, see
-  above). Never touched by a test, by policy (`testing` skill: never the
-  real health/motion plugin in a test).
+- `steps/data/android_step_counting_service.dart`,
+  `ios_step_counting_service.dart`, and `ios_pedometer_channel.dart` (0%
+  each) — the real platform wrappers, one per platform (split out of a
+  single `HealthPackageAdapter` by the architecture plan this session;
+  `IosStepCountingService`'s internals later swapped from `health`/
+  HealthKit to Core Motion, see above). Never touched by a test, by policy
+  (`testing` skill: never the real health/motion plugin in a test).
   `hasActivityRecognitionPermission()`/
   `requestActivityRecognitionPermission()`/`openAppSettings()` (the
   `permission_handler` wrapper added for the two-runtime-prompts fix above)

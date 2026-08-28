@@ -1,11 +1,11 @@
-import 'package:cm_pedometer/cm_pedometer.dart';
 import 'package:permission_handler/permission_handler.dart' as ph;
 
+import 'ios_pedometer_channel.dart';
 import 'step_counting_service.dart';
 
 /// The iOS implementation of [StepCountingService] — **temporarily** backed
-/// by Core Motion's `CMPedometer` (via the `cm_pedometer` package), not
-/// HealthKit.
+/// by Core Motion's `CMPedometer` (via a first-party `MethodChannel`, see
+/// [IosPedometerChannel]), not HealthKit.
 ///
 /// TODO(ios-healthkit-migration): migrate back to HealthKit once this app
 /// has a paid Apple Developer Program membership (CLAUDE.md §3, §14) —
@@ -18,8 +18,11 @@ import 'step_counting_service.dart';
 /// `android_step_counting_service.dart` today). Restoring it is a revert,
 /// not a rewrite: re-add `with HealthPackagePedometer`, restore its
 /// `Health health` field and `walkingDistanceType` getter
-/// (`HealthDataType.DISTANCE_WALKING_RUNNING`), and drop the CMPedometer
-/// calls below. Also re-enable `com.apple.developer.healthkit` in
+/// (`HealthDataType.DISTANCE_WALKING_RUNNING`), drop [IosPedometerChannel]
+/// and its call below, and remove the `com.zimokk.thereandback/pedometer`
+/// channel from `ios/Runner/AppDelegate.swift` (the `CMPedometer` property,
+/// its registration, and its handler — nothing else in that file is
+/// specific to this). Also re-enable `com.apple.developer.healthkit` in
 /// `Runner.entitlements` and restore `NSHealthShareUsageDescription` in
 /// `Info.plist` (both currently commented out, not deleted) — and, once a
 /// `Podfile` exists, remove the `PERMISSION_SENSORS` line documented in
@@ -41,17 +44,17 @@ import 'step_counting_service.dart';
 ///
 /// Unconditional — no `Platform.isAndroid` checks anywhere in this class.
 class IosStepCountingService implements StepCountingService {
-  /// `cm_pedometer` has no equivalent to `health`'s `configure()` — nothing
-  /// to initialize before querying Core Motion.
+  /// Nothing to initialize before querying Core Motion — `AppDelegate.swift`
+  /// constructs its `CMPedometer` once, at app start.
   @override
   Future<void> configure() async {}
 
   /// Backed by `permission_handler`'s `Permission.sensors` — the one that
   /// maps to iOS's `NSMotionUsageDescription` (Core Motion). Not
   /// `Permission.activityRecognition`: that one has no iOS mapping at all
-  /// (Android-only, see `AndroidStepCountingService`), despite some
-  /// `cm_pedometer` examples using it — a real, if usually harmless,
-  /// mismatch in those examples.
+  /// (Android-only, see `AndroidStepCountingService`) — a real, if usually
+  /// harmless, mismatch worth avoiding here since a copy of it is exactly
+  /// how `cm_pedometer`'s own example code is written.
   @override
   Future<bool?> hasStepsPermission() async =>
       (await ph.Permission.sensors.status).isGranted;
@@ -84,14 +87,8 @@ class IosStepCountingService implements StepCountingService {
   Future<void> openHealthConnectInstall() async {}
 
   @override
-  Future<StepsDelta> fetchDelta(DateTime from, DateTime to) async {
-    final data = await CMPedometer.queryPedometerData(from: from, to: to);
-    final steps = data.numberOfSteps;
-    return StepsDelta(
-      steps: steps < 0 ? 0 : steps,
-      walkingDistanceMeters: data.distance?.round(),
-    );
-  }
+  Future<StepsDelta> fetchDelta(DateTime from, DateTime to) =>
+      const IosPedometerChannel().queryPedometerData(from: from, to: to);
 
   /// No iOS background-sync mechanism exists yet for either step source
   /// (§7 — a separate open item, tied to the same Live Activity iOS

@@ -27,12 +27,6 @@ dependencies:
   flutter_local_notifications: ^22.3.0
   workmanager: ^0.10.9
   permission_handler: ^13.0.1
-  # Temporary iOS step source (CLAUDE.md §3, §14) — CMPedometer via Core
-  # Motion, not HealthKit: HealthKit needs a paid Apple Developer Program
-  # membership even for local device testing, cm_pedometer doesn't.
-  # TODO(ios-healthkit-migration): drop once that account exists — see
-  # ios_step_counting_service.dart.
-  cm_pedometer: ^1.2.0
 
 dev_dependencies:
   flutter_test:
