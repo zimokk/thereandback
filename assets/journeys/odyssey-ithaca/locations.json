@@ -1,5 +1,5 @@
 {
-  "$schemaNote": "Draft content for There and Back — Journey catalog. NOT final: map.json pixel coordinates, l10n keys and human narrative polish still pending. See CLAUDE.md §4/§6.2 for target schema.",
+  "$schemaNote": "Draft content for There and Back — Journey catalog. NOT final: map.json pixel coordinates, l10n keys and human narrative polish still pending. See CLAUDE.md §4/§6.2 for target schema. `narrative` is the in-fiction traveler's line (what the app shows); `historicalNote`, present on about half the landmarks, is a short real-world historical/archaeological aside (not shown to the traveler as-is — candidate copy for a future 'about this place' surface) and is added only where a genuine, checkable anchor exists, not on every point.",
   "journey": {
     "id": "odyssey-ithaca",
     "name": "The Odyssey: Troy to Ithaca",
@@ -170,7 +170,8 @@
       "name": "The Smoking Walls of Troy",
       "meters": 11875,
       "segmentId": "troy-departure",
-      "narrative": "Smoke still curls above the broken towers as the ships push off."
+      "narrative": "Smoke still curls above the broken towers as the ships push off.",
+      "historicalNote": "Troy is usually identified with the archaeological mound of Hisarlik in northwestern Turkey; Heinrich Schliemann's 1870s excavations there uncovered several destruction layers, one of them (Troy VIIa) burned around 1180 BCE — in the rough era later Greeks assigned to the Trojan War."
     },
     {
       "id": "002-the-harbor-of-a-thousand-ships",
@@ -178,7 +179,8 @@
       "name": "The Harbor of a Thousand Ships",
       "meters": 35625,
       "segmentId": "troy-departure",
-      "narrative": "Counted the empty berths where the fleet once rode at anchor."
+      "narrative": "Counted the empty berths where the fleet once rode at anchor.",
+      "historicalNote": "The Iliad's 'Catalogue of Ships' lists forces from across the Greek world; ancient audiences already treated its huge fleet count as a feat of oral memory rather than a literal muster roll."
     },
     {
       "id": "003-the-last-sight-of-the-trojan-shore",
@@ -186,7 +188,8 @@
       "name": "The Last Sight of the Trojan Shore",
       "meters": 59375,
       "segmentId": "troy-departure",
-      "narrative": "Watched the coastline shrink to a grey line on the horizon."
+      "narrative": "Watched the coastline shrink to a grey line on the horizon.",
+      "historicalNote": "Ancient Aegean sailors mostly hugged the coast rather than crossing open water; losing sight of land was itself considered a notable, risky moment worth marking in the story."
     },
     {
       "id": "004-the-walls-of-ismarus",
@@ -194,7 +197,8 @@
       "name": "The Walls of Ismarus",
       "meters": 83125,
       "segmentId": "cicones-ismarus",
-      "narrative": "Raided the granaries before the Cicones could raise the alarm."
+      "narrative": "Raided the granaries before the Cicones could raise the alarm.",
+      "historicalNote": "The Cicones were a real Thracian people, also named among Troy's allies in the Iliad; ancient geographers placed them on the Thracian coast near the river Hebrus (today's Maritsa)."
     },
     {
       "id": "005-the-vineyard-slopes-above-the-town",
@@ -202,7 +206,8 @@
       "name": "The Vineyard Slopes Above the Town",
       "meters": 106875,
       "segmentId": "cicones-ismarus",
-      "narrative": "Filled the water-skins with dark wine taken from the hillside."
+      "narrative": "Filled the water-skins with dark wine taken from the hillside.",
+      "historicalNote": "Wine from Ismarus/Maroneia was famous in antiquity for its strength — the very wine Odysseus later uses to get the Cyclops drunk."
     },
     {
       "id": "006-the-cicones-muster-field",
@@ -226,7 +231,8 @@
       "name": "The Bloodied Sands of Ismarus",
       "meters": 178125,
       "segmentId": "cicones-ismarus",
-      "narrative": "Counted six men lost from every ship before the last oar bit water."
+      "narrative": "Counted six men lost from every ship before the last oar bit water.",
+      "historicalNote": "The poem gives an unusually exact casualty figure here — six men lost per ship — a precision that stands out against the vaguer numbers used almost everywhere else in the epic."
     },
     {
       "id": "009-the-turn-at-cape-malea",
@@ -234,7 +240,8 @@
       "name": "The Turn at Cape Malea",
       "meters": 201875,
       "segmentId": "storm-cape-malea",
-      "narrative": "The current seized the ships the moment we rounded the cape."
+      "narrative": "The current seized the ships the moment we rounded the cape.",
+      "historicalNote": "Cape Malea, the Peloponnese's southern tip, had a real reputation among ancient Greek sailors as the most dangerous headland to round; a saying quoted by the geographer Strabo warns to 'forget everything at home' once past it."
     },
     {
       "id": "010-nine-days-before-the-north-wind",
@@ -250,7 +257,8 @@
       "name": "The Uncharted Swell",
       "meters": 249375,
       "segmentId": "storm-cape-malea",
-      "narrative": "The known sea-lanes are gone; nothing ahead looks familiar."
+      "narrative": "The known sea-lanes are gone; nothing ahead looks familiar.",
+      "historicalNote": "From here the poem's geography stops matching any real Mediterranean coastline — ancient and modern scholars alike treat everything past Malea as folklore, not itinerary."
     },
     {
       "id": "012-the-lotus-eaters-shore",
@@ -258,7 +266,8 @@
       "name": "The Lotus-Eaters' Shore",
       "meters": 273125,
       "segmentId": "lotus-eaters-shore",
-      "narrative": "A strange sweetness hangs in the air the moment we land."
+      "narrative": "A strange sweetness hangs in the air the moment we land.",
+      "historicalNote": "The historian Herodotus describes a real people he calls the Lotophagi living on the Libyan coast (roughly modern Tunisia), eating a sweet fruit-bread — the episode's closest widely cited real-world anchor."
     },
     {
       "id": "013-the-grove-of-the-honeyed-fruit",
@@ -290,7 +299,8 @@
       "name": "The Goat Island Offshore",
       "meters": 368125,
       "segmentId": "cyclops-island",
-      "narrative": "Anchored on the small island across from the cave-dweller's coast."
+      "narrative": "Anchored on the small island across from the cave-dweller's coast.",
+      "historicalNote": "Ancient writers as early as Thucydides associated the Cyclopes with Sicily, whose volcanic landscape gave later audiences a ready image for a one-eyed, fire-breathing race."
     },
     {
       "id": "017-the-cliffside-cave-mouth",
@@ -298,7 +308,8 @@
       "name": "The Cliffside Cave Mouth",
       "meters": 391875,
       "segmentId": "cyclops-island",
-      "narrative": "A cave big enough for a giant's flock, sealed with a single boulder."
+      "narrative": "A cave big enough for a giant's flock, sealed with a single boulder.",
+      "historicalNote": "The blinded-giant-in-a-cave story is catalogued by folklorists as an old, widespread tale type found well beyond Greece — Homer appears to be adapting existing oral tradition, not inventing it."
     },
     {
       "id": "018-the-cheese-racks-in-the-dark",
@@ -314,7 +325,8 @@
       "name": "Polyphemus's Hearthstone",
       "meters": 439375,
       "segmentId": "cyclops-island",
-      "narrative": "The giant returned and rolled a stone no ten men could move."
+      "narrative": "The giant returned and rolled a stone no ten men could move.",
+      "historicalNote": "'Cyclopean masonry' is a real archaeological term for the massive, irregular stone walls at Mycenae and Tiryns — later Greeks found them so large they assumed only the Cyclopes could have built them."
     },
     {
       "id": "020-the-sharpened-olive-stake",
@@ -346,7 +358,8 @@
       "name": "The Boulder-Throw Shallows",
       "meters": 534375,
       "segmentId": "cyclops-island",
-      "narrative": "Torn rock splashed close enough to swamp the stern."
+      "narrative": "Torn rock splashed close enough to swamp the stern.",
+      "historicalNote": "Real volcanic rock formations off the Sicilian coast near Aci Trezza — the 'Faraglioni dei Ciclopi' — were identified by later folk tradition as the very stones Polyphemus hurled."
     },
     {
       "id": "024-shouting-a-name-across-the-water",
@@ -354,7 +367,8 @@
       "name": "Shouting a Name Across the Water",
       "meters": 558125,
       "segmentId": "cyclops-island",
-      "narrative": "A boast thrown back at the shore that we may come to regret."
+      "narrative": "A boast thrown back at the shore that we may come to regret.",
+      "historicalNote": "Withholding one's true name from an enemy is a widespread folklore taboo; Odysseus breaking it here to boast is read by scholars as the hinge that turns a lucky escape into a twenty-year punishment."
     },
     {
       "id": "025-clear-of-the-cyclops-coast",
@@ -370,7 +384,8 @@
       "name": "The Floating Walls of Aeolia",
       "meters": 605625,
       "segmentId": "aeolia-isle",
-      "narrative": "An island ringed by unbroken bronze, adrift on a sea of its own."
+      "narrative": "An island ringed by unbroken bronze, adrift on a sea of its own.",
+      "historicalNote": "The Lipari Islands north of Sicily are still called the Aeolian Islands today, the ancient identification of Aeolus's floating home."
     },
     {
       "id": "027-the-hall-of-the-wind-king",
@@ -386,7 +401,8 @@
       "name": "The Ox-Hide Sack of Storms",
       "meters": 653125,
       "segmentId": "aeolia-isle",
-      "narrative": "Given every contrary wind bound tight in a sack of ox-hide."
+      "narrative": "Given every contrary wind bound tight in a sack of ox-hide.",
+      "historicalNote": "Winds bound inside a container is a recognized motif in sailors' folklore across many maritime cultures, not a detail unique to this poem."
     },
     {
       "id": "029-sighting-ithacas-smoke",
@@ -418,7 +434,8 @@
       "name": "The Narrow Fjord Harbor",
       "meters": 748125,
       "segmentId": "laestrygonian-fjord",
-      "narrative": "Steep cliffs on both sides, water too still to trust."
+      "narrative": "Steep cliffs on both sides, water too still to trust.",
+      "historicalNote": "The unusually short summer nights described here have led some scholars to read this episode as a garbled sailor's account of high-latitude northern seas, where midsummer nights are genuinely brief."
     },
     {
       "id": "033-the-giant-queens-doorway",
@@ -434,7 +451,8 @@
       "name": "The Boulders From the Cliffs Above",
       "meters": 795625,
       "segmentId": "laestrygonian-fjord",
-      "narrative": "Rocks the size of ships crashed down on the fleet at anchor."
+      "narrative": "Rocks the size of ships crashed down on the fleet at anchor.",
+      "historicalNote": "Only one of twelve ships survives this attack — the single largest loss of the whole voyage, after which Odysseus sails on with just his own crew."
     },
     {
       "id": "035-the-speared-catch",
@@ -466,7 +484,8 @@
       "name": "The Smoke Above Aeaea",
       "meters": 890625,
       "segmentId": "aeaea-circe",
-      "narrative": "A single thread of hearth-smoke rising from an island of dense oak."
+      "narrative": "A single thread of hearth-smoke rising from an island of dense oak.",
+      "historicalNote": "Ancient geographers as far back as the Roman period identified Aeaea with the Monte Circeo promontory on the Italian coast — in some reconstructions of past sea levels, genuinely once an island."
     },
     {
       "id": "039-the-wolves-that-do-not-bite",
@@ -482,7 +501,8 @@
       "name": "Circe's Loom Song",
       "meters": 938125,
       "segmentId": "aeaea-circe",
-      "narrative": "Heard weaving and singing through the open doorway of a fine house."
+      "narrative": "Heard weaving and singing through the open doorway of a fine house.",
+      "historicalNote": "Weaving was the archetypal domestic craft of the Greek household; showing Circe at the loom quietly links her, visually, to Penelope waiting at her own loom back in Ithaca."
     },
     {
       "id": "041-the-cup-of-forgetting",
@@ -506,7 +526,8 @@
       "name": "The Moly Root at the Crossroads",
       "meters": 1009375,
       "segmentId": "aeaea-circe",
-      "narrative": "A grey-and-white herb, pressed into hand, said to turn a curse aside."
+      "narrative": "A grey-and-white herb, pressed into hand, said to turn a curse aside.",
+      "historicalNote": "The 'moly' herb Odysseus is given — black root, white flower — has never been matched to a real plant despite the unusually precise botanical description, and scholars still argue over what Homer had in mind."
     },
     {
       "id": "044-the-untouched-cup",
@@ -538,7 +559,8 @@
       "name": "A Year at Aeaea's Table",
       "meters": 1104375,
       "segmentId": "aeaea-circe",
-      "narrative": "Twelve months of feasting while the ships sit idle on the sand."
+      "narrative": "Twelve months of feasting while the ships sit idle on the sand.",
+      "historicalNote": "A full year at Circe's table is the second-longest single stop of the whole journey, behind only Calypso's island."
     },
     {
       "id": "048-the-edge-of-oceans-stream",
@@ -546,7 +568,8 @@
       "name": "The Edge of Ocean's Stream",
       "meters": 1128125,
       "segmentId": "underworld-shore",
-      "narrative": "Sailed past the sunless edge of the world into fog that never lifts."
+      "narrative": "Sailed past the sunless edge of the world into fog that never lifts.",
+      "historicalNote": "Archaic Greeks pictured the inhabited world as a flat disk ringed by a great river-Ocean; setting the entrance to the dead at its edge follows that real cosmology directly."
     },
     {
       "id": "049-the-grove-of-persephone",
@@ -554,7 +577,8 @@
       "name": "The Grove of Persephone",
       "meters": 1151875,
       "segmentId": "underworld-shore",
-      "narrative": "Black poplars and dead willows mark the entrance to the House of the Dead."
+      "narrative": "Black poplars and dead willows mark the entrance to the House of the Dead.",
+      "historicalNote": "Some ancient sources placed this land of the dead near Ephyra in northwestern Greece, where a real 'Nekyomanteion' — an oracle for consulting the dead — once operated; later excavators' identification of the exact site has since been disputed."
     },
     {
       "id": "050-the-trench-of-dark-blood",
@@ -562,7 +586,8 @@
       "name": "The Trench of Dark Blood",
       "meters": 1175625,
       "segmentId": "underworld-shore",
-      "narrative": "Dug a pit and filled it with offerings to call the shades to speech."
+      "narrative": "Dug a pit and filled it with offerings to call the shades to speech.",
+      "historicalNote": "Pouring blood into a pit to draw and question the dead reflects a genuine ancient Greek necromantic rite, attested independently at real oracle-of-the-dead sites."
     },
     {
       "id": "051-the-shade-of-elpenor-unburied",
@@ -570,7 +595,8 @@
       "name": "The Shade of Elpenor, Unburied",
       "meters": 1199375,
       "segmentId": "underworld-shore",
-      "narrative": "A crewman's ghost begs for a grave he does not yet know he needs."
+      "narrative": "A crewman's ghost begs for a grave he does not yet know he needs.",
+      "historicalNote": "Proper burial mattered enormously in ancient Greek religion — Elpenor's plea for a grave voices a real and deeply held belief, not just a plot device."
     },
     {
       "id": "052-the-blind-prophets-warning",
@@ -578,7 +604,8 @@
       "name": "The Blind Prophet's Warning",
       "meters": 1223125,
       "segmentId": "underworld-shore",
-      "narrative": "Tiresias speaks of a homecoming bought at the price of every companion."
+      "narrative": "Tiresias speaks of a homecoming bought at the price of every companion.",
+      "historicalNote": "Tiresias, the blind prophet of Thebes, is a major figure across Greek myth far beyond the Odyssey — most famously in the later story of Oedipus."
     },
     {
       "id": "053-my-mothers-shade-among-the-dead",
@@ -586,7 +613,8 @@
       "name": "My Mother's Shade Among the Dead",
       "meters": 1246875,
       "segmentId": "underworld-shore",
-      "narrative": "Reached three times to embrace her; three times the shade slipped through."
+      "narrative": "Reached three times to embrace her; three times the shade slipped through.",
+      "historicalNote": "The failed embrace of a parent's ghost here is echoed almost word for word later in the poem, when Odysseus embraces his very-much-alive father Laertes."
     },
     {
       "id": "054-the-judgment-hall-of-minos",
@@ -610,7 +638,8 @@
       "name": "The Weight Sisyphus Cannot Set Down",
       "meters": 1318125,
       "segmentId": "underworld-shore",
-      "narrative": "A boulder, a slope, and a curse with no end in sight."
+      "narrative": "A boulder, a slope, and a curse with no end in sight.",
+      "historicalNote": "Sisyphus's pointless, endless labor became so proverbial that 'Sisyphean' is still ordinary English for futile toil, three thousand years later."
     },
     {
       "id": "057-the-retreat-from-the-house-of-the-dead",
@@ -626,7 +655,8 @@
       "name": "Elpenor's Barrow on the Shore",
       "meters": 1365625,
       "segmentId": "aeaea-return",
-      "narrative": "Raised a mound and planted an oar where the fallen crewman rests."
+      "narrative": "Raised a mound and planted an oar where the fallen crewman rests.",
+      "historicalNote": "Marking a lost sailor's grave with a planted oar reflects a real ancient Greek custom of symbolic burial markers for those lost far from home."
     },
     {
       "id": "059-circes-chart-of-dangers-ahead",
@@ -642,7 +672,8 @@
       "name": "The Wax and the Mast Ropes",
       "meters": 1413125,
       "segmentId": "aeaea-return",
-      "narrative": "Prepared beeswax for the ears and rope enough to bind a man fast."
+      "narrative": "Prepared beeswax for the ears and rope enough to bind a man fast.",
+      "historicalNote": "Beeswax was an ordinary, widely available ancient Mediterranean material — one of the epic's most famous solutions is also one of its most mundane."
     },
     {
       "id": "061-the-becalmed-approach-to-the-sirens",
@@ -650,7 +681,8 @@
       "name": "The Becalmed Approach to the Sirens",
       "meters": 1436875,
       "segmentId": "sirens-strait",
-      "narrative": "Not a breath of wind stirs as the fatal coast comes into view."
+      "narrative": "Not a breath of wind stirs as the fatal coast comes into view.",
+      "historicalNote": "Ancient tradition placed the Sirens' rocks off the Sorrentine peninsula in Italy, on a cluster of islets still known today as Li Galli — once called the Sirenusae."
     },
     {
       "id": "062-ears-sealed-with-wax",
@@ -658,7 +690,8 @@
       "name": "Ears Sealed With Wax",
       "meters": 1460625,
       "segmentId": "sirens-strait",
-      "narrative": "Watched the rowers' faces go blank and calm as the wax set."
+      "narrative": "Watched the rowers' faces go blank and calm as the wax set.",
+      "historicalNote": "Early Greek art shows the Sirens as bird-bodied women, not the fish-tailed figure later cultures came to call a 'siren'."
     },
     {
       "id": "063-bound-to-the-mast",
@@ -666,7 +699,8 @@
       "name": "Bound to the Mast",
       "meters": 1484375,
       "segmentId": "sirens-strait",
-      "narrative": "Lashed tight at my own order, straining against ropes I begged for."
+      "narrative": "Lashed tight at my own order, straining against ropes I begged for.",
+      "historicalNote": "This scene — the one sailor who heard the Sirens and lived, bound to his own mast — became one of antiquity's most painted images, appearing on Greek vases for centuries."
     },
     {
       "id": "064-the-field-of-bones-below-the-rocks",
@@ -682,7 +716,8 @@
       "name": "The Smoking Whirlpool",
       "meters": 1531875,
       "segmentId": "scylla-charybdis",
-      "narrative": "Charybdis swallows the sea itself three times a day."
+      "narrative": "Charybdis swallows the sea itself three times a day.",
+      "historicalNote": "The historian Thucydides already identified this strait with the real Strait of Messina between Sicily and mainland Italy, genuinely known for strong tidal currents."
     },
     {
       "id": "066-the-cliff-with-no-handhold",
@@ -698,7 +733,8 @@
       "name": "The Choice of Losses",
       "meters": 1579375,
       "segmentId": "scylla-charybdis",
-      "narrative": "Steer wide of the whirlpool and pay the narrow strait its price instead."
+      "narrative": "Steer wide of the whirlpool and pay the narrow strait its price instead.",
+      "historicalNote": "'Between Scylla and Charybdis' survives today, in English and other languages, as an idiom for choosing between two comparably bad options."
     },
     {
       "id": "068-scyllas-reach",
@@ -730,7 +766,8 @@
       "name": "The Sun God's Green Island",
       "meters": 1674375,
       "segmentId": "thrinacia-pastures",
-      "narrative": "Cattle graze in herds too perfect to be ordinary livestock."
+      "narrative": "Cattle graze in herds too perfect to be ordinary livestock.",
+      "historicalNote": "Thrinacia's name echoes an old Greek epithet for Sicily itself, 'Trinacria' — 'three-cornered,' describing the island's triangular shape."
     },
     {
       "id": "072-the-oath-sworn-on-the-beach",
@@ -818,7 +855,8 @@
       "name": "Nine Days on Open Water",
       "meters": 1935625,
       "segmentId": "adrift-alone",
-      "narrative": "No land, no ship, no crew — just current and a fig tree remembered too well."
+      "narrative": "No land, no ship, no crew — just current and a fig tree remembered too well.",
+      "historicalNote": "The number nine recurs through the poem at oddly regular intervals — nine days of storm earlier, nine days adrift here — a pattern 20th-century scholarship on oral-formulaic composition (Milman Parry) traces to the mechanics of composing epic aloud, not coincidence."
     },
     {
       "id": "083-washed-up-on-ogygias-sand",
@@ -826,7 +864,8 @@
       "name": "Washed Up on Ogygia's Sand",
       "meters": 1959375,
       "segmentId": "ogygia-calypso",
-      "narrative": "A nymph's hidden island, further from home than any place yet."
+      "narrative": "A nymph's hidden island, further from home than any place yet.",
+      "historicalNote": "Ogygia's location was disputed even in antiquity, with ancient writers proposing sites from Malta and Gozo to the far Atlantic; most modern scholars treat it as deliberately unmappable rather than a real island."
     },
     {
       "id": "084-calypsos-grotto-fire",
@@ -842,7 +881,8 @@
       "name": "The Offer of Forever",
       "meters": 2006875,
       "segmentId": "ogygia-calypso",
-      "narrative": "Immortality offered in exchange for never seeing Ithaca again."
+      "narrative": "Immortality offered in exchange for never seeing Ithaca again.",
+      "historicalNote": "Calypso's offer of immortality, and Odysseus's refusal of it, is read by many scholars as the poem's clearest statement of its actual theme — choosing a mortal home over a god's endless, changeless life."
     },
     {
       "id": "086-the-loom-by-the-cave-entrance",
@@ -858,7 +898,8 @@
       "name": "Seven Years Counted in Tides",
       "meters": 2054375,
       "segmentId": "ogygia-calypso",
-      "narrative": "The seasons on Ogygia repeat with no calendar but the surf."
+      "narrative": "The seasons on Ogygia repeat with no calendar but the surf.",
+      "historicalNote": "Seven years on Ogygia is the single longest stop of the entire twenty-year absence from Ithaca — more than double any other stay in the poem."
     },
     {
       "id": "088-hermes-on-the-sea-bright-path",
@@ -882,7 +923,8 @@
       "name": "Felling Timber for the Raft",
       "meters": 2125625,
       "segmentId": "ogygia-calypso",
-      "narrative": "Twenty trees cut, trimmed, and lashed with the last tools she'll lend."
+      "narrative": "Twenty trees cut, trimmed, and lashed with the last tools she'll lend.",
+      "historicalNote": "The mortise-and-tenon joinery real Bronze Age shipbuilders used is confirmed by actual shipwrecks, such as the Uluburun wreck recovered off the Turkish coast."
     },
     {
       "id": "091-eighteen-days-by-the-stars",
@@ -890,7 +932,8 @@
       "name": "Eighteen Days by the Stars",
       "meters": 2149375,
       "segmentId": "raft-storm",
-      "narrative": "Kept the Great Bear on the left hand, exactly as instructed."
+      "narrative": "Kept the Great Bear on the left hand, exactly as instructed.",
+      "historicalNote": "Keeping a fixed constellation — here the Great Bear — on one side of the vessel was a real, attested method of ancient celestial navigation, not a poetic flourish."
     },
     {
       "id": "092-poseidons-sighting-from-afar",
@@ -898,7 +941,8 @@
       "name": "Poseidon's Sighting From Afar",
       "meters": 2173125,
       "segmentId": "raft-storm",
-      "narrative": "A god still furious over a blinded son notices the raft too late to ignore."
+      "narrative": "A god still furious over a blinded son notices the raft too late to ignore.",
+      "historicalNote": "Poseidon's grudge over his blinded son is the epic's own explicitly stated reason for the entire twenty-year ordeal — one of Greek myth's most clearly drawn cause-and-effect stories of divine anger."
     },
     {
       "id": "093-the-wave-that-broke-the-mast",
@@ -914,7 +958,8 @@
       "name": "Clinging to a Single Plank",
       "meters": 2220625,
       "segmentId": "raft-storm",
-      "narrative": "Ino's veil, tied at the waist, is the only thing between here and drowning."
+      "narrative": "Ino's veil, tied at the waist, is the only thing between here and drowning.",
+      "historicalNote": "Ino, the sea-goddess who intervenes here, was a mortal woman in other tellings of Greek myth before her transformation — one of several such divinized former mortals in Greek religion."
     },
     {
       "id": "095-the-river-mouth-of-salvation",
@@ -938,7 +983,8 @@
       "name": "Nausicaa's Washing Day",
       "meters": 2291875,
       "segmentId": "scheria-phaeacia",
-      "narrative": "A princess and her maids find a castaway asleep among the driftwood."
+      "narrative": "A princess and her maids find a castaway asleep among the driftwood.",
+      "historicalNote": "A princess doing the household's laundry herself, rather than leaving it to servants, is a small realistic detail scholars read as marking Phaeacian society as idealized and unusually unpretentious."
     },
     {
       "id": "098-the-gift-of-oil-and-linen",
@@ -946,7 +992,8 @@
       "name": "The Gift of Oil and Linen",
       "meters": 2315625,
       "segmentId": "scheria-phaeacia",
-      "narrative": "Clean clothes and oil for aching limbs, offered without a single question."
+      "narrative": "Clean clothes and oil for aching limbs, offered without a single question.",
+      "historicalNote": "Bathing with oil rather than soap was standard ancient Mediterranean hygiene — the gift here is thoroughly ordinary, not exotic."
     },
     {
       "id": "099-the-road-into-the-phaeacian-city",
@@ -970,7 +1017,8 @@
       "name": "The Queen's Hearth",
       "meters": 2386875,
       "segmentId": "scheria-phaeacia",
-      "narrative": "Knelt at Arete's feet before a single word of welcome was offered."
+      "narrative": "Knelt at Arete's feet before a single word of welcome was offered.",
+      "historicalNote": "Ancient commentators already noted that a supplicant here approaches the queen, not the king — an unusual detail suggesting real authority for Phaeacian queens."
     },
     {
       "id": "102-the-feast-in-king-alcinouss-hall",
@@ -986,7 +1034,8 @@
       "name": "The Blind Singer's Song of Troy",
       "meters": 2434375,
       "segmentId": "scheria-phaeacia",
-      "narrative": "A bard sings the fall of Troy, and the guest weeps without meaning to."
+      "narrative": "A bard sings the fall of Troy, and the guest weeps without meaning to.",
+      "historicalNote": "The blind court singer Demodocus is often read as Homer's own self-portrait, since later ancient biography also imagined Homer himself as blind."
     },
     {
       "id": "104-the-games-on-the-practice-field",
@@ -994,7 +1043,8 @@
       "name": "The Games on the Practice Field",
       "meters": 2458125,
       "segmentId": "scheria-phaeacia",
-      "narrative": "A discus throw settles an insult before it becomes a feud."
+      "narrative": "A discus throw settles an insult before it becomes a feud.",
+      "historicalNote": "Athletic contests as a mark of hospitality reflect the same competitive culture that, in the real world, produced institutions like the ancient Olympic Games."
     },
     {
       "id": "105-demodocus-sings-the-wooden-horse",
@@ -1002,7 +1052,8 @@
       "name": "Demodocus Sings the Wooden Horse",
       "meters": 2481875,
       "segmentId": "scheria-phaeacia",
-      "narrative": "The whole hall falls silent at the story only one listener truly lived."
+      "narrative": "The whole hall falls silent at the story only one listener truly lived.",
+      "historicalNote": "The Trojan Horse is never narrated in the Iliad itself — this scene, sung by Demodocus, is actually the earliest surviving account of it, making the Odyssey older than the Iliad on that one detail."
     },
     {
       "id": "106-naming-the-castaway-at-last",
@@ -1018,7 +1069,8 @@
       "name": "The Magic Ship Made Ready",
       "meters": 2529375,
       "segmentId": "night-passage-home",
-      "narrative": "A Phaeacian galley loaded with gifts greater than anything brought from Troy."
+      "narrative": "A Phaeacian galley loaded with gifts greater than anything brought from Troy.",
+      "historicalNote": "Phaeacian ships needing no steering, described here as almost magically fast, are punished later in the same book — turned to stone by Poseidon on their way home, a fate the poem recounts right after Odysseus's own safe arrival."
     },
     {
       "id": "108-asleep-for-the-last-crossing",
@@ -1034,7 +1086,8 @@
       "name": "Waking on an Unfamiliar Shore",
       "meters": 2576875,
       "segmentId": "ithaca-homecoming",
-      "narrative": "Twenty years gone; even home looks like a stranger's coastline."
+      "narrative": "Twenty years gone; even home looks like a stranger's coastline.",
+      "historicalNote": "Ithaca's exact identity among the Ionian Islands has been argued since antiquity; a modern theory (Robert Bittlestone, 2005) proposed the Paliki peninsula of Cephalonia as the 'real' Ithaca, though most scholars still favor the traditionally named island, Ithaki."
     },
     {
       "id": "110-the-harbor-of-the-old-sea-god-phorcys",
@@ -1050,7 +1103,8 @@
       "name": "The Cave of the Nymphs",
       "meters": 2624375,
       "segmentId": "ithaca-homecoming",
-      "narrative": "Stone looms and stone jars inside a cave no mortal built."
+      "narrative": "Stone looms and stone jars inside a cave no mortal built.",
+      "historicalNote": "A real cave near Polis Bay on modern Ithaki has long been proposed as this 'Cave of the Nymphs,' partly on the strength of ancient votive offerings archaeologists found there."
     },
     {
       "id": "112-athenas-disguise-on-the-beach",
@@ -1074,7 +1128,8 @@
       "name": "The Swineherd's Hut on the Ridge",
       "meters": 2695625,
       "segmentId": "ithaca-homecoming",
-      "narrative": "Smoke rising from Eumaeus's hut, the first honest welcome in twenty years."
+      "narrative": "Smoke rising from Eumaeus's hut, the first honest welcome in twenty years.",
+      "historicalNote": "Eumaeus the swineherd is one of the few enslaved or low-status characters in Homeric epic given real depth and a voice of his own — a detail scholars single out as unusual for the genre."
     },
     {
       "id": "115-a-beggar-at-his-own-door",
@@ -1090,7 +1145,8 @@
       "name": "The Old Dog on the Dung Heap",
       "meters": 2743125,
       "segmentId": "ithaca-homecoming",
-      "narrative": "Argos lifts his head once, at a scent no one else in the yard notices."
+      "narrative": "Argos lifts his head once, at a scent no one else in the yard notices.",
+      "historicalNote": "The old dog Argos recognizing his master and then dying is one of the most frequently cited passages in the whole poem — a handful of lines, disproportionate emotional weight."
     },
     {
       "id": "117-counting-the-suitors-in-the-hall",
@@ -1098,7 +1154,8 @@
       "name": "Counting the Suitors in the Hall",
       "meters": 2766875,
       "segmentId": "ithaca-homecoming",
-      "narrative": "More than a hundred men living off another man's house and patience."
+      "narrative": "More than a hundred men living off another man's house and patience.",
+      "historicalNote": "The scale of the suitors — over a hundred men in most manuscript traditions — already struck ancient commentators as implausibly large for a single household to support."
     },
     {
       "id": "118-the-bow-that-only-one-man-can-string",
@@ -1106,7 +1163,8 @@
       "name": "The Bow That Only One Man Can String",
       "meters": 2790625,
       "segmentId": "ithaca-homecoming",
-      "narrative": "A contest set for a queen's hand that no suitor can complete."
+      "narrative": "A contest set for a queen's hand that no suitor can complete.",
+      "historicalNote": "A hero proving himself by alone stringing an unusually stiff bow is a recognized folk-tale motif for establishing a unique right to rule, found well beyond this poem."
     },
     {
       "id": "119-the-hall-barred-from-the-inside",
@@ -1114,7 +1172,8 @@
       "name": "The Hall Barred From the Inside",
       "meters": 2814375,
       "segmentId": "ithaca-homecoming",
-      "narrative": "Doors sealed, weapons gathered, twenty years of debt about to be called in."
+      "narrative": "Doors sealed, weapons gathered, twenty years of debt about to be called in.",
+      "historicalNote": "Just before the killing, the poem has the seer Theoclymenus describe darkness swallowing the sun in daylight — a passage some modern astronomers have linked to a real total solar eclipse over Ithaca around 1178 BCE, though the theory remains debated."
     },
     {
       "id": "120-ithaca-truly-home",
@@ -1122,7 +1181,8 @@
       "name": "Ithaca, Truly Home",
       "meters": 2838125,
       "segmentId": "ithaca-homecoming",
-      "narrative": "The last suitor falls, and the house finally belongs to the man who built it."
+      "narrative": "The last suitor falls, and the house finally belongs to the man who built it.",
+      "historicalNote": "The poem's actual ending, often trimmed from retellings, includes a further peacemaking between Odysseus and the dead suitors' families — present in the original text past the final duel."
     }
   ]
 }
