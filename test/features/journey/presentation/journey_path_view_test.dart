@@ -3,8 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:thereandback/app/database_provider.dart';
 import 'package:thereandback/app/theme.dart';
+import 'package:thereandback/core/formatters.dart';
 import 'package:thereandback/data/drift/database.dart';
 import 'package:thereandback/design/colors.dart';
+import 'package:thereandback/design/components/distance_text.dart';
+import 'package:thereandback/features/achievements/data/achievement_catalog.dart';
+import 'package:thereandback/features/achievements/presentation/achievement_titles.dart';
 import 'package:thereandback/features/journey/presentation/journey_path_view.dart';
 import 'package:thereandback/features/journey/presentation/journey_providers.dart';
 import 'package:thereandback/l10n/app_localizations.dart';
@@ -264,6 +268,52 @@ void main() {
           afterSecondDrag,
           moreOrLessEquals(afterFirstDrag, epsilon: 0.5),
         );
+      },
+    );
+
+    testWidgets(
+      'a marker shows nothing until tapped, then opens a sheet with its '
+      'name and status',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+            ],
+            child: _app(const JourneyPathView()),
+          ),
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(JourneyPathView)),
+        );
+        container
+            .read(selectedJourneyProvider.notifier)
+            .start('odyssey-ithaca', now: DateTime.now());
+        await tester.pump();
+
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(JourneyPathView)),
+        )!;
+        final def = achievementCatalog.firstWhere(
+          (candidate) => candidate.id == 'first-steps',
+        );
+        final expectedTitle = achievementTitle(l10n, def);
+        final expectedStatus = l10n.achievementRemainingLabel(
+          localizedDistanceInline(l10n, formatDistance(def.thresholdMeters)),
+        );
+
+        // The name/status are nowhere on screen before the tap — a marker
+        // is icon-only until interacted with.
+        expect(find.text(expectedTitle), findsNothing);
+
+        await tester.tap(
+          find.byKey(const Key('achievementMarker-first-steps')),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text(expectedTitle), findsOneWidget);
+        expect(find.text(expectedStatus), findsOneWidget);
       },
     );
   });

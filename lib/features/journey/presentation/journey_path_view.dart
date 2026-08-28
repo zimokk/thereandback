@@ -11,6 +11,7 @@ import '../../../design/typography.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../achievements/data/achievement_catalog.dart';
 import '../../achievements/domain/achievement.dart';
+import '../../achievements/presentation/achievement_titles.dart';
 import '../domain/quest_time_service.dart';
 import '../domain/route_scale.dart';
 import 'journey_providers.dart';
@@ -163,6 +164,7 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView> {
                           _AchievementMarker(
                             key: Key('achievementMarker-${state.def.id}'),
                             state: state,
+                            l10n: l10n,
                             x:
                                 centerX +
                                 (state.def.thresholdMeters - _panMeters) *
@@ -257,10 +259,21 @@ double _wavyPathY({
 /// [AchievementState.unlocked] (the same rule `achievements_tab.dart`
 /// uses), muted otherwise — so scrolling ahead of the current position
 /// previews what's coming without pretending it has already been reached.
+///
+/// The icon itself is all that shows on the line — a tap is required to see
+/// anything more (this task's requirement). No hover/long-press reveal, no
+/// always-on label: [_showAchievementDetails] is the only way to read a
+/// marker's name and status.
 class _AchievementMarker extends StatelessWidget {
-  const _AchievementMarker({super.key, required this.state, required this.x});
+  const _AchievementMarker({
+    super.key,
+    required this.state,
+    required this.x,
+    required this.l10n,
+  });
 
   final AchievementState state;
+  final AppLocalizations l10n;
 
   /// Horizontal screen position, in pixels — already resolved by the
   /// caller from the marker's meters and the current pan (§ boundary: the
@@ -271,13 +284,22 @@ class _AchievementMarker extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = state.unlocked ? AppColors.gold : AppColors.textSecondary;
     return Positioned(
-      left: x - _markerIconSize / 2,
-      top: _markersLayerTop,
-      child: IgnorePointer(
-        child: Icon(
-          state.unlocked ? Icons.emoji_events : Icons.emoji_events_outlined,
-          color: color,
-          size: _markerIconSize,
+      // The tappable area is padded out beyond the icon itself
+      // (_markerTapPadding on every side) so a 20px icon still has a
+      // comfortable touch target — the icon's own painted position doesn't
+      // move, only the hit-testable region around it grows.
+      left: x - _markerIconSize / 2 - _markerTapPadding,
+      top: _markersLayerTop - _markerTapPadding,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _showAchievementDetails(context, l10n, state),
+        child: Padding(
+          padding: const EdgeInsets.all(_markerTapPadding),
+          child: Icon(
+            state.unlocked ? Icons.emoji_events : Icons.emoji_events_outlined,
+            color: color,
+            size: _markerIconSize,
+          ),
         ),
       ),
     );
@@ -292,6 +314,51 @@ const double _markerIconSize = 20;
 /// single flat row that never moves with the line's height at any given
 /// `x`.
 const double _markersLayerTop = AppSpacing.md;
+
+/// Extra hit-testable margin around a marker icon, in logical pixels — the
+/// icon itself is small (20px); this keeps the tap target from being
+/// uncomfortably tight without changing how the icon looks or where it
+/// visually sits.
+const double _markerTapPadding = AppSpacing.sm;
+
+/// Shows a marker's name and status (this task's requirement — "details on
+/// tap only") in a bottom sheet, following the same shape every other sheet
+/// in this app uses (see `settings_tab.dart`'s `_showSignInStub`): title,
+/// then status line, dismissible by the sheet's own default swipe-down/
+/// tap-outside gesture — no bespoke close button, since adding one needs a
+/// new l10n key and this change didn't add one.
+void _showAchievementDetails(
+  BuildContext context,
+  AppLocalizations l10n,
+  AchievementState state,
+) {
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: AppColors.surface,
+    builder: (context) => Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(achievementTitle(l10n, state.def), style: AppTypography.heading),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            state.unlocked
+                ? l10n.achievementUnlockedLabel
+                : l10n.achievementRemainingLabel(
+                    localizedDistanceInline(
+                      l10n,
+                      formatDistance(state.remainingMeters),
+                    ),
+                  ),
+            style: AppTypography.bodySecondary,
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
 class _WavyPathPainter extends CustomPainter {
   const _WavyPathPainter({

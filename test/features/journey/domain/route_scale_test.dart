@@ -29,16 +29,19 @@ void main() {
         );
       });
 
-      test('exactly one screen width of meters offsets by one screen width', () {
-        expect(
-          metersToLineOffset(
-            journeyId: 'odyssey-ithaca',
-            meters: metersPerScreenWidthFor('odyssey-ithaca'),
-            screenWidth: 800,
-          ),
-          800.0,
-        );
-      });
+      test(
+        'exactly one screen width of meters offsets by one screen width',
+        () {
+          expect(
+            metersToLineOffset(
+              journeyId: 'odyssey-ithaca',
+              meters: metersPerScreenWidthFor('odyssey-ithaca'),
+              screenWidth: 800,
+            ),
+            800.0,
+          );
+        },
+      );
 
       test('offset is linear/proportional in meters', () {
         final scale = metersPerScreenWidthFor('odyssey-ithaca');

@@ -36,7 +36,11 @@ Bottom tab 1 of 4 in this base (CLAUDE.md §6.1). Route: **`/journey`**
     reached yet (`!AchievementState.unlocked`) renders muted
     (`AppColors.textSecondary`, outlined trophy icon); reached ones render
     gold (filled icon) — the same rule `achievements_tab.dart` uses.
-    Scrolling ahead previews what's coming without unlocking it.
+    Scrolling ahead previews what's coming without unlocking it. The icon
+    is all that shows on the line — **tapping it** opens a bottom sheet
+    (`_showAchievementDetails`) with the achievement's name and status
+    (unlocked / meters remaining); there is no always-on label and no
+    hover/long-press reveal.
 
 ## Deliberate placeholder: no Flame yet
 
@@ -97,6 +101,10 @@ shape when that happens.
   `achievementCatalog` from `features/achievements/data/`) — reused as-is
   from the Трофеи tab (§6.3) to drive the marker row; this screen adds no
   achievement logic of its own.
+- `achievementTitle` (`features/achievements/presentation/
+  achievement_titles.dart`) — the `titleKey` → localized string switch,
+  shared by `achievements_tab.dart`'s grid and this screen's marker-tap
+  sheet so the two can't show a different name for the same achievement.
 
 ## l10n keys
 
@@ -142,9 +150,11 @@ vertically (not horizontally) — the line moving under a fixed icon, not
 the other way round. A second group covers the start/end line and markers:
 every achievement marker sits at the same fixed top offset regardless of
 its position along the route; a marker renders muted before its threshold
-and gold right after `applySyncedProgress` crosses it; and panning is
-clamped at both point A and point B (dragging further past either end,
-twice, lands in the same place both times).
+and gold right after `applySyncedProgress` crosses it; panning is clamped
+at both point A and point B (dragging further past either end, twice,
+lands in the same place both times); and a marker's name/status are
+nowhere on screen until it's tapped, after which they appear in the
+details sheet.
 
 `test/features/journey/domain/route_scale_test.dart` covers
 `metersPerScreenWidthFor`/`metersToLineOffset` directly: a configured
