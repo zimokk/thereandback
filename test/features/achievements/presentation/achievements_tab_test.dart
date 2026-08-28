@@ -32,6 +32,16 @@ void main() {
     await tester.pump();
 
     expect(find.text('First Steps'), findsOneWidget);
+    expect(find.text('Unlocked'), findsNothing);
+
+    // The catalog is longer than one screen now — scroll to the last tile
+    // to confirm the grid actually renders the whole thing, not just what
+    // fits without scrolling.
+    await tester.dragUntilVisible(
+      find.text("Journey's End"),
+      find.byType(GridView),
+      const Offset(0, -300),
+    );
     expect(find.text("Journey's End"), findsOneWidget);
     expect(find.text('Unlocked'), findsNothing);
   });

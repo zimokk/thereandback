@@ -272,11 +272,17 @@ abstract class AppLocalizations {
   /// **'The drawn map isn\'t in this build yet — below is the route itself, with your position on it.'**
   String get questMapIllustrationMissing;
 
-  /// Caption under the map naming the next landmark on the route and how far it still is; the landmark name is quest data, not translated copy (§11)
+  /// Caption under the map naming the next landmark on the route and how far it still is; the landmark name is quest data, not translated copy (§11). Reused verbatim as the tap-to-open tooltip for any landmark still ahead of the traveler, not just the next one.
   ///
   /// In en, this message translates to:
   /// **'Ahead: {name} — {distance} to go'**
   String questMapNextLandmark(String name, String distance);
+
+  /// Tooltip shown when tapping a landmark the traveler has already passed; distance is how far past it they are. Mirrors questMapNextLandmark's "Ahead: {name} — {distance} to go" phrasing for the opposite direction.
+  ///
+  /// In en, this message translates to:
+  /// **'Behind: {name} — {distance} ago'**
+  String questMapLandmarkBehindCaption(String name, String distance);
 
   /// Caption under the map once the traveler has passed the last landmark
   ///
@@ -314,17 +320,71 @@ abstract class AppLocalizations {
   /// **'First Steps'**
   String get achievementFirstStepsTitle;
 
+  /// Achievement title: reach 10 km on the current quest
+  ///
+  /// In en, this message translates to:
+  /// **'First League'**
+  String get achievementFirstLeagueTitle;
+
   /// Achievement title: reach 50 km on the current quest
   ///
   /// In en, this message translates to:
   /// **'Half-Day March'**
   String get achievementHalfDayMarchTitle;
 
+  /// Achievement title: reach 100 km on the current quest
+  ///
+  /// In en, this message translates to:
+  /// **'Century Mark'**
+  String get achievementCenturyMarkTitle;
+
   /// Achievement title: reach 500 km on the current quest
   ///
   /// In en, this message translates to:
   /// **'Seasoned Wanderer'**
   String get achievementSeasonedWandererTitle;
+
+  /// Achievement title: reach the Aeaea (Circe) landmark on the Odyssey quest — map.json's "aeaea-circe"
+  ///
+  /// In en, this message translates to:
+  /// **'Reached Aeaea'**
+  String get achievementReachedCirceTitle;
+
+  /// Achievement title: reach the Lotus-Eaters landmark on the Odyssey quest — map.json's "lotus-eaters"
+  ///
+  /// In en, this message translates to:
+  /// **'Reached the Lotus-Eaters'**
+  String get achievementReachedLotusEatersTitle;
+
+  /// Achievement title: reach exactly half the current quest's total length
+  ///
+  /// In en, this message translates to:
+  /// **'Halfway There'**
+  String get achievementHalfwayThereTitle;
+
+  /// Achievement title: reach the Calypso landmark on the Odyssey quest — map.json's "calypso"
+  ///
+  /// In en, this message translates to:
+  /// **'Reached Calypso'**
+  String get achievementReachedCalypsoTitle;
+
+  /// Achievement title: reach 2000 km on the current quest
+  ///
+  /// In en, this message translates to:
+  /// **'Long Hauler'**
+  String get achievementLongHaulerTitle;
+
+  /// Achievement title: reach the Scylla and Charybdis landmark on the Odyssey quest — map.json's "scylla-charybdis"
+  ///
+  /// In en, this message translates to:
+  /// **'Passed Scylla and Charybdis'**
+  String get achievementPassedScyllaCharybdisTitle;
+
+  /// Achievement title: reach the Sirens landmark on the Odyssey quest — map.json's "sirens"
+  ///
+  /// In en, this message translates to:
+  /// **'Passed the Sirens'**
+  String get achievementPassedSirensTitle;
 
   /// Achievement title: reach the full quest length
   ///

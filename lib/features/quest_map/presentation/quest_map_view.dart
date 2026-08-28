@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,23 +7,35 @@ import '../../../design/components/distance_text.dart';
 import '../../../design/spacing.dart';
 import '../../../design/typography.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../journey/domain/quest_progress.dart';
 import '../data/quest_map_repository.dart';
 import '../domain/route_mapping.dart';
 import 'quest_map_providers.dart';
 
-/// The drawn quest map of §6.2: the illustration, the route traced over it
-/// from `map.json`, and the traveler's own position on that line.
+/// The drawn quest map of §6.2: the illustration and the traveler's own
+/// position on the route traced in `map.json`.
 ///
-/// The route is split at the walked distance — solid gold behind the
-/// traveler, dashed ahead of them — so the position reads as a point on the
-/// path, not a pin floating over the art. Pan and zoom come from
-/// [InteractiveViewer]; nothing here touches the network, the map is a
-/// bundled asset and the screen works fully offline (§6.2, §8).
+/// The route line itself is never drawn — the traveler moves along it
+/// invisibly, so the only thing marking where they are is the helmet
+/// itself, not a line leading up to it. Landmarks are marked the same way.
+/// Tapping the traveler or a landmark shows a small tooltip with its
+/// stats (§6.2's "interactive hotspots"); tapping empty space, or the same
+/// marker again, dismisses it. Pan and zoom come from [InteractiveViewer];
+/// nothing here touches the network, the map is a bundled asset and the
+/// screen works fully offline (§6.2, §8).
 class QuestMapView extends ConsumerWidget {
-  const QuestMapView({super.key, required this.progressMeters});
+  const QuestMapView({
+    super.key,
+    required this.progressMeters,
+    required this.startedAt,
+  });
 
   /// How far along the quest the traveler is, in meters.
   final int progressMeters;
+
+  /// When the quest started — needed for the traveler's tapped-open stat
+  /// bubble, which shows the quest day alongside the distance.
+  final DateTime startedAt;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,6 +53,7 @@ class QuestMapView extends ConsumerWidget {
         return _LoadedMap(
           assets: loaded,
           progressMeters: progressMeters,
+          startedAt: startedAt,
           l10n: l10n,
         );
       },
@@ -53,21 +64,89 @@ class QuestMapView extends ConsumerWidget {
 /// Shape of the frame before the real map's own ratio is known.
 const double _fallbackAspectRatio = 2 / 3;
 
-class _LoadedMap extends StatelessWidget {
+class _LoadedMap extends StatefulWidget {
   const _LoadedMap({
     required this.assets,
     required this.progressMeters,
+    required this.startedAt,
     required this.l10n,
   });
 
   final QuestMapAssets assets;
   final int progressMeters;
+  final DateTime startedAt;
   final AppLocalizations l10n;
 
   @override
+  State<_LoadedMap> createState() => _LoadedMapState();
+}
+
+/// How close a tap has to land to a marker's center to select it, in
+/// logical pixels — generous enough for a touch target well under the
+/// marker's own visible halo.
+const double _tapTargetRadius = 22;
+
+class _LoadedMapState extends State<_LoadedMap> {
+  /// Whether the traveler's own stat bubble is open. Mutually exclusive
+  /// with [_selectedLandmark] — only one tooltip shows at a time.
+  bool _travelerSelected = false;
+
+  /// The landmark whose distance tooltip is open, or `null` if none is.
+  MapLandmark? _selectedLandmark;
+
+  void _handleTap(TapUpDetails details, QuestMap map, Size size) {
+    Offset toOffset(MapPoint point) =>
+        Offset(point.x * size.width, point.y * size.height);
+    final tapped = details.localPosition;
+
+    var closestDistance = _tapTargetRadius;
+    var hitTraveler = false;
+    MapLandmark? hitLandmark;
+
+    final travelerAt = toOffset(
+      metersToPoint(map.polyline, widget.progressMeters),
+    );
+    final travelerDistance = (tapped - travelerAt).distance;
+    if (travelerDistance <= closestDistance) {
+      closestDistance = travelerDistance;
+      hitTraveler = true;
+    }
+    for (final landmark in map.landmarks) {
+      final at = toOffset(MapPoint(x: landmark.x, y: landmark.y));
+      final distance = (tapped - at).distance;
+      // Strictly closer, not <=: early in the quest the traveler can sit
+      // exactly on top of a landmark (progress 0 at Troy, the route's own
+      // start), and a tie should stay with whichever was found first — the
+      // traveler, checked above — not flip to the landmark checked last.
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        hitTraveler = false;
+        hitLandmark = landmark;
+      }
+    }
+
+    setState(() {
+      if (hitTraveler) {
+        final wasOpen = _travelerSelected;
+        _selectedLandmark = null;
+        _travelerSelected = !wasOpen;
+      } else if (hitLandmark != null) {
+        final wasOpen = _selectedLandmark == hitLandmark;
+        _travelerSelected = false;
+        _selectedLandmark = wasOpen ? null : hitLandmark;
+      } else {
+        _travelerSelected = false;
+        _selectedLandmark = null;
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final map = assets.map;
-    final upcoming = nextLandmark(map, progressMeters);
+    final map = widget.assets.map;
+    final upcoming = nextLandmark(map, widget.progressMeters);
+    final travelerPoint = metersToPoint(map.polyline, widget.progressMeters);
+    final l10n = widget.l10n;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -77,37 +156,73 @@ class _LoadedMap extends StatelessWidget {
           child: InteractiveViewer(
             maxScale: 5,
             clipBehavior: Clip.hardEdge,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                if (assets.hasIllustration)
-                  // BoxFit.fill, not cover: the frame already carries the
-                  // illustration's own aspect ratio, and filling it is what
-                  // keeps every normalized (0..1) coordinate in `map.json`
-                  // landing on the spot it was traced from.
-                  Image.asset(map.imageAsset, fit: BoxFit.fill)
-                else
-                  const ColoredBox(color: AppColors.backgroundElevated),
-                Semantics(
-                  // A node of its own: the marker it describes is painted,
-                  // so there is no child semantics for a label to annotate.
-                  container: true,
-                  label: l10n.questMapYouAreHere,
-                  child: CustomPaint(
-                    key: const Key('questMapRouteOverlay'),
-                    painter: _RouteOverlayPainter(
-                      polyline: map.polyline,
-                      landmarks: map.landmarks,
-                      progressMeters: progressMeters,
-                    ),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final size = constraints.biggest;
+                return GestureDetector(
+                  // Opaque so a tap on empty water (nothing painted there)
+                  // still reaches this handler and dismisses an open
+                  // tooltip, not just taps that land on a marker.
+                  behavior: HitTestBehavior.opaque,
+                  onTapUp: (details) => _handleTap(details, map, size),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (widget.assets.hasIllustration)
+                        // BoxFit.fill, not cover: the frame already carries
+                        // the illustration's own aspect ratio, and filling
+                        // it is what keeps every normalized (0..1)
+                        // coordinate in `map.json` landing on the spot it
+                        // was traced from.
+                        Image.asset(map.imageAsset, fit: BoxFit.fill)
+                      else
+                        const ColoredBox(color: AppColors.backgroundElevated),
+                      Semantics(
+                        // A node of its own: the markers it describes are
+                        // painted, so there is no child semantics for a
+                        // label to annotate.
+                        container: true,
+                        label: l10n.questMapYouAreHere,
+                        child: CustomPaint(
+                          key: const Key('questMapRouteOverlay'),
+                          painter: _RouteOverlayPainter(
+                            polyline: map.polyline,
+                            landmarks: map.landmarks,
+                            progressMeters: widget.progressMeters,
+                          ),
+                        ),
+                      ),
+                      if (_travelerSelected)
+                        _MapTooltip(
+                          key: const Key('questMapTravelerTooltip'),
+                          x: travelerPoint.x,
+                          y: travelerPoint.y,
+                          child: _TravelerStats(
+                            startedAt: widget.startedAt,
+                            progressMeters: widget.progressMeters,
+                            l10n: l10n,
+                          ),
+                        )
+                      else if (_selectedLandmark case final landmark?)
+                        _MapTooltip(
+                          key: const Key('questMapLandmarkTooltip'),
+                          x: landmark.x,
+                          y: landmark.y,
+                          child: _LandmarkDistance(
+                            landmark: landmark,
+                            progressMeters: widget.progressMeters,
+                            l10n: l10n,
+                          ),
+                        ),
+                    ],
                   ),
-                ),
-              ],
+                );
+              },
             ),
           ),
         ),
         const SizedBox(height: AppSpacing.sm),
-        if (!assets.hasIllustration) ...[
+        if (!widget.assets.hasIllustration) ...[
           Text(
             l10n.questMapIllustrationMissing,
             style: AppTypography.bodySecondary,
@@ -123,12 +238,116 @@ class _LoadedMap extends StatelessWidget {
                   upcoming.name,
                   localizedDistanceInline(
                     l10n,
-                    formatDistance(upcoming.meters - progressMeters),
+                    formatDistance(upcoming.meters - widget.progressMeters),
                   ),
                 ),
           style: AppTypography.bodySecondary,
         ),
       ],
+    );
+  }
+}
+
+/// Floats [child] above the normalized `(x, y)` map point it's anchored to
+/// — [Align] maps that same `0..1` space the painter uses to `-1..1`
+/// alignment, and [FractionalTranslation] then lifts the tooltip up by its
+/// own height (plus a little extra) so it sits above the marker rather than
+/// centered on it, whatever size its content turns out to be.
+class _MapTooltip extends StatelessWidget {
+  const _MapTooltip({
+    super.key,
+    required this.x,
+    required this.y,
+    required this.child,
+  });
+
+  final double x;
+  final double y;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Align(
+        alignment: Alignment(x * 2 - 1, y * 2 - 1),
+        child: FractionalTranslation(
+          translation: const Offset(0, -1.15),
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xs,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.surface.withValues(alpha: 0.95),
+              borderRadius: BorderRadius.circular(AppRadius.card),
+              border: Border.all(color: AppColors.gold, width: AppStroke.icon),
+            ),
+            child: child,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TravelerStats extends StatelessWidget {
+  const _TravelerStats({
+    required this.startedAt,
+    required this.progressMeters,
+    required this.l10n,
+  });
+
+  final DateTime startedAt;
+  final int progressMeters;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final day = questDay(startedAt: startedAt, now: DateTime.now());
+    final distance = formatDistance(progressMeters);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(l10n.journeyDayCounter(day), style: AppTypography.label),
+        Text(
+          localizedDistanceInline(l10n, distance),
+          style: AppTypography.body,
+        ),
+      ],
+    );
+  }
+}
+
+class _LandmarkDistance extends StatelessWidget {
+  const _LandmarkDistance({
+    required this.landmark,
+    required this.progressMeters,
+    required this.l10n,
+  });
+
+  final MapLandmark landmark;
+  final int progressMeters;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final diff = landmark.meters - progressMeters;
+    final text = diff > 0
+        ? l10n.questMapNextLandmark(
+            landmark.name,
+            localizedDistanceInline(l10n, formatDistance(diff)),
+          )
+        : l10n.questMapLandmarkBehindCaption(
+            landmark.name,
+            localizedDistanceInline(l10n, formatDistance(-diff)),
+          );
+
+    return Text(
+      text,
+      style: AppTypography.bodySecondary,
+      textAlign: TextAlign.center,
     );
   }
 }
@@ -169,10 +388,6 @@ class _MapNotice extends StatelessWidget {
   }
 }
 
-/// Dash and gap lengths of the not-yet-walked stretch, in logical pixels.
-const double _dashLength = 6;
-const double _dashGap = 5;
-
 /// Emoji standing in for each landmark on the map, keyed by
 /// [MapLandmark.id] — a small piece of presentation styling, not quest
 /// content, so it lives here rather than in `map.json` (§11: the id itself
@@ -211,6 +426,12 @@ const double _landmarkHaloRadius = 11;
 /// units, this is what that gets scaled to.
 const double _travelerIconHeight = 20;
 
+/// Paints the traveler's position and every landmark on the drawn map —
+/// **not** the route between them (§6.2: the path is deliberately
+/// invisible; the traveler moves along it, nothing draws it). Marker
+/// positions still come straight from the same route math
+/// ([metersToPoint]) either way, so hiding the line changes nothing about
+/// where the markers land.
 class _RouteOverlayPainter extends CustomPainter {
   const _RouteOverlayPainter({
     required this.polyline,
@@ -226,28 +447,6 @@ class _RouteOverlayPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     Offset toOffset(MapPoint point) =>
         Offset(point.x * size.width, point.y * size.height);
-
-    final split = splitRouteAt(polyline, progressMeters);
-    final ahead = split.remaining.map(toOffset).toList(growable: false);
-    final behind = split.walked.map(toOffset).toList(growable: false);
-
-    final line = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    canvas.drawPath(
-      _dashed(ahead),
-      line
-        ..color = AppColors.gold.withValues(alpha: 0.5)
-        ..strokeWidth = AppStroke.path,
-    );
-    canvas.drawPath(
-      _polylinePath(behind),
-      line
-        ..color = AppColors.gold
-        ..strokeWidth = AppStroke.path + 1,
-    );
 
     for (final landmark in landmarks) {
       _paintLandmark(
@@ -299,52 +498,6 @@ class _RouteOverlayPainter extends CustomPainter {
     canvas.drawPath(_travelerHelmetCrest, gold);
     canvas.drawPath(_travelerHelmetDome, gold);
     canvas.restore();
-  }
-
-  Path _polylinePath(List<Offset> points) {
-    final path = Path();
-    if (points.isEmpty) return path;
-    path.moveTo(points.first.dx, points.first.dy);
-    for (final point in points.skip(1)) {
-      path.lineTo(point.dx, point.dy);
-    }
-    return path;
-  }
-
-  /// The same polyline, cut into dashes — [Path] has no dash support, and a
-  /// dashed stretch is what §6.2 asks for ahead of the traveler.
-  Path _dashed(List<Offset> points) {
-    final path = Path();
-    var drawing = true;
-    var remainingInDash = _dashLength;
-
-    for (var i = 0; i < points.length - 1; i++) {
-      final start = points[i];
-      final end = points[i + 1];
-      final length = (end - start).distance;
-      // Two vertices traced onto the same spot: nothing to dash.
-      if (length == 0) continue;
-      final direction = (end - start) / length;
-
-      var walked = 0.0;
-      while (walked < length) {
-        final step = math.min(length - walked, remainingInDash);
-        if (drawing) {
-          final from = start + direction * walked;
-          final to = start + direction * (walked + step);
-          path
-            ..moveTo(from.dx, from.dy)
-            ..lineTo(to.dx, to.dy);
-        }
-        walked += step;
-        remainingInDash -= step;
-        if (remainingInDash <= 0) {
-          drawing = !drawing;
-          remainingInDash = drawing ? _dashLength : _dashGap;
-        }
-      }
-    }
-    return path;
   }
 
   @override

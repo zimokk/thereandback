@@ -51,4 +51,30 @@ void main() {
       isEmpty,
     );
   });
+
+  test('landmarkReached unlocks the same way distanceReached does — same rule, '
+      'different reason', () {
+    const landmarkCatalog = [
+      AchievementDef(
+        id: 'reached-circe',
+        titleKey: 'achievementReachedCirceTitle',
+        kind: AchievementKind.landmarkReached,
+        thresholdMeters: 561921,
+      ),
+    ];
+
+    final before = evaluateAchievements(
+      progressMeters: 561920,
+      catalog: landmarkCatalog,
+    );
+    expect(before.single.unlocked, isFalse);
+    expect(before.single.remainingMeters, 1);
+
+    final atThreshold = evaluateAchievements(
+      progressMeters: 561921,
+      catalog: landmarkCatalog,
+    );
+    expect(atThreshold.single.unlocked, isTrue);
+    expect(atThreshold.single.remainingMeters, 0);
+  });
 }

@@ -130,6 +130,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String questMapLandmarkBehindCaption(String name, String distance) {
+    return 'Behind: $name — $distance ago';
+  }
+
+  @override
   String get questMapAllLandmarksReached =>
       'Every landmark on this route is behind you.';
 
@@ -150,10 +155,38 @@ class AppLocalizationsEn extends AppLocalizations {
   String get achievementFirstStepsTitle => 'First Steps';
 
   @override
+  String get achievementFirstLeagueTitle => 'First League';
+
+  @override
   String get achievementHalfDayMarchTitle => 'Half-Day March';
 
   @override
+  String get achievementCenturyMarkTitle => 'Century Mark';
+
+  @override
   String get achievementSeasonedWandererTitle => 'Seasoned Wanderer';
+
+  @override
+  String get achievementReachedCirceTitle => 'Reached Aeaea';
+
+  @override
+  String get achievementReachedLotusEatersTitle => 'Reached the Lotus-Eaters';
+
+  @override
+  String get achievementHalfwayThereTitle => 'Halfway There';
+
+  @override
+  String get achievementReachedCalypsoTitle => 'Reached Calypso';
+
+  @override
+  String get achievementLongHaulerTitle => 'Long Hauler';
+
+  @override
+  String get achievementPassedScyllaCharybdisTitle =>
+      'Passed Scylla and Charybdis';
+
+  @override
+  String get achievementPassedSirensTitle => 'Passed the Sirens';
 
   @override
   String get achievementJourneysEndTitle => 'Journey\'s End';

@@ -26,6 +26,15 @@ abstract class AchievementDef with _$AchievementDef {
 enum AchievementKind {
   /// Unlocked once total quest progress reaches [AchievementDef.thresholdMeters].
   distanceReached,
+
+  /// Unlocked once total quest progress reaches [AchievementDef.thresholdMeters]
+  /// — the same rule as [distanceReached], evaluated identically. Kept as
+  /// its own variant because the *reason* the threshold unlocks is
+  /// different: it names a specific landmark on the route (see the
+  /// `-reached`/`passed-` entries in `achievement_catalog.dart`) rather
+  /// than an arbitrary milestone, which is worth knowing at the catalog
+  /// level even before anything downstream (an icon, a filter) reads it.
+  landmarkReached,
 }
 
 /// The evaluated state of one achievement for the current user.
@@ -49,7 +58,10 @@ List<AchievementState> evaluateAchievements({
   return catalog
       .map((def) {
         switch (def.kind) {
+          // Same rule, different reason to unlock — see the doc comment on
+          // AchievementKind.landmarkReached.
           case AchievementKind.distanceReached:
+          case AchievementKind.landmarkReached:
             final unlocked = progressMeters >= def.thresholdMeters;
             final remaining = unlocked
                 ? 0

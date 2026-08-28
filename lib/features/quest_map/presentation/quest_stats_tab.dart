@@ -134,7 +134,7 @@ class _StatsBody extends StatelessWidget {
         const SizedBox(height: AppSpacing.lg),
         Text(l10n.questMapSectionTitle, style: AppTypography.label),
         const SizedBox(height: AppSpacing.sm),
-        QuestMapView(progressMeters: progressMeters),
+        QuestMapView(progressMeters: progressMeters, startedAt: startedAt),
       ],
     );
   }
