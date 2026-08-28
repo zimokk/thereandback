@@ -62,7 +62,7 @@ final class StepCountingServiceProvider
 }
 
 String _$stepCountingServiceHash() =>
-    r'8f3c2a1e6d5b4a7c9f0e1d2c3b4a5968778655c4';
+    r'271d619ca16e900a84a1a6dade9dad92c5154989';
 
 /// The drift-backed idempotency log for synced intervals (§5.2). Overridden
 /// with an in-memory `AppDatabase` in tests via `appDatabaseProvider`
@@ -180,7 +180,7 @@ final class StepsSyncProvider
   }
 }
 
-String _$stepsSyncHash() => r'eda8eb7484f806b10cf91903ba8d4dd75cf58566';
+String _$stepsSyncHash() => r'45969ed82d56c4e794740e228228dff90be04610';
 
 /// Drives the foreground steps-sync flow: permission checks, the Health
 /// Connect "not installed" case, and syncing a delta into

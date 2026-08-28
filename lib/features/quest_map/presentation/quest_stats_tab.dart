@@ -22,13 +22,14 @@ class QuestStatsTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(selectedJourneyProvider);
     final journey = ref.watch(selectedJourneyDetailsProvider);
-    // `.valueOrNull ?? []`, not `.when(loading: ...)`: while the history is
-    // still loading (or a quest just started, before any interval exists),
-    // an empty list is already the right input — `QuestTimeService` treats
+    // `.value ?? []`, not `.when(loading: ...)`: while the history is still
+    // loading (or a quest just started, before any interval exists), an
+    // empty list is already the right input — `QuestTimeService` treats
     // "no matching intervals yet" the same as "none exist", not as an error
-    // state to show a spinner for.
+    // state to show a spinner for. (This riverpod version's `AsyncValue`
+    // has no `valueOrNull` — `.value` itself is already the nullable one.)
     final recentIntervals =
-        ref.watch(recentMeteredIntervalsProvider).valueOrNull ??
+        ref.watch(recentMeteredIntervalsProvider).value ??
         const <MeteredInterval>[];
     final l10n = AppLocalizations.of(context)!;
 

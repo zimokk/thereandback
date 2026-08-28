@@ -114,9 +114,8 @@ void main() {
     await container.read(lockScreenControllerProvider.notifier).enable();
 
     verify(() => stepCountingService.requestStepsPermission()).called(1);
-    verify(
-      () => stepCountingService.requestBackgroundHealthPermission(),
-    ).called(1);
+    verify(() => stepCountingService.requestBackgroundHealthPermission())
+        .called(1);
     expect(
       container.read(lockScreenControllerProvider).permissionStatus,
       LockScreenPermissionStatus.granted,

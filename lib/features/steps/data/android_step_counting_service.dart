@@ -21,8 +21,7 @@ import 'step_counting_service.dart';
 class AndroidStepCountingService
     with HealthPackagePedometer
     implements StepCountingService {
-  AndroidStepCountingService([Health? health])
-    : health = health ?? Health();
+  AndroidStepCountingService([Health? health]) : health = health ?? Health();
 
   @override
   final Health health;

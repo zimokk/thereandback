@@ -58,9 +58,8 @@ Widget _wrap(
   when(() => stepCountingService.requestActivityRecognitionPermission())
       .thenAnswer((_) async => activityRecognitionResult);
   when(() => stepCountingService.openAppSettings()).thenAnswer((_) async {});
-  when(
-    () => stepCountingService.hasStepsPermission(),
-  ).thenAnswer((_) async => true);
+  when(() => stepCountingService.hasStepsPermission())
+      .thenAnswer((_) async => true);
   when(() => stepCountingService.requestStepsPermission())
       .thenAnswer((_) async => true);
   when(() => stepCountingService.requestBackgroundHealthPermission())

@@ -72,56 +72,50 @@ void main() {
       );
     });
 
-    test(
-      'at exactly 3 elapsed days the rolling window equals the whole-quest '
-      'average — there is nothing older than the quest to exclude yet',
-      () {
-        final startedAt = DateTime(2026, 3, 10);
-        final now = DateTime(2026, 3, 12); // Day 3
-        final recentIntervals = [
-          MeteredInterval(end: DateTime(2026, 3, 10, 9), meters: 1000),
-          MeteredInterval(end: DateTime(2026, 3, 11, 9), meters: 1000),
-          MeteredInterval(end: DateTime(2026, 3, 12, 9), meters: 1000),
-        ];
-        expect(
-          service.paceMetersPerDay(
-            recentIntervals: recentIntervals,
-            progressMeters: 3000,
-            startedAt: startedAt,
-            now: now,
-          ),
-          1000,
-        );
-      },
-    );
+    test('at exactly 3 elapsed days the rolling window equals the whole-quest '
+        'average — there is nothing older than the quest to exclude yet', () {
+      final startedAt = DateTime(2026, 3, 10);
+      final now = DateTime(2026, 3, 12); // Day 3
+      final recentIntervals = [
+        MeteredInterval(end: DateTime(2026, 3, 10, 9), meters: 1000),
+        MeteredInterval(end: DateTime(2026, 3, 11, 9), meters: 1000),
+        MeteredInterval(end: DateTime(2026, 3, 12, 9), meters: 1000),
+      ];
+      expect(
+        service.paceMetersPerDay(
+          recentIntervals: recentIntervals,
+          progressMeters: 3000,
+          startedAt: startedAt,
+          now: now,
+        ),
+        1000,
+      );
+    });
 
-    test(
-      'past 7 elapsed days, only the last 7 calendar days count — older '
-      'activity drops out of the window instead of dragging the average',
-      () {
-        final startedAt = DateTime(2026, 3, 1);
-        final now = DateTime(2026, 3, 15); // Day 15
-        final recentIntervals = [
-          // A big push right after starting, now 14 days stale — outside
-          // the 7-day window and must not inflate today's pace.
-          MeteredInterval(end: DateTime(2026, 3, 2, 9), meters: 20000),
-          // The last 7 calendar days (Mar 9 .. Mar 15): 500 m/day.
-          for (var day = 9; day <= 15; day++)
-            MeteredInterval(end: DateTime(2026, 3, day, 9), meters: 500),
-        ];
-        // Whole-quest average would be (20000 + 7*500) / 14 ≈ 1679 m/day —
-        // the rolling window must report 500, not that.
-        expect(
-          service.paceMetersPerDay(
-            recentIntervals: recentIntervals,
-            progressMeters: 20000 + 7 * 500,
-            startedAt: startedAt,
-            now: now,
-          ),
-          500,
-        );
-      },
-    );
+    test('past 7 elapsed days, only the last 7 calendar days count — older '
+        'activity drops out of the window instead of dragging the average', () {
+      final startedAt = DateTime(2026, 3, 1);
+      final now = DateTime(2026, 3, 15); // Day 15
+      final recentIntervals = [
+        // A big push right after starting, now 14 days stale — outside
+        // the 7-day window and must not inflate today's pace.
+        MeteredInterval(end: DateTime(2026, 3, 2, 9), meters: 20000),
+        // The last 7 calendar days (Mar 9 .. Mar 15): 500 m/day.
+        for (var day = 9; day <= 15; day++)
+          MeteredInterval(end: DateTime(2026, 3, day, 9), meters: 500),
+      ];
+      // Whole-quest average would be (20000 + 7*500) / 14 ≈ 1679 m/day —
+      // the rolling window must report 500, not that.
+      expect(
+        service.paceMetersPerDay(
+          recentIntervals: recentIntervals,
+          progressMeters: 20000 + 7 * 500,
+          startedAt: startedAt,
+          now: now,
+        ),
+        500,
+      );
+    });
 
     test('a rest day with zero recorded meters counts as a real zero in '
         'the window, not as a gap that shrinks it', () {

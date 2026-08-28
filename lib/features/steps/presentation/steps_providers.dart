@@ -23,10 +23,9 @@ part 'steps_providers.g.dart';
 /// `step_counting_service.dart`, so that file has no reason to import
 /// either concrete implementation — only this composition-root-ish spot
 /// needs to know both exist.
-StepCountingService createStepCountingService() =>
-    Platform.isAndroid
-        ? AndroidStepCountingService()
-        : IosStepCountingService();
+StepCountingService createStepCountingService() => Platform.isAndroid
+    ? AndroidStepCountingService()
+    : IosStepCountingService();
 
 /// The step-counting service. Overridden with a fake in tests (`testing`
 /// skill: never the real health plugin in a widget test).

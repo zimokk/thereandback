@@ -45,9 +45,7 @@ class QuestTimeService {
   /// `startedAt` (clock skew, or a quest that has not started yet) clamps to
   /// Day 1 rather than going negative.
   int questDay({required DateTime startedAt, required DateTime now}) {
-    final days = _calendarDate(
-      now,
-    ).difference(_calendarDate(startedAt)).inDays;
+    final days = _calendarDate(now).difference(_calendarDate(startedAt)).inDays;
     return (days < 0 ? 0 : days) + 1;
   }
 

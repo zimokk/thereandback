@@ -327,4 +327,4 @@ final class RecentMeteredIntervalsProvider
 }
 
 String _$recentMeteredIntervalsHash() =>
-    r'c653ed046b1e41812445540994a2a5e31d1208fa';
+    r'cce3357ac381a9f3f6fe919edcc1c42638a94254';
