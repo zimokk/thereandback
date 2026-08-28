@@ -24,6 +24,19 @@ Bottom tab 1 of 4 in this base (CLAUDE.md §6.1). Route: **`/journey`**
     the terrain moves past it. `_wavyPathY()` (`journey_path_view.dart`) is
     the one function both the painter and the icon's position read, so
     the two can never disagree about the curve's shape.
+  - The line has a **start and an end**: it spans exactly `[0 m,
+    journey.totalMeters]`, drawn at a fixed **per-quest scale**
+    (`metersPerScreenWidthFor`, `domain/route_scale.dart` — 20 000 m per
+    screen width for `odyssey-ithaca`, configured per journey id, not one
+    app-wide constant). Panning is clamped to that same range, so a drag
+    can never scroll past point A or point B.
+  - **Achievement markers** (`achievementCatalog`) sit in their own flat
+    row pinned to the top of the scene, positioned along the x axis by
+    their `thresholdMeters` at the same scale as the line. A marker not
+    reached yet (`!AchievementState.unlocked`) renders muted
+    (`AppColors.textSecondary`, outlined trophy icon); reached ones render
+    gold (filled icon) — the same rule `achievements_tab.dart` uses.
+    Scrolling ahead previews what's coming without unlocking it.
 
 ## Deliberate placeholder: no Flame yet
 
@@ -37,6 +50,14 @@ move over that placeholder curve — it does not (yet) change the day/
 distance/narrative labels below it or credit a different position on the
 route; those still only move with real progress, same as before this
 placeholder existed.
+
+The line's *shape* (the sine wave) is the placeholder part. Its *length*
+and the *scale* it's drawn at are not — both are real, meters-accurate and
+per-quest (`domain/route_scale.dart`), which is also why panning is bounded
+at point A/B instead of scrolling forever. Achievement markers are real
+data too (`achievementCatalog`, evaluated against the actual
+`selected.progressMeters`), just floating in their own top-pinned layer
+rather than sitting on the (still placeholder) terrain.
 
 **Phase 5** (`flame-scene` skill, `docs/implementation-plan.md`) replaces
 `_WavyPathPainter` in `journey_path_view.dart` with a real
@@ -67,6 +88,15 @@ shape when that happens.
   `paceMetersPerDay`/`estimateArrival`, but this screen only ever needs
   the day counter — see [`quest-stats.md`](quest-stats.md) for the
   pace/ETA half.
+- `metersPerScreenWidthFor`/`metersToLineOffset` (`domain/route_scale.dart`)
+  — the per-quest meters-per-screen-width config and the pure meters→pixel
+  conversion built on it. A plain `Map<String, int>` keyed by journey id,
+  not a field on `Journey` — no `build_runner` pass needed to add a quest's
+  scale.
+- `evaluateAchievements` (`features/achievements/domain/achievement.dart`,
+  `achievementCatalog` from `features/achievements/data/`) — reused as-is
+  from the Трофеи tab (§6.3) to drive the marker row; this screen adds no
+  achievement logic of its own.
 
 ## l10n keys
 
@@ -109,7 +139,18 @@ screen.
 wavy-line placeholder scene directly: the traveler icon renders pinned at
 the screen's horizontal centre, and dragging the scene moves the icon
 vertically (not horizontally) — the line moving under a fixed icon, not
-the other way round.
+the other way round. A second group covers the start/end line and markers:
+every achievement marker sits at the same fixed top offset regardless of
+its position along the route; a marker renders muted before its threshold
+and gold right after `applySyncedProgress` crosses it; and panning is
+clamped at both point A and point B (dragging further past either end,
+twice, lands in the same place both times).
+
+`test/features/journey/domain/route_scale_test.dart` covers
+`metersPerScreenWidthFor`/`metersToLineOffset` directly: a configured
+quest's own scale, the fallback for an unconfigured one, proportionality,
+device-width independence of the scale itself, and the point-A clamp on
+negative meters.
 
 `test/features/journey/domain/quest_time_service_test.dart` covers
 `questDay`, `paceMetersPerDay`, `estimateArrival` per the §12 mandatory

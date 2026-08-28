@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:thereandback/app/database_provider.dart';
 import 'package:thereandback/app/theme.dart';
 import 'package:thereandback/data/drift/database.dart';
+import 'package:thereandback/design/colors.dart';
 import 'package:thereandback/features/journey/presentation/journey_path_view.dart';
 import 'package:thereandback/features/journey/presentation/journey_providers.dart';
 import 'package:thereandback/l10n/app_localizations.dart';
@@ -98,4 +99,172 @@ void main() {
       expect(afterX, moreOrLessEquals(beforeX, epsilon: 0.5));
     },
   );
+
+  group('achievement markers (§6.1 — start/end line, markers ahead)', () {
+    testWidgets(
+      'markers sit in one flat row pinned to the top of the scene, '
+      'regardless of how far along the route they are',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+            ],
+            child: _app(const JourneyPathView()),
+          ),
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(JourneyPathView)),
+        );
+        container
+            .read(selectedJourneyProvider.notifier)
+            .start('odyssey-ithaca', now: DateTime.now());
+        await tester.pump();
+
+        // 'first-steps' (1000 m) and 'journeys-end' (2 850 000 m — the
+        // quest's full length) sit at very different points along the
+        // route, so if their marker's top ever depended on the wavy
+        // placeholder line's height at that x, these two would differ.
+        final firstStepsTop = tester
+            .getTopLeft(find.byKey(const Key('achievementMarker-first-steps')))
+            .dy;
+        final journeysEndTop = tester
+            .getTopLeft(
+              find.byKey(const Key('achievementMarker-journeys-end')),
+            )
+            .dy;
+
+        expect(journeysEndTop, moreOrLessEquals(firstStepsTop, epsilon: 0.5));
+      },
+    );
+
+    testWidgets(
+      'a marker ahead of progress renders muted, then gold once progress '
+      'reaches its threshold — previewing without unlocking',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+            ],
+            child: _app(const JourneyPathView()),
+          ),
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(JourneyPathView)),
+        );
+        final notifier = container.read(selectedJourneyProvider.notifier);
+        notifier.start('odyssey-ithaca', now: DateTime.now());
+        await tester.pump();
+
+        final markerFinder = find.byKey(
+          const Key('achievementMarker-first-steps'),
+        );
+        Icon iconOf(Finder finder) => tester.widget<Icon>(
+          find.descendant(of: finder, matching: find.byType(Icon)),
+        );
+
+        final beforeIcon = iconOf(markerFinder);
+        expect(beforeIcon.icon, Icons.emoji_events_outlined);
+        expect(beforeIcon.color, AppColors.textSecondary);
+
+        notifier.applySyncedProgress(
+          progressMeters: 1000,
+          syncedAt: DateTime.now(),
+        );
+        await tester.pump();
+
+        final afterIcon = iconOf(markerFinder);
+        expect(afterIcon.icon, Icons.emoji_events);
+        expect(afterIcon.color, AppColors.gold);
+      },
+    );
+
+    testWidgets(
+      'panning is clamped at point A — dragging further right past the '
+      'start does nothing more once already there',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+            ],
+            child: _app(const JourneyPathView()),
+          ),
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(JourneyPathView)),
+        );
+        container
+            .read(selectedJourneyProvider.notifier)
+            .start('odyssey-ithaca', now: DateTime.now());
+        await tester.pump();
+
+        final beforeY = tester.getCenter(find.byIcon(Icons.directions_walk)).dy;
+
+        // Already sitting at point A (fresh quest, no pan yet) — dragging
+        // further right tries to go *before* the start, which the clamp in
+        // _onHorizontalDragUpdate refuses.
+        await tester.drag(
+          find.byKey(const Key('journeyPathScene')),
+          const Offset(100000, 0),
+        );
+        await tester.pump();
+
+        final afterY = tester.getCenter(find.byIcon(Icons.directions_walk)).dy;
+        expect(afterY, moreOrLessEquals(beforeY, epsilon: 0.5));
+      },
+    );
+
+    testWidgets(
+      'panning is clamped at point B — dragging past the end twice lands '
+      'in the same place both times',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+            ],
+            child: _app(const JourneyPathView()),
+          ),
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(JourneyPathView)),
+        );
+        container
+            .read(selectedJourneyProvider.notifier)
+            .start('odyssey-ithaca', now: DateTime.now());
+        await tester.pump();
+
+        // Drag left by far more than the quest's own length in pixels —
+        // this lands past point B, where the clamp should hold.
+        await tester.drag(
+          find.byKey(const Key('journeyPathScene')),
+          const Offset(-1000000, 0),
+        );
+        await tester.pump();
+        final afterFirstDrag = tester
+            .getCenter(find.byIcon(Icons.directions_walk))
+            .dy;
+
+        await tester.drag(
+          find.byKey(const Key('journeyPathScene')),
+          const Offset(-1000000, 0),
+        );
+        await tester.pump();
+        final afterSecondDrag = tester
+            .getCenter(find.byIcon(Icons.directions_walk))
+            .dy;
+
+        expect(
+          afterSecondDrag,
+          moreOrLessEquals(afterFirstDrag, epsilon: 0.5),
+        );
+      },
+    );
+  });
 }
