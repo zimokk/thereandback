@@ -50,7 +50,7 @@ void main() {
         meters: scale,
         screenWidth: 800,
       );
-      expect(half, moreOrLessEquals(full / 2));
+      expect(half, closeTo(full / 2, 1e-9));
     });
 
     test('the scale itself does not depend on screen width', () {
@@ -67,7 +67,7 @@ void main() {
         meters: 5000,
         screenWidth: 800,
       );
-      expect(wide, moreOrLessEquals(narrow * 2));
+      expect(wide, closeTo(narrow * 2, 1e-9));
     });
 
     test('negative meters clamp to point A (offset 0), never negative', () {
