@@ -70,7 +70,9 @@ drift-схема, зеркалящая доменные сущности, с `la
 
 ### Phase 4 — Steps integration
 
-Единый интерфейс над HealthKit / Health Connect через пакет `health`.
+Единый интерфейс `StepCountingService` над Health Connect (Android, через
+пакет `health`) и, **временно**, Core Motion/`CMPedometer` вместо HealthKit
+на iOS (§3, §14 — HealthKit требует платный Apple Developer Program).
 Разрешение запрашивается только при старте квеста — не на запуске
 приложения — с экраном-объяснением (§7). Отсутствие Health Connect на
 устройстве обрабатывается диплинком в Play Store. Отказ в разрешении — не

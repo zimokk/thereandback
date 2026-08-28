@@ -87,7 +87,7 @@ Country, перешёл ручей по узкому мостику». Числ�
 | Модели / DTO | `freezed` + `json_serializable` |
 | Навигация | `go_router` |
 | Локальное хранилище | `drift` (SQLite) — источник правды офлайн |
-| Шаги | `health` (^13.x) — HealthKit на iOS, Health Connect на Android |
+| Шаги | `health` (^13.x) — Health Connect на Android. iOS **временно** на `cm_pedometer` (Core Motion), не на HealthKit из `health` — см. «Почему так» и §14 |
 | Карта | **своя рисованная иллюстрация**, `InteractiveViewer` (см. §6.2) |
 | Бэкенд | **Firebase**: Auth, Cloud Firestore, Cloud Functions, FCM |
 | Аналитика/краши | Firebase Analytics + Crashlytics |
@@ -111,6 +111,18 @@ Country, перешёл ручей по узкому мостику». Числ�
 - **Health Connect, не Google Fit** — Google Fit API устарел (регистрация новых
   приложений закрыта с 1 мая 2024), в `health` его поддержка удалена начиная с
   версии 11.0.0. **Никогда не предлагать Google Fit.**
+- **iOS временно на `cm_pedometer` (Core Motion), не на HealthKit — явный,
+  осознанный отход от «единого API» выше, по прямому запросу (2026-08-28,
+  §14).** HealthKit — Apple capability, требующая платного Apple Developer
+  Program аккаунта даже для локальной сборки на свой телефон; `cm_pedometer`
+  дёргает `CMPedometer.queryPedometerData(from:to:)` — обычное runtime-
+  разрешение (`NSMotionUsageDescription`), работает с бесплатным Personal
+  Team. Плата: только шаги этого iPhone (без агрегации с Apple Watch),
+  дистанция — оценка Core Motion, а не HealthKit-агрегат. Считать временным
+  решением — TODO на миграцию обратно на HealthKit лежит в
+  `ios_step_counting_service.dart` и в §14; ради него `AndroidStepCountingService`
+  и `IosStepCountingService` за одним интерфейсом `StepCountingService`
+  специально разведены по независимым классам (§14, 2026-08-28).
 - **Firebase** — Auth + Firestore + FCM закрывают друзей, синк и пуши в MVP без
   своего сервера.
 
@@ -685,15 +697,35 @@ firebase emulators:start                                    # Firestore + Functi
   новая зависимость.
 - **Android реализован и не требует платного аккаунта** — Health Connect
   бесплатен, ограничений уровня Apple Developer Program у него нет.
-- **iOS (`IosStepCountingService`) реализован по тому же интерфейсу, но не
-  проверен на реальном устройстве** — HealthKit является Apple capability,
-  требующей платного членства в Apple Developer Program; бесплатного пути
-  для него, в отличие от Health Connect, не существует (см. также §7 —
-  Live Activity iOS follow-up упирается в ту же самую причину: недоступность
-  полноценной iOS-разработки без платного аккаунта/Xcode в этой песочнице).
-  Код не удалён и не оставлен заглушкой — он рабочий, просто не
-  верифицирован сквозным тестом на устройстве; включить его в реальную
-  проверку — вопрос заведения аккаунта, а не написания кода.
+- **iOS (`IosStepCountingService`) сначала был реализован через HealthKit
+  (`health`), тем же интерфейсом, что и Android** — но не был верифицирован
+  на устройстве: HealthKit — Apple capability, требующая платного членства
+  в Apple Developer Program; бесплатного пути для неё, в отличие от Health
+  Connect, не существует (см. также §7 — Live Activity iOS follow-up
+  упирается в ту же самую причину). **В тот же день пересмотрено** — см.
+  следующий пункт.
+- **iOS переведён на `cm_pedometer` (Core Motion), временно, по прямому
+  запросу.** `IosStepCountingService` больше не использует `health`/
+  HealthKit — вместо этого `CMPedometer.queryPedometerData(from:to:)`
+  через пакет `cm_pedometer`, с разрешением через `permission_handler`'s
+  `Permission.sensors` (`NSMotionUsageDescription` — обычное runtime-
+  разрешение, не capability, работает с бесплатным Personal Team). Полная
+  рабочая HealthKit-реализация того же класса существовала до этого
+  изменения — `git log -p -- lib/features/steps/data/ios_step_counting_service.dart`
+  её находит; TODO на миграцию обратно лежит в самом файле (§3, «Почему
+  так»). Плата за бесплатность сейчас: только шаги этого iPhone (без
+  Apple Watch), дистанция — оценка Core Motion, не HealthKit-агрегат.
+  `HealthPackagePedometer` mixin (общая обвязка над `health`) оставлен как
+  есть, используется пока только `AndroidStepCountingService` — на случай
+  будущей миграции iOS обратно на HealthKit восстановление тривиально
+  (снова подмешать mixin), а не переписывание с нуля.
+- **Требует ручной донастройки перед сборкой на iOS**, которую нельзя
+  сделать в этой песочнице (нет Xcode/CocoaPods): после первого
+  `pod install` (создаст `ios/Podfile`, которого пока нет в репозитории) —
+  добавить `PERMISSION_SENSORS=1` в `GCC_PREPROCESSOR_DEFINITIONS` его
+  `post_install`-блока (`permission_handler`'s own README задаёт точный
+  сниппет). Без этого `Permission.sensors` не работает на iOS. См.
+  `docs/screens/steps-sync.md`.
 
 Решено 2026-08-27 (пересматривает «Бэкфилл при старте квеста» из
 2026-08-23):
@@ -754,11 +786,13 @@ firebase emulators:start                                    # Firestore + Functi
       («Решено 2026-08-28» выше): `StepCountingService` — один интерфейс,
       `AndroidStepCountingService`/`IosStepCountingService` — независимые
       реализации. Android реализован и рабочий (Health Connect, бесплатно).
-      iOS реализован по тому же интерфейсу, но не проверен на реальном
-      устройстве — HealthKit требует платного Apple Developer Program
-      аккаунта, которого пока нет; проверка на устройстве остаётся
-      открытым follow-up, привязанным к той же причине, что и iOS Live
-      Activity выше.
+      iOS временно на `cm_pedometer`/Core Motion вместо HealthKit — тоже
+      рабочий и бесплатный (обычное runtime-разрешение, не capability), но
+      без агрегации с Apple Watch. TODO на миграцию обратно на HealthKit —
+      в `ios_step_counting_service.dart`, привязан к той же причине
+      (платный Apple Developer Program), что и iOS Live Activity выше.
+      Требует ручной правки `ios/Podfile` после первого `pod install` —
+      см. «Решено 2026-08-28» выше и `docs/screens/steps-sync.md`.
 
 ---
 

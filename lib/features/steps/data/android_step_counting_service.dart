@@ -15,9 +15,9 @@ import 'step_counting_service.dart';
 /// directly for the same reason (it *is* Android-only code, by
 /// construction).
 ///
-/// This is the platform that ships and gets exercised today — Health
-/// Connect has no account gate, unlike HealthKit on iOS (see
-/// `ios_step_counting_service.dart`).
+/// Health Connect has no account gate, unlike HealthKit — this app's
+/// eventual iOS data source (see `ios_step_counting_service.dart`'s TODO;
+/// iOS is temporarily on CMPedometer instead, §3/§14).
 class AndroidStepCountingService
     with HealthPackagePedometer
     implements StepCountingService {

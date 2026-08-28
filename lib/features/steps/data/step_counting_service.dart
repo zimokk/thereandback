@@ -32,10 +32,12 @@ enum HealthConnectAvailability {
 /// drive different UI, not both collapse into one "denied" bucket.
 enum RuntimePermissionResult { granted, denied, permanentlyDenied }
 
-/// Abstraction over device step/distance counting (HealthKit on iOS, Health
-/// Connect on Android — §3), so presentation and sync logic can be tested
-/// with a fake instead of a real platform plugin (`testing` skill: never a
-/// real health plugin in a widget test).
+/// Abstraction over device step/distance counting — Health Connect on
+/// Android, and, **temporarily**, Core Motion (`CMPedometer`) rather than
+/// HealthKit on iOS (§3, §14: HealthKit needs a paid Apple Developer
+/// Program membership CMPedometer doesn't) — so presentation and sync
+/// logic can be tested with a fake instead of a real platform plugin
+/// (`testing` skill: never a real health plugin in a widget test).
 ///
 /// Exactly two concrete implementations exist, one per platform —
 /// `AndroidStepCountingService` and `IosStepCountingService`
@@ -50,9 +52,12 @@ abstract class StepCountingService {
   /// Must be called once before any other method.
   Future<void> configure();
 
-  /// `null` on iOS means "undetermined" (HealthKit never discloses read
-  /// grants, per the `health` package docs) — callers should treat `null`
-  /// the same as "ask the user", not as granted.
+  /// Nullable for HealthKit's sake, not Core Motion's: HealthKit never
+  /// discloses read grants (`null` means "undetermined", per the `health`
+  /// package docs) — callers should treat `null` the same as "ask the
+  /// user", not as granted. `IosStepCountingService`'s current CMPedometer
+  /// backing always returns a definite `bool`; a future HealthKit-based
+  /// implementation is what this nullability exists for.
   Future<bool?> hasStepsPermission();
 
   /// Shows the OS permission prompt. Returns whether the prompt was shown
@@ -108,13 +113,19 @@ abstract class StepCountingService {
   Future<bool> requestBackgroundHealthPermission();
 }
 
-/// Shared `health`-package plumbing between `AndroidStepCountingService` and
-/// `IosStepCountingService`: `configure`, permission checks and `fetchDelta`
-/// are identical apart from which `HealthDataType` carries walking distance
-/// on each platform. An implementation-sharing detail, not part of the
-/// public interface — dropping this mixin from one class later (e.g. to
-/// swap that platform onto a non-`health`-package source) is a one-line
-/// change that doesn't touch the other class.
+/// Shared `health`-package plumbing: `configure`, permission checks and
+/// `fetchDelta` are identical apart from which `HealthDataType` carries
+/// walking distance on each platform. An implementation-sharing detail, not
+/// part of the public interface — mixing it into a class later (or
+/// dropping it) is a one-line change that doesn't touch any other class.
+///
+/// Only `AndroidStepCountingService` uses this today —
+/// `IosStepCountingService` is temporarily on CMPedometer instead of
+/// HealthKit (§3, §14), so it has no `health`-package plumbing to share
+/// right now. Kept general rather than folded into
+/// `AndroidStepCountingService` directly so a future HealthKit-based iOS
+/// implementation (see that class's TODO) can just mix this back in
+/// instead of rewriting it.
 mixin HealthPackagePedometer implements StepCountingService {
   /// The `Health` instance to call into — a getter, not a hardcoded
   /// `Health()`, so each concrete class can accept an injected fake in its

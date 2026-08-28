@@ -4,14 +4,17 @@ part 'steps_sync_state.freezed.dart';
 
 /// UI-facing permission state for the steps sync flow (§7). This is an
 /// application/presentation concept — the platform-specific detail it wraps
-/// (HealthKit's undetermined-`null`, Health Connect's install check) lives
-/// behind `steps/data/step_counting_service.dart`.
+/// (HealthKit's undetermined-`null` — currently unused, iOS is temporarily
+/// on CMPedometer instead, §3/§14 — and Health Connect's install check)
+/// lives behind `steps/data/step_counting_service.dart`.
 enum StepsPermissionStatus {
   /// Not checked yet.
   unknown,
 
-  /// Checked; the user has not been asked (or, on iOS, HealthKit's grant is
-  /// undetermined — treated the same as "ask").
+  /// Checked; the user has not been asked. Also where a HealthKit-based
+  /// implementation's undetermined grant would land, treated the same as
+  /// "ask" — not reachable today, since iOS is on CMPedometer (§3/§14),
+  /// which always reports a definite granted/not-granted.
   notRequested,
   granted,
   denied,
