@@ -335,7 +335,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get friendsMyNicknameCopyTooltip => 'Скопировать ник';
 
   @override
-  String get friendsMyNicknameCopied => 'Ник скопирован — поделитесь им с другом.';
+  String get friendsMyNicknameCopied =>
+      'Ник скопирован — поделитесь им с другом.';
 
   @override
   String get friendsPendingIncomingTitle => 'Заявки';

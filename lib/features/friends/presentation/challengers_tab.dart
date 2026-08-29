@@ -245,9 +245,8 @@ Future<void> _copyNickname(
 ) async {
   await Clipboard.setData(ClipboardData(text: nickname));
   if (!context.mounted) return;
-  ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(SnackBar(content: Text(l10n.friendsMyNicknameCopied)));
+  ScaffoldMessenger.of(context)
+      .showSnackBar(SnackBar(content: Text(l10n.friendsMyNicknameCopied)));
 }
 
 class _PendingRequestTile extends StatelessWidget {

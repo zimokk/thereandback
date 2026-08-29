@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show MethodCall, SystemChannels;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -118,6 +119,19 @@ void main() {
         const FriendProfile(uid: 'me', nickname: 'Me', avatarPresetIndex: 0),
       ),
     );
+
+    // Clipboard.setData has no plugin interface this app can inject a fake
+    // behind (unlike GoogleAuthService/StepCountingService above) — it's a
+    // raw Flutter SDK static call, so it's faked the standard Flutter way:
+    // a mock handler on the platform channel. Without this, the real
+    // channel has no engine on the other end and the awaited call never
+    // completes, hanging the copy-nickname test rather than failing it.
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (
+          MethodCall methodCall,
+        ) async {
+          return null;
+        });
   });
 
   testWidgets('empty state renders when there are no friends or requests', (
@@ -173,10 +187,12 @@ void main() {
 
     // 'Me' now appears twice: once in the pinned "Your nickname" card
     // (§6.4 — findable so a friend can be given the nickname to add), once
-    // in the own row further down ("Me (You)").
+    // in the own row further down ("Me (You)"). Same reason 'You' matches
+    // twice — "Me (You)" and the card's own label "Your nickname" both
+    // contain the substring.
     expect(find.textContaining('Me'), findsNWidgets(2));
     expect(find.text('Your nickname'), findsOneWidget);
-    expect(find.textContaining('You'), findsOneWidget);
+    expect(find.textContaining('You'), findsNWidgets(2));
     expect(find.text('Bob'), findsOneWidget);
     expect(find.text('No friends yet'), findsNothing);
   });
@@ -240,7 +256,10 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.byIcon(Icons.copy));
-      await tester.pumpAndSettle();
+      // A single pump, not pumpAndSettle: the SnackBar's own auto-dismiss
+      // timer means settling would pump straight through its whole visible
+      // duration and find it already gone by the time this returns.
+      await tester.pump();
 
       expect(
         find.text('Nickname copied — share it with a friend.'),

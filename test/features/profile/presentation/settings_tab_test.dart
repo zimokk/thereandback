@@ -140,9 +140,8 @@ void main() {
     (tester) async {
       final googleAuthService = _MockGoogleAuthService();
       final authRepository = _MockAuthRepository();
-      when(() => googleAuthService.signIn()).thenAnswer(
-        (_) async => const GoogleAuthTokens(idToken: 'id-token'),
-      );
+      when(() => googleAuthService.signIn())
+          .thenAnswer((_) async => const GoogleAuthTokens(idToken: 'id-token'));
       when(
         () => authRepository.linkWithGoogleCredential(
           idToken: any(named: 'idToken'),
@@ -159,44 +158,39 @@ void main() {
       await tester.tap(find.text('Войти'));
       await tester.pumpAndSettle();
 
-      verify(
-        () => authRepository.linkWithGoogleCredential(idToken: 'id-token'),
-      ).called(1);
+      verify(() => authRepository.linkWithGoogleCredential(idToken: 'id-token'))
+          .called(1);
       expect(find.text('Вход через Google выполнен.'), findsOneWidget);
     },
   );
 
-  testWidgets(
-    'a Google identity already linked to another profile shows that '
-    'specific message rather than crashing',
-    (tester) async {
-      final googleAuthService = _MockGoogleAuthService();
-      final authRepository = _MockAuthRepository();
-      when(() => googleAuthService.signIn()).thenAnswer(
-        (_) async => const GoogleAuthTokens(idToken: 'id-token'),
-      );
-      when(
-        () => authRepository.linkWithGoogleCredential(
-          idToken: any(named: 'idToken'),
-        ),
-      ).thenThrow(const GoogleAccountAlreadyLinkedException());
+  testWidgets('a Google identity already linked to another profile shows that '
+      'specific message rather than crashing', (tester) async {
+    final googleAuthService = _MockGoogleAuthService();
+    final authRepository = _MockAuthRepository();
+    when(() => googleAuthService.signIn())
+        .thenAnswer((_) async => const GoogleAuthTokens(idToken: 'id-token'));
+    when(
+      () => authRepository.linkWithGoogleCredential(
+        idToken: any(named: 'idToken'),
+      ),
+    ).thenThrow(const GoogleAccountAlreadyLinkedException());
 
-      await tester.pumpWidget(
-        _wrap(
-          const SettingsTab(),
-          googleAuthService: googleAuthService,
-          authRepository: authRepository,
-        ),
-      );
-      await tester.tap(find.text('Войти'));
-      await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      _wrap(
+        const SettingsTab(),
+        googleAuthService: googleAuthService,
+        authRepository: authRepository,
+      ),
+    );
+    await tester.tap(find.text('Войти'));
+    await tester.pumpAndSettle();
 
-      expect(
-        find.text('Этот аккаунт Google уже привязан к другому профилю.'),
-        findsOneWidget,
-      );
-    },
-  );
+    expect(
+      find.text('Этот аккаунт Google уже привязан к другому профилю.'),
+      findsOneWidget,
+    );
+  });
 
   testWidgets(
     'once signed in, the row shows the signed-in state instead of the '

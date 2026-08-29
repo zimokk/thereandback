@@ -135,9 +135,7 @@ Future<void> _signInWithGoogle(
       l10n.friendsOutcomeUpgradeAlreadyLinked,
   };
   if (message == null) return;
-  ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(SnackBar(content: Text(message)));
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }
 
 /// The §7 "persistent lock screen / notification shade" toggle. Off by
