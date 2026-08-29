@@ -12,7 +12,20 @@
           "package_name": "com.zimokk.thereandback"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "443590986164-13ocvl90256bogl1cm44qbqo7g84953f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.zimokk.thereandback",
+            "certificate_hash": "006d2f69b993d389455c44e06ce4d3f247d72695"
+          }
+        },
+        {
+          "client_id": "443590986164-r9jnh4gqiq5skt8hi1grlbolalsfdo4q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBHST6gP469WAL9XhC9S6tDQ1KyObEiCx8"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "443590986164-r9jnh4gqiq5skt8hi1grlbolalsfdo4q.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "443590986164-unrn80pvg8dthgkk61913g2utdbac1bu.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.zimokk.thereandback"
+              }
+            }
+          ]
         }
       }
     }
