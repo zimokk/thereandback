@@ -237,7 +237,7 @@ final class FriendsViewProvider
   }
 }
 
-String _$friendsViewHash() => r'e06b794e97ebdfea433ba8a1332dbe64fba69954';
+String _$friendsViewHash() => r'41a1882b2251013508d179c8ee7416e305ebd9fa';
 
 /// Imperative actions for the Challengers tab (§6.4): sending a request by
 /// nickname (triggering the Google upgrade first if still anonymous),
@@ -281,7 +281,7 @@ final class FriendsControllerProvider
   }
 }
 
-String _$friendsControllerHash() => r'3a8bd89c8860923215bb9f1979489b9e466ebc23';
+String _$friendsControllerHash() => r'69e37cabe15659a844dcf43a197d6cc4211fc0a9';
 
 /// Imperative actions for the Challengers tab (§6.4): sending a request by
 /// nickname (triggering the Google upgrade first if still anonymous),

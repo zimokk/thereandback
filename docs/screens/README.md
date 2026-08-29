@@ -12,7 +12,7 @@ into phases; these files are the as-built record for this base.
 | Путь (journey home + placeholder scene) | `/journey` | [`journey.md`](journey.md) |
 | Карта / Прогресс (quest stats) | `/quest-stats` | [`quest-stats.md`](quest-stats.md) |
 | Трофеи (achievements) | `/achievements` | [`achievements.md`](achievements.md) |
-| Друзья (Challengers) | `/friends` | — (Phase 8; see `firestore-rules`/friends providers, no dedicated doc yet — `docs/screens/friends.md` follow-up) |
+| Друзья (Challengers) | `/friends` | [`friends.md`](friends.md) |
 | Настройки (settings) | `/settings` | [`settings.md`](settings.md) |
 | Steps sync (embedded in Путь, not its own tab) | — | [`steps-sync.md`](steps-sync.md) |
 
