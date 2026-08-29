@@ -1,0 +1,117 @@
+rules_version = '2';
+
+// Firestore Security Rules for There and Back (CLAUDE.md §8, §6.4; plan:
+// Phase 8 — Firebase Auth + Friends). Firestore is a sync layer, not the
+// source of truth (drift on-device is) — these rules only gate what the
+// friends feature is allowed to read/write; the app's own math never trusts
+// what it reads back from here.
+//
+// Schema:
+//   users/{uid}                       — nickname, avatar, privacy settings
+//   users/{uid}/progress/{journeyId}  — meters, startedAt, updatedAt, isCurrent
+//   usernames/{nicknameLower}         — { uid } — reverse lookup for
+//                                        "add friend by nickname"; a fifth
+//                                        collection beyond CLAUDE.md §8's
+//                                        4-collection draft (marked there as
+//                                        a "черновик" / draft)
+//   friendships/{pairId}              — sorted uid pair, status, initiator,
+//                                        hiddenBy
+//   journeys/{journeyId}              — read-only catalog, not written by
+//                                        clients this phase (still
+//                                        asset-based, see journey_catalog.dart)
+//
+// Tested against the Firestore emulator by firebase/rules-tests/ (Node.js,
+// @firebase/rules-unit-testing) — every allow/deny pair below has a test.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // The one canonical friendship document id for an unordered pair —
+    // both the client repository and these rules derive it the same way,
+    // so a client can never smuggle in a friendship keyed differently than
+    // what the rules expect.
+    function sortedPairId(a, b) {
+      return a < b ? a + '_' + b : b + '_' + a;
+    }
+
+    match /users/{uid} {
+      // Nickname/avatar are not sensitive (§7's "raw health data, geolocation,
+      // anything medical never leaves the device" doesn't cover them) — any
+      // signed-in user can read them. This is deliberate: Bob must see
+      // Alice's nickname on his own incoming-request row before the
+      // friendship is even accepted, which a self-or-accepted-friend-only
+      // rule here would make impossible.
+      allow read: if isSignedIn();
+      allow create, update: if isSelf(uid);
+      allow delete: if false;
+
+      // Progress is the actually sensitive, health-adjacent data (§7) — this
+      // is where friendship-gating actually matters.
+      match /progress/{journeyId} {
+        allow read: if isSelf(uid) || (
+          isSignedIn() &&
+          get(/databases/$(database)/documents/friendships/$(sortedPairId(uid, request.auth.uid))).data.status == 'accepted' &&
+          get(/databases/$(database)/documents/friendships/$(sortedPairId(uid, request.auth.uid))).data.hiddenBy[uid] != true
+        );
+        allow write: if isSelf(uid);
+      }
+    }
+
+    match /usernames/{nicknameLower} {
+      allow get: if isSignedIn();
+      // Never let a client enumerate every taken nickname.
+      allow list: if false;
+      allow create: if isSignedIn()
+        && request.resource.data.uid == request.auth.uid
+        && !exists(/databases/$(database)/documents/usernames/$(nicknameLower));
+      allow update, delete: if isSignedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    match /friendships/{pairId} {
+      allow read: if isSignedIn() && request.auth.uid in resource.data.uids;
+
+      // A pending request: the sender names themself and an arbitrary other
+      // uid, but cannot fabricate an already-accepted status, nor a pair
+      // that doesn't match this document's own id.
+      allow create: if isSignedIn()
+        && request.auth.uid in request.resource.data.uids
+        && request.resource.data.uids.size() == 2
+        && pairId == sortedPairId(request.resource.data.uids[0], request.resource.data.uids[1])
+        && request.resource.data.status == 'pending'
+        && request.resource.data.initiatorUid == request.auth.uid;
+
+      allow update: if isSignedIn() && request.auth.uid in resource.data.uids && (
+        // Accept: only the non-initiator, only pending -> accepted, nothing
+        // else about the document changes in the same write.
+        (resource.data.status == 'pending' && request.resource.data.status == 'accepted'
+          && request.auth.uid != resource.data.initiatorUid
+          && request.resource.data.uids == resource.data.uids
+          && request.resource.data.initiatorUid == resource.data.initiatorUid)
+        ||
+        // Hide-progress toggle: only your own key in hiddenBy changes —
+        // the other party can never flip your own visibility.
+        (request.resource.data.status == resource.data.status
+          && request.resource.data.uids == resource.data.uids
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hiddenBy', 'updatedAt']))
+      );
+
+      // Remove a friend, decline a request, or cancel your own outgoing
+      // request — all a plain delete by either party. Reversible: a new
+      // `pending` document can be created from scratch afterward.
+      allow delete: if isSignedIn() && request.auth.uid in resource.data.uids;
+    }
+
+    match /journeys/{journeyId} {
+      allow read: if isSignedIn();
+      // The catalog stays asset-based (journey_catalog.dart) this phase —
+      // clients never write it.
+      allow write: if false;
+    }
+  }
+}

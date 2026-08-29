@@ -27,6 +27,10 @@ dependencies:
   flutter_local_notifications: ^22.3.0
   workmanager: ^0.10.9
   permission_handler: ^13.0.1
+  firebase_core: ^4.14.0
+  firebase_auth: ^6.6.1
+  cloud_firestore: ^6.9.0
+  google_sign_in: ^7.2.0
 
 dev_dependencies:
   flutter_test:
@@ -39,6 +43,8 @@ dev_dependencies:
   mocktail: ^1.0.5
   test: ^1.31.1
   drift_dev: ^2.34.5
+  fake_cloud_firestore: ^4.2.0
+  firebase_auth_mocks: ^0.15.2
 
 flutter:
   uses-material-design: true
