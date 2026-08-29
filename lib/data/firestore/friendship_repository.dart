@@ -46,10 +46,7 @@ class FirestoreFriendshipRepository implements FriendshipRepository {
       _firestore.collection('friendships');
 
   @override
-  Future<void> sendRequest({
-    required String fromUid,
-    required String toUid,
-  }) {
+  Future<void> sendRequest({required String fromUid, required String toUid}) {
     final pairId = pairIdFor(fromUid, toUid);
     final sortedUids = [fromUid, toUid]..sort();
     final now = Timestamp.now();

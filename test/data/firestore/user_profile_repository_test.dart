@@ -76,40 +76,46 @@ void main() {
       expect(newUsernameDoc.data()!['uid'], 'uid-1');
     });
 
-    test('throws when the new nickname is already claimed by someone else', () async {
-      await repository.createInitialProfileIfAbsent(
-        'uid-1',
-        nickname: 'Odysseus',
-        avatarPresetIndex: 2,
-      );
-      await repository.createInitialProfileIfAbsent(
-        'uid-2',
-        nickname: 'Penelope',
-        avatarPresetIndex: 1,
-      );
+    test(
+      'throws when the new nickname is already claimed by someone else',
+      () async {
+        await repository.createInitialProfileIfAbsent(
+          'uid-1',
+          nickname: 'Odysseus',
+          avatarPresetIndex: 2,
+        );
+        await repository.createInitialProfileIfAbsent(
+          'uid-2',
+          nickname: 'Penelope',
+          avatarPresetIndex: 1,
+        );
 
-      await expectLater(
-        repository.updateNickname('uid-1', 'Penelope'),
-        throwsA(isA<NicknameTakenException>()),
-      );
+        await expectLater(
+          repository.updateNickname('uid-1', 'Penelope'),
+          throwsA(isA<NicknameTakenException>()),
+        );
 
-      // The original claim must be untouched by the failed attempt.
-      final userDoc = await firestore.collection('users').doc('uid-1').get();
-      expect(userDoc.data()!['nickname'], 'Odysseus');
-    });
+        // The original claim must be untouched by the failed attempt.
+        final userDoc = await firestore.collection('users').doc('uid-1').get();
+        expect(userDoc.data()!['nickname'], 'Odysseus');
+      },
+    );
 
-    test('renaming to the same nickname (case-insensitively) is fine', () async {
-      await repository.createInitialProfileIfAbsent(
-        'uid-1',
-        nickname: 'Odysseus',
-        avatarPresetIndex: 2,
-      );
+    test(
+      'renaming to the same nickname (case-insensitively) is fine',
+      () async {
+        await repository.createInitialProfileIfAbsent(
+          'uid-1',
+          nickname: 'Odysseus',
+          avatarPresetIndex: 2,
+        );
 
-      await repository.updateNickname('uid-1', 'ODYSSEUS');
+        await repository.updateNickname('uid-1', 'ODYSSEUS');
 
-      final userDoc = await firestore.collection('users').doc('uid-1').get();
-      expect(userDoc.data()!['nickname'], 'ODYSSEUS');
-    });
+        final userDoc = await firestore.collection('users').doc('uid-1').get();
+        expect(userDoc.data()!['nickname'], 'ODYSSEUS');
+      },
+    );
   });
 
   group('watchProfile', () {

@@ -85,7 +85,10 @@ void main() {
         // `mock_exceptions`' registry is a global map keyed by object
         // equality that nothing here clears, so two tests reusing the same
         // uid would share (and leak) each other's registered exceptions.
-        final mockUser = MockUser(isAnonymous: true, uid: 'anon-already-in-use');
+        final mockUser = MockUser(
+          isAnonymous: true,
+          uid: 'anon-already-in-use',
+        );
         final auth = MockFirebaseAuth(signedIn: true, mockUser: mockUser);
         final repository = FirebaseAuthRepository(auth);
 

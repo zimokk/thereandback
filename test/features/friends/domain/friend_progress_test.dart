@@ -4,10 +4,7 @@ import 'package:thereandback/features/friends/domain/friend_progress.dart';
 void main() {
   group('friendDeltaMeters (§5.3)', () {
     test('positive when the friend is ahead', () {
-      expect(
-        friendDeltaMeters(myMeters: 1000, friendMeters: 1229000),
-        1228000,
-      );
+      expect(friendDeltaMeters(myMeters: 1000, friendMeters: 1229000), 1228000);
     });
 
     test('negative when the friend is behind', () {
@@ -74,23 +71,26 @@ void main() {
       expect(sorted.map((r) => r.uid), ['carol', 'dave', 'bob']);
     });
 
-    test('no own row present is not an error — just an unpinned sorted list', () {
-      final rows = [
-        const FriendProgressRow(
-          uid: 'bob',
-          nickname: 'Bob',
-          progressMeters: 100,
-          isSelf: false,
-        ),
-        const FriendProgressRow(
-          uid: 'carol',
-          nickname: 'Carol',
-          progressMeters: 300,
-          isSelf: false,
-        ),
-      ];
+    test(
+      'no own row present is not an error — just an unpinned sorted list',
+      () {
+        final rows = [
+          const FriendProgressRow(
+            uid: 'bob',
+            nickname: 'Bob',
+            progressMeters: 100,
+            isSelf: false,
+          ),
+          const FriendProgressRow(
+            uid: 'carol',
+            nickname: 'Carol',
+            progressMeters: 300,
+            isSelf: false,
+          ),
+        ];
 
-      expect(sortFriendRows(rows).map((r) => r.uid), ['carol', 'bob']);
-    });
+        expect(sortFriendRows(rows).map((r) => r.uid), ['carol', 'bob']);
+      },
+    );
   });
 }
