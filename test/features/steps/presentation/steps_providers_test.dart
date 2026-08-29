@@ -7,6 +7,7 @@ import 'package:thereandback/app/auth_provider.dart';
 import 'package:thereandback/app/database_provider.dart';
 import 'package:thereandback/core/local_owner.dart';
 import 'package:thereandback/data/drift/database.dart';
+import 'package:thereandback/data/firestore/firestore_providers.dart';
 import 'package:thereandback/data/firestore/progress_sync_repository.dart';
 import 'package:thereandback/features/journey/presentation/journey_providers.dart';
 import 'package:thereandback/features/steps/data/step_counting_service.dart';

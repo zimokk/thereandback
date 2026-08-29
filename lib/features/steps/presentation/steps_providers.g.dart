@@ -123,68 +123,6 @@ final class StepSampleRepositoryProvider
 String _$stepSampleRepositoryHash() =>
     r'91b2d20c9fedbeeb2b0c5b5c04bb24f24496b562';
 
-/// Pushes progress to `users/{uid}/progress/{journeyId}` after a
-/// foreground sync (§8, Phase 8) — a sync layer only, never the source of
-/// truth ([stepSampleRepositoryProvider]'s drift log is). Overridden with a
-/// mock in tests.
-
-@ProviderFor(progressSyncRepository)
-final progressSyncRepositoryProvider = ProgressSyncRepositoryProvider._();
-
-/// Pushes progress to `users/{uid}/progress/{journeyId}` after a
-/// foreground sync (§8, Phase 8) — a sync layer only, never the source of
-/// truth ([stepSampleRepositoryProvider]'s drift log is). Overridden with a
-/// mock in tests.
-
-final class ProgressSyncRepositoryProvider
-    extends
-        $FunctionalProvider<
-          ProgressSyncRepository,
-          ProgressSyncRepository,
-          ProgressSyncRepository
-        >
-    with $Provider<ProgressSyncRepository> {
-  /// Pushes progress to `users/{uid}/progress/{journeyId}` after a
-  /// foreground sync (§8, Phase 8) — a sync layer only, never the source of
-  /// truth ([stepSampleRepositoryProvider]'s drift log is). Overridden with a
-  /// mock in tests.
-  ProgressSyncRepositoryProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'progressSyncRepositoryProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$progressSyncRepositoryHash();
-
-  @$internal
-  @override
-  $ProviderElement<ProgressSyncRepository> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  ProgressSyncRepository create(Ref ref) {
-    return progressSyncRepository(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(ProgressSyncRepository value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<ProgressSyncRepository>(value),
-    );
-  }
-}
-
-String _$progressSyncRepositoryHash() =>
-    r'd7e008a1ac6ffd424df9b053d326a6564b3f5512';
-
 /// Drives the foreground steps-sync flow: permission checks, the Health
 /// Connect "not installed" case, and syncing a delta into
 /// `selectedJourneyProvider` through the pure `stride.dart` math.
