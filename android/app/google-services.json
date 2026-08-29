@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "443590986164",
+    "project_id": "thereandgetback",
+    "storage_bucket": "thereandgetback.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:443590986164:android:e1ec6fc89ae4f58ea68ae1",
+        "android_client_info": {
+          "package_name": "com.zimokk.thereandback"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBHST6gP469WAL9XhC9S6tDQ1KyObEiCx8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
