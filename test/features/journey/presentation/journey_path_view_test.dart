@@ -111,82 +111,69 @@ void main() {
     expect(afterX, lessThan(beforeX - 0.5));
   });
 
-  testWidgets(
-    "the line's height at a given route position doesn't change just "
-    'because the view has been panned further — fixed terrain the camera '
-    'pans across, not a pattern that warps under the drag',
-    (tester) async {
-      // Drags the scene until `_panMeters` sits at exactly [panMeters],
-      // given this test's fixed [pixelsPerMeter] — `_onHorizontalDragUpdate`
-      // converts a drag delta to meters via that same ratio, so a single
-      // `tester.drag` lands `_panMeters` at the target exactly (no
-      // clamping, as long as it stays well under odyssey-ithaca's
-      // ~2 850 000 m length).
-      Future<double> travelerYAtPanMeters(
-        double panMeters,
-        double pixelsPerMeter,
-      ) async {
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
-            ],
-            child: _app(const JourneyPathView()),
-          ),
-        );
-        final container = ProviderScope.containerOf(
-          tester.element(find.byType(JourneyPathView)),
-        );
-        container
-            .read(selectedJourneyProvider.notifier)
-            .start('odyssey-ithaca', now: DateTime.now());
-        await tester.pump();
-        await tester.drag(
-          find.byKey(const Key('journeyPathScene')),
-          Offset(-panMeters * pixelsPerMeter, 0),
-        );
-        await tester.pump();
-        return tester.getCenter(find.byIcon(Icons.directions_walk)).dy;
-      }
+  testWidgets("the line's height at a given route position doesn't change just "
+      'because the view has been panned further — fixed terrain the camera '
+      'pans across, not a pattern that warps under the drag', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+        ],
+        child: _app(const JourneyPathView()),
+      ),
+    );
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(JourneyPathView)),
+    );
+    container
+        .read(selectedJourneyProvider.notifier)
+        .start('odyssey-ithaca', now: DateTime.now());
+    await tester.pump();
 
-      // Measured from the scene's actual layout rather than assumed, so
-      // this test doesn't depend on flutter_test's default surface size.
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
-          ],
-          child: _app(const JourneyPathView()),
-        ),
-      );
-      final sceneWidth = tester
-          .getSize(find.byKey(const Key('journeyPathScene')))
-          .width;
-      final pixelsPerMeter =
-          sceneWidth / metersPerScreenWidthFor('odyssey-ithaca');
+    // Measured from the scene's actual layout rather than assumed, so this
+    // test doesn't depend on flutter_test's default surface size.
+    final sceneWidth = tester
+        .getSize(find.byKey(const Key('journeyPathScene')))
+        .width;
+    final pixelsPerMeter =
+        sceneWidth / metersPerScreenWidthFor('odyssey-ithaca');
 
-      // `_waveWavelength` (journey_path_view.dart, private — mirrored here)
-      // is 260 "world" pixels at the quest's own pixels-per-meter scale:
-      // panning by exactly 260 more world-pixels' worth of route meters
-      // returns the fixed terrain to the same phase. `panMeters1` is
-      // chosen comfortably past where `_travelerOffsetX` saturates at
-      // `_travelerSwayRange`, so the traveler's own route meters is
-      // `panMeters - <the same constant>` in both cases — a constant shift
-      // that a difference of exactly one wavelength survives.
-      const wavelengthWorldPixels = 260.0;
-      const panMeters1 = 100000.0;
-      final panMeters2 = panMeters1 + wavelengthWorldPixels / pixelsPerMeter;
+    // `_waveWavelength` (journey_path_view.dart, private — mirrored here)
+    // is 260 "world" pixels at the quest's own pixels-per-meter scale:
+    // panning by exactly 260 more world-pixels' worth of route meters
+    // returns the fixed terrain to the same phase. `panMeters1` is
+    // chosen comfortably past where `_travelerOffsetX` saturates at
+    // `_travelerSwayRange`, so the traveler's own route meters is
+    // `panMeters - <the same constant>` in both cases — a constant shift
+    // that a difference of exactly one wavelength survives.
+    const wavelengthWorldPixels = 260.0;
+    const panMeters1 = 100000.0;
+    final panMeters2 = panMeters1 + wavelengthWorldPixels / pixelsPerMeter;
 
-      // Before this fix, `_wavyPathY` keyed its phase off screen-space
-      // quantities that both moved with `_panMeters`, so the same route
-      // position rendered at a different height after a larger pan — this
-      // asserts that no longer happens.
-      final y1 = await travelerYAtPanMeters(panMeters1, pixelsPerMeter);
-      final y2 = await travelerYAtPanMeters(panMeters2, pixelsPerMeter);
+    // Drags the same scene (`_panMeters` accumulates, see
+    // `_onHorizontalDragUpdate`) first to panMeters1, then the rest of the
+    // way to panMeters2 — both well short of odyssey-ithaca's ~2 850 000 m
+    // length, so neither lands the clamp.
+    await tester.drag(
+      find.byKey(const Key('journeyPathScene')),
+      Offset(-panMeters1 * pixelsPerMeter, 0),
+    );
+    await tester.pump();
+    final y1 = tester.getCenter(find.byIcon(Icons.directions_walk)).dy;
 
-      expect(y2, moreOrLessEquals(y1, epsilon: 0.5));
-    },
-  );
+    // Before this fix, `_wavyPathY` keyed its phase off screen-space
+    // quantities that both moved with `_panMeters`, so the same route
+    // position rendered at a different height after a larger pan — this
+    // asserts that no longer happens.
+    await tester.drag(
+      find.byKey(const Key('journeyPathScene')),
+      Offset(-(panMeters2 - panMeters1) * pixelsPerMeter, 0),
+    );
+    await tester.pump();
+    final y2 = tester.getCenter(find.byIcon(Icons.directions_walk)).dy;
+
+    expect(y2, moreOrLessEquals(y1, epsilon: 0.5));
+  });
 
   group('achievement markers (§6.1 — start/end line, markers ahead)', () {
     testWidgets('markers sit in one flat row pinned to the top of the scene, '
