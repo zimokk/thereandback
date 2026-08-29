@@ -18,14 +18,24 @@ import 'journey_providers.dart';
 
 /// The Путь tab's scene (§6.1) — today, a deliberate placeholder: a wavy
 /// line standing in for real terrain, panned by a horizontal drag, with the
-/// traveler icon resting on it near the screen's horizontal centre. The
-/// icon is the foreground layer, the line is the background one (§6.1 —
+/// traveler icon resting on it near the screen's horizontal centre.
+/// Dragging left-to-right (positive `dx`) moves the visible line right —
+/// direct manipulation, content follows the finger — and dragging
+/// right-to-left reveals what's further down the route, toward B (see
+/// [_onHorizontalDragUpdate]). The line's height at any given route meter
+/// is fixed (see [_wavyPathY]'s doc comment) — panning changes which part
+/// of that fixed profile is on screen, never the profile itself, which is
+/// what sells "человек поднимается и спускается по линии": the traveler
+/// visibly climbs and descends fixed hills the camera pans across, instead
+/// of a pattern that warps as you drag.
+///
+/// The icon is the foreground layer, the line is the background one (§6.1 —
 /// "слои двигаются с разной скоростью"): a drag moves both, but the icon
 /// sways only a small, bounded distance opposite the screen direction the
-/// line's own pattern shifts in (see [_travelerOffsetX] and [_wavyPathY]),
-/// which is what makes the two read as different depths instead of one
-/// rigid picture. At rest (`_panMeters == 0`, a freshly started quest) the
-/// icon still sits exactly at centre — the sway only appears once panned.
+/// line itself pans in (see [_travelerOffsetX]), which is what makes the
+/// two read as different depths instead of one rigid picture. At rest
+/// (`_panMeters == 0`, a freshly started quest) the icon still sits exactly
+/// at centre — the sway only appears once panned.
 ///
 /// The line's *length* is not a placeholder, though: it always spans
 /// exactly `[0, journey.totalMeters]` at this quest's fixed
@@ -137,22 +147,27 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView> {
                   final midY = size.height / 2;
                   final pixelsPerMeter =
                       size.width / metersPerScreenWidthFor(_journeyId);
-                  // Same panOffset feeds the painter and the traveler icon
-                  // — one function decides the line's shape, so neither
-                  // reader can drift apart from it (see the class doc
-                  // comment). Achievement markers below use `pixelsPerMeter`
-                  // directly instead, since their layer is pinned to the
-                  // top and doesn't follow the line's height.
+                  // Feeds the traveler icon's sway only — the height itself
+                  // now comes from [_wavyPathY], which the painter and the
+                  // icon both call with a *route meter*, not a screen
+                  // offset (see that function's doc comment). Achievement
+                  // markers below use `pixelsPerMeter` directly instead,
+                  // since their layer is pinned to the top and doesn't
+                  // follow the line's height.
                   final panOffsetPixels = _panMeters * pixelsPerMeter;
                   // Foreground (icon) vs. background (line) parallax: see
                   // the class doc comment and [_travelerOffsetX]. The icon
                   // reads its height off the line at its *own* x, not at
                   // centerX, so it still visually sits on the terrain once
-                  // it has swayed off centre.
+                  // it has swayed off centre — converted back to the route
+                  // meter under that x so the lookup uses the same
+                  // pan-invariant height as the line beneath it.
                   final travelerX = centerX + _travelerOffsetX(panOffsetPixels);
+                  final travelerMeters =
+                      _panMeters + (travelerX - centerX) / pixelsPerMeter;
                   final travelerY = _wavyPathY(
-                    x: travelerX,
-                    panOffset: panOffsetPixels,
+                    meters: travelerMeters,
+                    pixelsPerMeter: pixelsPerMeter,
                     midY: midY,
                   );
 
@@ -162,7 +177,6 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView> {
                         key: const Key('journeyPathScene'),
                         size: size,
                         painter: _WavyPathPainter(
-                          panOffset: panOffsetPixels,
                           midY: midY,
                           totalMeters: _totalMeters,
                           panMeters: _panMeters,
@@ -241,8 +255,9 @@ const double _travelerIconSize = 32;
 /// in pixels.
 const double _waveAmplitude = 36;
 
-/// Horizontal distance, in pixels, over which the placeholder wave
-/// completes one full up-down cycle.
+/// Route distance, in pixels at the quest's own meters-per-pixel scale
+/// (`meters * pixelsPerMeter` — see [_wavyPathY]), over which the
+/// placeholder wave completes one full up-down cycle.
 const double _waveWavelength = 260;
 
 /// Fraction of the pan's screen-space offset the traveler icon sways by,
@@ -260,36 +275,50 @@ const double _travelerParallaxFactor = 0.15;
 const double _travelerSwayRange = 40.0;
 
 /// Horizontal offset of the traveler icon from screen centre, given the
-/// current pan's screen-space offset ([panOffsetPixels], pixels from
-/// [_wavyPathY]'s own `panOffset` parameter).
+/// current pan's screen-space offset ([panOffsetPixels] — `_panMeters *
+/// pixelsPerMeter`, the same quantity the painter derives `panMeters` from).
 ///
 /// The sign is deliberately opposite the line: advancing the pan (dragging
-/// toward B) shifts [_wavyPathY]'s visible pattern to larger x — see that
-/// function's doc comment — so this returns a *negative* offset for a
-/// positive [panOffsetPixels], moving the icon the other way. That is the
-/// parallax cue this function exists for: foreground (icon) and background
-/// (line) visibly moving in different screen directions under the same
-/// drag, not just at different speeds.
+/// toward B, a positive [panOffsetPixels]) shifts the whole line left on
+/// screen (see [_JourneyPathViewState.build] and [_onHorizontalDragUpdate]),
+/// so this returns a *negative* offset for a positive [panOffsetPixels],
+/// moving the icon the other way. That is the parallax cue this function
+/// exists for: foreground (icon) and background (line) visibly moving in
+/// different screen directions under the same drag, not just at different
+/// speeds.
 double _travelerOffsetX(double panOffsetPixels) =>
     (-panOffsetPixels * _travelerParallaxFactor).clamp(
       -_travelerSwayRange,
       _travelerSwayRange,
     );
 
-/// Height of the placeholder wavy path at horizontal screen position [x],
-/// given how far the line has been panned ([panOffset], pixels) and the
-/// scene's vertical centre ([midY]). Shared by the painter (draws the line)
-/// and the traveler icon (sits on it) — there is exactly one function that
-/// knows the shape of this curve, so the two can never drift apart.
-/// Achievement markers deliberately do *not* read this — they live in
-/// their own layer pinned to [_markersLayerTop] instead (this task's
-/// requirement).
+/// Height of the placeholder wavy path at route position [meters] (from
+/// point A), given the quest's current pixels-per-meter scale
+/// ([pixelsPerMeter]) and the scene's vertical centre ([midY]).
+///
+/// Deliberately a function of the *route position*, not of screen x or how
+/// far the view has been panned: panning changes which meters are on
+/// screen, never the elevation the terrain has at a given meter. That's
+/// what makes the line read as fixed hills the camera pans across —
+/// "человек поднимается и спускается по линии" — rather than a pattern
+/// that slides and rescales as you drag (an earlier version keyed the
+/// phase off `x - panOffset`, screen-space quantities that both shift with
+/// `panMeters`, so the same route point rendered at a different height
+/// after every pan — a bug this signature makes impossible to reintroduce).
+///
+/// Shared by the painter (draws the line) and the traveler icon (sits on
+/// it, via its own screen x converted back to meters — see the icon's call
+/// site) — there is exactly one function that knows the shape of this
+/// curve, so the two can never drift apart. Achievement markers
+/// deliberately do *not* read this — they live in their own layer pinned to
+/// [_markersLayerTop] instead (this task's requirement).
 double _wavyPathY({
-  required double x,
-  required double panOffset,
+  required double meters,
+  required double pixelsPerMeter,
   required double midY,
 }) {
-  final phase = (x - panOffset) / _waveWavelength * 2 * math.pi;
+  final worldX = meters * pixelsPerMeter;
+  final phase = worldX / _waveWavelength * 2 * math.pi;
   return midY + _waveAmplitude * math.sin(phase);
 }
 
@@ -404,7 +433,6 @@ void _showAchievementDetails(
 
 class _WavyPathPainter extends CustomPainter {
   const _WavyPathPainter({
-    required this.panOffset,
     required this.midY,
     required this.totalMeters,
     required this.panMeters,
@@ -412,7 +440,6 @@ class _WavyPathPainter extends CustomPainter {
     required this.centerX,
   });
 
-  final double panOffset;
   final double midY;
 
   /// The route's full length in meters — the line is drawn only across
@@ -441,15 +468,41 @@ class _WavyPathPainter extends CustomPainter {
     final right = math.min(size.width, endX);
     if (right <= left) return; // point A and point B are both off-screen.
 
+    // Screen x -> route meters, the inverse of how the caller placed left/
+    // right above — this is what lets [_wavyPathY] key its phase off the
+    // route position instead of the screen position (see its doc comment).
+    double metersAtX(double x) => panMeters + (x - centerX) / pixelsPerMeter;
+
     final path = Path()
-      ..moveTo(left, _wavyPathY(x: left, panOffset: panOffset, midY: midY));
+      ..moveTo(
+        left,
+        _wavyPathY(
+          meters: metersAtX(left),
+          pixelsPerMeter: pixelsPerMeter,
+          midY: midY,
+        ),
+      );
     // A few pixels per segment reads as smooth without evaluating sin() at
     // every physical pixel.
     const step = 4.0;
     for (var x = left + step; x <= right; x += step) {
-      path.lineTo(x, _wavyPathY(x: x, panOffset: panOffset, midY: midY));
+      path.lineTo(
+        x,
+        _wavyPathY(
+          meters: metersAtX(x),
+          pixelsPerMeter: pixelsPerMeter,
+          midY: midY,
+        ),
+      );
     }
-    path.lineTo(right, _wavyPathY(x: right, panOffset: panOffset, midY: midY));
+    path.lineTo(
+      right,
+      _wavyPathY(
+        meters: metersAtX(right),
+        pixelsPerMeter: pixelsPerMeter,
+        midY: midY,
+      ),
+    );
 
     canvas.drawPath(
       path,
@@ -462,7 +515,6 @@ class _WavyPathPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _WavyPathPainter oldDelegate) =>
-      oldDelegate.panOffset != panOffset ||
       oldDelegate.midY != midY ||
       oldDelegate.totalMeters != totalMeters ||
       oldDelegate.panMeters != panMeters ||
