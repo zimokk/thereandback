@@ -6,16 +6,20 @@ Bottom tab 4 of 4 in this base — a deliberately trimmed slice of CLAUDE.md
 
 ## What it shows
 
-Two sections, exactly what was asked for — an optional sign-in entry
-point and a working language switch. Everything else §6.5 lists (stride
+Two sections, exactly what was asked for — a Google sign-in entry point
+and a working language switch. Everything else §6.5 lists (stride
 override, privacy toggles, permission re-request, "Смена квеста") is a
 later slice, not built here.
 
 ### Account
 
-A row: **Sign in**, subtitle "Optional — your progress already works
-without an account." Tapping it opens a bottom sheet ("Coming soon") —
-see below.
+Anonymous: a row — **Sign in**, subtitle "Optional — your progress
+already works without an account." Tapping it runs the real §8 upgrade
+(see below), not a stub.
+
+Once linked: the row swaps to **Signed in** with a gold check icon and
+becomes non-interactive — there's nothing left to tap once the upgrade
+has already happened.
 
 ### Language
 
@@ -25,17 +29,26 @@ Selecting one calls `appLocaleProvider.notifier.setLocale(locale)`, which
 locale (including this screen's own labels) changes immediately, no
 restart.
 
-## Sign-in is a real UI stub, not a placeholder pretending to work
+## Sign-in is the real §8 Google upgrade, not a stub
 
-Tapping **Sign in** never calls Firebase — it shows a sheet
-(`settingsSignInStubTitle`/`Body`/`Close`) saying account sign-in isn't
-wired up yet. This matches CLAUDE.md §8's own MVP decision: anonymous
-Firebase Auth by default, no login screen designed for MVP, but the
-anonymous `uid` must not be blocked from a future `linkWithCredential`
-upgrade. Building the real flow is **Phase 8** and needs its own
-architecture plan first (§13 — Firestore/Auth work always does). This
-base intentionally does not touch `firebase_core`/`firebase_auth` at all;
-they are not dependencies of this project yet.
+Tapping **Sign in** calls `AuthController.upgradeWithGoogle()`
+(`app/auth_provider.dart`) — the exact same call the friends feature makes
+from "Add friend" when the session is still anonymous
+(`friends_providers.dart`'s `addFriendByNickname`). Settings is just a
+second, equally real entry point to that one upgrade path, not a separate
+flow: an interactive Google account picker
+(`data/firebase/google_sign_in_service.dart`), then
+`AuthRepository.linkWithGoogleCredential` (`data/firebase/
+auth_repository.dart`) linking the credential onto the existing anonymous
+Firebase user via `linkWithCredential` — so the same `uid`, friendships and
+progress carry over, nothing is re-created under a new identity.
+
+The three `GoogleUpgradeOutcome` cases are rendered explicitly, same as on
+the friends tab: `success` shows a confirmation snackbar and flips the row
+to **Signed in**; `cancelled` (the user closed the picker) shows nothing;
+`alreadyLinked` (`GoogleAccountAlreadyLinkedException` — this Google
+identity already owns a different Firebase account, typically a reinstall)
+shows that specific message rather than a raw exception.
 
 ## State — providers
 
@@ -46,10 +59,12 @@ they are not dependencies of this project yet.
 ## l10n keys
 
 `settingsTitle`, `settingsAccountSectionTitle`, `settingsSignInButton`,
-`settingsSignInSubtitle`, `settingsSignInStubTitle`,
-`settingsSignInStubBody`, `settingsSignInStubClose`,
+`settingsSignInSubtitle`, `settingsSignedInTitle`,
+`settingsSignedInSubtitle`, `settingsSignInSuccessMessage`,
 `settingsLanguageSectionTitle`, `settingsLanguageRussian`,
-`settingsLanguageEnglish`.
+`settingsLanguageEnglish`. The `alreadyLinked` snackbar reuses
+`friendsOutcomeUpgradeAlreadyLinked` — one message for one outcome,
+regardless of which tab triggered the upgrade.
 
 `settingsLanguageRussian`/`settingsLanguageEnglish` are deliberately the
 **same string in both ARB files** — a language names itself, it doesn't
@@ -69,6 +84,10 @@ section added here that contains a `ListTile`-family widget needs the same
 
 `test/features/profile/presentation/settings_tab_test.dart`: both sections
 render (Russian sign-in label by default, since `ru` is the default
-locale); tapping sign-in shows the stub sheet and not a real flow;
+locale); tapping sign-in while anonymous runs the real upgrade (mocked
+`GoogleAuthService`/`AuthRepository`, same `_FixedAuthController` pattern
+as `auth_provider_test.dart`) and shows the success snackbar; an
+already-linked identity shows that specific message instead of crashing;
+once signed in the row renders the signed-in state instead of the prompt;
 switching to English flips the visible copy immediately, English label
 included.

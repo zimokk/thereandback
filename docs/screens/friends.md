@@ -17,6 +17,14 @@ friend by nickname" has something to find and be found by.
 
 ## What it shows
 
+- **Your nickname card** — pinned above everything else, always visible:
+  the caller's own nickname plus a copy-to-clipboard button
+  (`_MyNicknameCard`). "Add friend by nickname" only works once a friend
+  actually *has* the nickname to type in, and before this card the only
+  place it appeared was the caller's own row further down the same table —
+  easy to miss, and not copyable. Copying shows a confirmation `SnackBar`;
+  the button is disabled while the nickname hasn't loaded yet (`—`
+  placeholder instead of a blank).
 - **Incoming requests** — a pending friendship where the caller is *not*
   the initiator (`Friendship.isIncomingPendingFor`). Accept or decline.
 - **Outgoing requests** — a pending friendship the caller *did* initiate
@@ -131,7 +139,8 @@ only reads).
 
 `navFriends`, `friendsTitle`, `friendsYouLabel`, `friendsAddButton`,
 `friendsAddDialogTitle`, `friendsAddNicknameLabel`, `friendsAddSubmit`,
-`friendsAddCancel`, `friendsPendingIncomingTitle`,
+`friendsAddCancel`, `friendsMyNicknameLabel`, `friendsMyNicknameCopyTooltip`,
+`friendsMyNicknameCopied`, `friendsPendingIncomingTitle`,
 `friendsPendingOutgoingTitle`, `friendsIncomingRequestLabel` (`{name}`),
 `friendsOutgoingRequestLabel` (`{name}`), `friendsAcceptButton`,
 `friendsDeclineButton`, `friendsCancelRequestButton`, `friendsRemoveButton`,
@@ -160,10 +169,12 @@ pending split into incoming/outgoing) and `FriendsController
 .addFriendByNickname`'s outcomes, all against mocked repositories.
 
 `test/features/friends/presentation/challengers_tab_test.dart` — empty
-state, a populated table with the own row pinned, an incoming request's
-accept button calling the repository, and the anonymous add-friend flow
-triggering (and, on cancellation, short-circuiting) the Google upgrade
-prompt.
+state, a populated table with the own row pinned (now alongside the
+pinned nickname card, so the caller's nickname renders twice on that
+screen), an incoming request's accept button calling the repository, the
+copy-nickname button copying and confirming, and the anonymous add-friend
+flow triggering (and, on cancellation, short-circuiting) the Google
+upgrade prompt.
 
 `firebase/rules-tests/firestore.test.js` (Node.js, `@firebase/rules-unit-
 testing`, run via `firebase emulators:exec --only firestore`) — the real

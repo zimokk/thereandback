@@ -171,7 +171,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Me'), findsOneWidget);
+    // 'Me' now appears twice: once in the pinned "Your nickname" card
+    // (§6.4 — findable so a friend can be given the nickname to add), once
+    // in the own row further down ("Me (You)").
+    expect(find.textContaining('Me'), findsNWidgets(2));
+    expect(find.text('Your nickname'), findsOneWidget);
     expect(find.textContaining('You'), findsOneWidget);
     expect(find.text('Bob'), findsOneWidget);
     expect(find.text('No friends yet'), findsNothing);
@@ -217,6 +221,33 @@ void main() {
     verify(() => friendshipRepository.acceptRequest(pairIdFor('me', 'bob')))
         .called(1);
   });
+
+  testWidgets(
+    'tapping the copy icon on the own-nickname card copies it and shows a '
+    'confirmation',
+    (tester) async {
+      when(() => friendshipRepository.watchMyFriendships('me'))
+          .thenAnswer((_) => Stream.value(const []));
+
+      await tester.pumpWidget(
+        _wrap(
+          friendshipRepository: friendshipRepository,
+          userProfileRepository: userProfileRepository,
+          progressSyncRepository: progressSyncRepository,
+          googleAuthService: googleAuthService,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.copy));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Nickname copied — share it with a friend.'),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets(
     'adding a friend while anonymous triggers the Google upgrade prompt, '

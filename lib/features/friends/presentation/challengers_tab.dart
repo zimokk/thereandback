@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/formatters.dart';
@@ -23,6 +24,7 @@ class ChallengersTab extends ConsumerWidget {
     ref.watch(ensureFriendProfileProvider);
 
     final l10n = AppLocalizations.of(context)!;
+    final myNickname = ref.watch(myProfileProvider).value?.nickname;
     final view = ref.watch(friendsViewProvider).value ?? FriendsViewData.empty;
     final myMeters = view.rows
         .firstWhere(
@@ -54,6 +56,8 @@ class ChallengersTab extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(AppSpacing.md),
           children: [
+            _MyNicknameCard(nickname: myNickname, l10n: l10n),
+            const SizedBox(height: AppSpacing.md),
             if (view.incoming.isNotEmpty) ...[
               Text(
                 l10n.friendsPendingIncomingTitle,
@@ -179,6 +183,71 @@ String _outcomeMessage(AddFriendOutcome outcome, AppLocalizations l10n) {
     AddFriendOutcome.googleUpgradeAlreadyLinked =>
       l10n.friendsOutcomeUpgradeAlreadyLinked,
   };
+}
+
+/// The signed-in user's own nickname, pinned above everything else on this
+/// tab so it's the first thing found here — the whole point of §6.4's
+/// "add by nickname" flow is that a friend needs to *have* this nickname
+/// before they can use it, and until now the only place it appeared was
+/// this user's own row further down the same list.
+class _MyNicknameCard extends StatelessWidget {
+  const _MyNicknameCard({required this.nickname, required this.l10n});
+
+  /// `null` while the profile hasn't loaded yet (no uid, or
+  /// [ensureFriendProfileProvider] hasn't finished its first write) —
+  /// rendered as a placeholder dash rather than an empty string so the card
+  /// never looks broken.
+  final String? nickname;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(color: AppColors.gold),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l10n.friendsMyNicknameLabel, style: AppTypography.label),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  nickname ?? '—',
+                  style: AppTypography.body.copyWith(color: AppColors.gold),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.copy, color: AppColors.gold),
+            tooltip: l10n.friendsMyNicknameCopyTooltip,
+            onPressed: nickname == null
+                ? null
+                : () => _copyNickname(context, nickname!, l10n),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+Future<void> _copyNickname(
+  BuildContext context,
+  String nickname,
+  AppLocalizations l10n,
+) async {
+  await Clipboard.setData(ClipboardData(text: nickname));
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(l10n.friendsMyNicknameCopied)));
 }
 
 class _PendingRequestTile extends StatelessWidget {

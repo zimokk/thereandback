@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:thereandback/app/auth_provider.dart';
 import 'package:thereandback/app/theme.dart';
+import 'package:thereandback/data/firebase/auth_repository.dart';
+import 'package:thereandback/data/firebase/google_sign_in_service.dart';
 import 'package:thereandback/features/journey/data/android_lock_screen_channel.dart';
 import 'package:thereandback/features/journey/presentation/lock_screen_controller.dart';
 import 'package:thereandback/features/journey/presentation/lock_screen_state.dart';
@@ -16,6 +19,23 @@ import 'package:thereandback/l10n/app_localizations.dart';
 class _MockChannel extends Mock implements AndroidLockScreenChannel {}
 
 class _MockStepCountingService extends Mock implements StepCountingService {}
+
+class _MockAuthRepository extends Mock implements AuthRepository {}
+
+class _MockGoogleAuthService extends Mock implements GoogleAuthService {}
+
+/// An [AuthController] that starts from a fixed state and skips the real
+/// `build()`'s Firebase bootstrap — same trick `auth_provider_test.dart`'s
+/// `_FixedAuthController` uses, duplicated here rather than exported since
+/// it's test-only scaffolding.
+class _FixedAuthController extends AuthController {
+  _FixedAuthController(this._state);
+
+  final AuthState _state;
+
+  @override
+  AuthState build() => _state;
+}
 
 /// A `LockScreenController` with a fixed state — same fake pattern
 /// `permission_gate_test.dart` uses for `StepsSync` — so the
@@ -44,6 +64,12 @@ Widget _wrap(
   bool backgroundHealthGranted = false,
   RuntimePermissionResult activityRecognitionResult =
       RuntimePermissionResult.granted,
+  // Anonymous by default, and always through `_FixedAuthController` — same
+  // "never a real platform plugin in a widget test" rule as the lock-screen
+  // fakes below applies to `AuthController`'s real Firebase bootstrap.
+  AuthState authState = const AuthState(isAnonymous: true),
+  GoogleAuthService? googleAuthService,
+  AuthRepository? authRepository,
 }) {
   final channel = _MockChannel();
   final stepCountingService = _MockStepCountingService();
@@ -70,6 +96,13 @@ Widget _wrap(
       lockScreenSupportedProvider.overrideWithValue(lockScreenSupported),
       androidLockScreenChannelProvider.overrideWithValue(channel),
       stepCountingServiceProvider.overrideWithValue(stepCountingService),
+      authControllerProvider.overrideWith(
+        () => _FixedAuthController(authState),
+      ),
+      if (googleAuthService != null)
+        googleAuthServiceProvider.overrideWithValue(googleAuthService),
+      if (authRepository != null)
+        authRepositoryProvider.overrideWithValue(authRepository),
     ],
     child: Consumer(
       builder: (context, ref, _) {
@@ -101,15 +134,86 @@ void main() {
     expect(find.text('English'), findsOneWidget);
   });
 
-  testWidgets('tapping sign-in shows the stub sheet, not a real sign-in flow', (
-    tester,
-  ) async {
-    await tester.pumpWidget(_wrap(const SettingsTab()));
-    await tester.tap(find.text('Войти'));
-    await tester.pumpAndSettle();
+  testWidgets(
+    'tapping sign-in while anonymous runs the real Google upgrade and '
+    'shows a success snackbar',
+    (tester) async {
+      final googleAuthService = _MockGoogleAuthService();
+      final authRepository = _MockAuthRepository();
+      when(() => googleAuthService.signIn()).thenAnswer(
+        (_) async => const GoogleAuthTokens(idToken: 'id-token'),
+      );
+      when(
+        () => authRepository.linkWithGoogleCredential(
+          idToken: any(named: 'idToken'),
+        ),
+      ).thenAnswer((_) async {});
 
-    expect(find.text('Скоро'), findsOneWidget);
-  });
+      await tester.pumpWidget(
+        _wrap(
+          const SettingsTab(),
+          googleAuthService: googleAuthService,
+          authRepository: authRepository,
+        ),
+      );
+      await tester.tap(find.text('Войти'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => authRepository.linkWithGoogleCredential(idToken: 'id-token'),
+      ).called(1);
+      expect(find.text('Вход через Google выполнен.'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a Google identity already linked to another profile shows that '
+    'specific message rather than crashing',
+    (tester) async {
+      final googleAuthService = _MockGoogleAuthService();
+      final authRepository = _MockAuthRepository();
+      when(() => googleAuthService.signIn()).thenAnswer(
+        (_) async => const GoogleAuthTokens(idToken: 'id-token'),
+      );
+      when(
+        () => authRepository.linkWithGoogleCredential(
+          idToken: any(named: 'idToken'),
+        ),
+      ).thenThrow(const GoogleAccountAlreadyLinkedException());
+
+      await tester.pumpWidget(
+        _wrap(
+          const SettingsTab(),
+          googleAuthService: googleAuthService,
+          authRepository: authRepository,
+        ),
+      );
+      await tester.tap(find.text('Войти'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Этот аккаунт Google уже привязан к другому профилю.'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'once signed in, the row shows the signed-in state instead of the '
+    'sign-in prompt',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          const SettingsTab(),
+          authState: const AuthState(uid: 'uid-1', isAnonymous: false),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Вы вошли'), findsOneWidget);
+      expect(find.text('Войти'), findsNothing);
+    },
+  );
 
   testWidgets('switching language flips the rendered locale immediately', (
     tester,
