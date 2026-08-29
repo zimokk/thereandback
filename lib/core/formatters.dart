@@ -63,3 +63,27 @@ String? formatEtaDate(DateTime? eta, {required String localeName}) {
 String formatDate(DateTime date, {required String localeName}) {
   return DateFormat.yMMMd(localeName).format(date);
 }
+
+/// A signed distance ready for display (§5.3's "Дельта друга", e.g.
+/// `+229 km`) — [value] already carries the leading sign, [unit] is
+/// presentation's to localize, same split as [FormattedDistance].
+class FormattedSignedDistance {
+  const FormattedSignedDistance({required this.value, required this.unit});
+
+  final String value;
+  final DistanceUnit unit;
+}
+
+/// Formats a signed meters delta (friends comparison, §5.3, §5.4) — reuses
+/// [formatDistance]'s precision rules on the magnitude, so a friend's delta
+/// follows the exact same "< 1 000 m whole, 1–100 km two decimals, above
+/// whole km" rule as any other distance. Lives here, not in the friends
+/// feature, per §5.4's "единый форматтер".
+FormattedSignedDistance formatSignedDistance(int deltaMeters) {
+  final magnitude = formatDistance(deltaMeters.abs());
+  final sign = deltaMeters < 0 ? '-' : '+';
+  return FormattedSignedDistance(
+    value: '$sign${magnitude.value}',
+    unit: magnitude.unit,
+  );
+}

@@ -1,13 +1,13 @@
 import 'package:go_router/go_router.dart';
 
 import '../features/achievements/presentation/achievements_tab.dart';
+import '../features/friends/presentation/challengers_tab.dart';
 import '../features/journey/presentation/journey_tab.dart';
 import '../features/profile/presentation/settings_tab.dart';
 import '../features/quest_map/presentation/quest_stats_tab.dart';
 import 'app_shell.dart';
 
-/// Four bottom-tab branches (§6, trimmed — no Friends tab in this base yet;
-/// see `docs/screens/README.md`). Each branch keeps its own navigation
+/// Five bottom-tab branches (§6). Each branch keeps its own navigation
 /// stack via `StatefulShellRoute.indexedStack`, so switching tabs doesn't
 /// lose a branch's scroll/nav state.
 final GoRouter appRouter = GoRouter(
@@ -38,6 +38,14 @@ final GoRouter appRouter = GoRouter(
             GoRoute(
               path: '/achievements',
               builder: (context, state) => const AchievementsTab(),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/friends',
+              builder: (context, state) => const ChallengersTab(),
             ),
           ],
         ),

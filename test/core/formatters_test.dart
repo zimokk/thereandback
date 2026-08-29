@@ -43,6 +43,32 @@ void main() {
     });
   });
 
+  group('formatSignedDistance (§5.3, §5.4)', () {
+    test('a friend ahead renders with a leading plus', () {
+      final result = formatSignedDistance(229000);
+      expect(result.value, '+229');
+      expect(result.unit, DistanceUnit.kilometers);
+    });
+
+    test('a friend behind renders with a leading minus, on the magnitude', () {
+      final result = formatSignedDistance(-40);
+      expect(result.value, '-40');
+      expect(result.unit, DistanceUnit.meters);
+    });
+
+    test('a tie (zero delta) renders as a plain plus-zero', () {
+      final result = formatSignedDistance(0);
+      expect(result.value, '+0');
+      expect(result.unit, DistanceUnit.meters);
+    });
+
+    test('follows the same §5.4 precision boundaries as formatDistance', () {
+      final result = formatSignedDistance(-5230);
+      expect(result.value, '-5.23');
+      expect(result.unit, DistanceUnit.kilometers);
+    });
+  });
+
   group('formatEtaDate', () {
     test('null eta renders as null (caller shows a dash, §5.3)', () {
       expect(formatEtaDate(null, localeName: 'en'), isNull);

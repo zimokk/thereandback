@@ -5,7 +5,9 @@ import 'package:flutter/widgets.dart' show AppLifecycleState;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../app/app_lifecycle.dart';
+import '../../../app/auth_provider.dart';
 import '../../../app/database_provider.dart';
+import '../../../data/firestore/firestore_providers.dart';
 import '../../journey/presentation/journey_providers.dart';
 import '../data/android_step_counting_service.dart';
 import '../data/ios_step_counting_service.dart';
@@ -211,8 +213,45 @@ class StepsSync extends _$StepsSync {
             syncedAt: result.syncedAt,
           );
       state = state.copyWith(lastSyncFlagged: result.flagged);
+
+      unawaited(
+        _pushProgress(
+          journeyId: selected.journeyId,
+          startedAt: selected.startedAt,
+          progressMeters: result.progressMeters,
+        ),
+      );
     } finally {
       state = state.copyWith(isSyncing: false);
+    }
+  }
+
+  /// Pushes the just-synced total to Firestore (§8, Phase 8) — foreground
+  /// only, fire-and-forget with respect to this method's own caller: a
+  /// Firestore failure (offline, permission not yet granted, no signed-in
+  /// uid yet on a very fresh cold start) must never affect [sync]'s own
+  /// result — the local drift write above already durably credited the
+  /// distance regardless of whether this succeeds.
+  Future<void> _pushProgress({
+    required String journeyId,
+    required DateTime startedAt,
+    required int progressMeters,
+  }) async {
+    final uid = ref.read(currentUidProvider);
+    if (uid == null) return;
+
+    try {
+      await ref
+          .read(progressSyncRepositoryProvider)
+          .pushProgress(
+            uid: uid,
+            journeyId: journeyId,
+            meters: progressMeters,
+            startedAt: startedAt,
+            isCurrent: true,
+          );
+    } catch (_) {
+      // See doc comment above — never let this surface to sync()'s caller.
     }
   }
 }

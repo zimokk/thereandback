@@ -12,17 +12,17 @@ into phases; these files are the as-built record for this base.
 | Путь (journey home + placeholder scene) | `/journey` | [`journey.md`](journey.md) |
 | Карта / Прогресс (quest stats) | `/quest-stats` | [`quest-stats.md`](quest-stats.md) |
 | Трофеи (achievements) | `/achievements` | [`achievements.md`](achievements.md) |
+| Друзья (Challengers) | `/friends` | [`friends.md`](friends.md) |
 | Настройки (settings) | `/settings` | [`settings.md`](settings.md) |
 | Steps sync (embedded in Путь, not its own tab) | — | [`steps-sync.md`](steps-sync.md) |
 
-## Why four tabs, not five
+## Five tabs
 
 CLAUDE.md §6 fixes five bottom tabs (Путь · Карта · Трофеи · Друзья ·
-Настройки). This base ships **four** — no Friends tab — by explicit
-user decision when this scaffold was planned. `lib/app/router.dart` and
-`lib/app/app_shell.dart` only wire up the four above; adding Друзья later
-is a fifth `StatefulShellBranch` plus a `features/friends/` module, not a
-restructuring of what's here.
+Настройки). All five are wired in `lib/app/router.dart` and
+`lib/app/app_shell.dart` as of Phase 8 — Друзья was the last one added,
+as its own `StatefulShellBranch` plus the `features/friends/` module
+(`ChallengersTab`), not a restructuring of the four already here.
 
 ## What this base deliberately does not build
 

@@ -26,4 +26,20 @@ abstract final class AppColors {
 
   /// Divider / hairline color, low-contrast against [background].
   static const Color divider = Color(0x33EDE7DA);
+
+  /// Fixed palette for friend pins on the map and in the Challengers table
+  /// (§6.2, §6.4) — deliberately distinct from [gold], which stays reserved
+  /// for the player's own position/accents. Indexed by
+  /// `features/friends/domain/friendship.dart`'s `pinColorIndexForUid`
+  /// (`friendPinPaletteSize` there must match this list's length).
+  static const List<Color> friendPinPalette = [
+    Color(0xFFE05C4F), // terracotta red
+    Color(0xFF4FA8E0), // sky blue
+    Color(0xFF6FCF97), // sage green
+    Color(0xFFBB86FC), // lavender
+    Color(0xFFE0954F), // amber orange
+    Color(0xFF4FE0CB), // teal
+    Color(0xFFE04F9E), // rose pink
+    Color(0xFFA0A0E0), // periwinkle
+  ];
 }

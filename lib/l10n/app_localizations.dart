@@ -116,6 +116,12 @@ abstract class AppLocalizations {
   /// **'Trophies'**
   String get navAchievements;
 
+  /// Bottom nav label for the friends/Challengers tab (§6.4)
+  ///
+  /// In en, this message translates to:
+  /// **'Friends'**
+  String get navFriends;
+
   /// Bottom nav label for the settings tab
   ///
   /// In en, this message translates to:
@@ -577,6 +583,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{day} · {distance}'**
   String lockScreenBody(String day, String distance);
+
+  /// Друзья tab app bar title (§6.4)
+  ///
+  /// In en, this message translates to:
+  /// **'Friends'**
+  String get friendsTitle;
+
+  /// Marker shown next to the signed-in user's own row in the Challengers table
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get friendsYouLabel;
+
+  /// Button that opens the add-by-nickname dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Add friend'**
+  String get friendsAddButton;
+
+  /// Title of the add-friend dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Add a friend'**
+  String get friendsAddDialogTitle;
+
+  /// Label of the nickname text field in the add-friend dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Nickname'**
+  String get friendsAddNicknameLabel;
+
+  /// Submit button in the add-friend dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Send request'**
+  String get friendsAddSubmit;
+
+  /// Cancel button in the add-friend dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get friendsAddCancel;
+
+  /// Section heading for incoming friend requests awaiting the user's own accept/decline
+  ///
+  /// In en, this message translates to:
+  /// **'Requests'**
+  String get friendsPendingIncomingTitle;
+
+  /// Section heading for the user's own outgoing, still-pending requests
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get friendsPendingOutgoingTitle;
+
+  /// Row label for one incoming pending request
+  ///
+  /// In en, this message translates to:
+  /// **'{name} wants to be your friend'**
+  String friendsIncomingRequestLabel(String name);
+
+  /// Row label for one of the user's own outgoing pending requests
+  ///
+  /// In en, this message translates to:
+  /// **'Request sent to {name}'**
+  String friendsOutgoingRequestLabel(String name);
+
+  /// Accepts an incoming friend request
+  ///
+  /// In en, this message translates to:
+  /// **'Accept'**
+  String get friendsAcceptButton;
+
+  /// Declines an incoming friend request
+  ///
+  /// In en, this message translates to:
+  /// **'Decline'**
+  String get friendsDeclineButton;
+
+  /// Cancels the user's own outgoing friend request
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get friendsCancelRequestButton;
+
+  /// Removes an existing (accepted) friend — reversible, §6.4
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get friendsRemoveButton;
+
+  /// Title shown when the Challengers table has only the user's own row and no pending requests
+  ///
+  /// In en, this message translates to:
+  /// **'No friends yet'**
+  String get friendsEmptyTitle;
+
+  /// Body text under friendsEmptyTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Add a friend by their nickname to see how your quests compare.'**
+  String get friendsEmptyBody;
+
+  /// Confirmation after AddFriendOutcome.sent
+  ///
+  /// In en, this message translates to:
+  /// **'Friend request sent.'**
+  String get friendsOutcomeSent;
+
+  /// Shown for AddFriendOutcome.nicknameNotFound
+  ///
+  /// In en, this message translates to:
+  /// **'No one has that nickname.'**
+  String get friendsOutcomeNicknameNotFound;
+
+  /// Shown for AddFriendOutcome.cannotAddSelf
+  ///
+  /// In en, this message translates to:
+  /// **'That\'s your own nickname.'**
+  String get friendsOutcomeCannotAddSelf;
+
+  /// Shown for AddFriendOutcome.alreadyExists (an existing pending or accepted friendship)
+  ///
+  /// In en, this message translates to:
+  /// **'You\'re already connected with that person.'**
+  String get friendsOutcomeAlreadyExists;
+
+  /// Shown for AddFriendOutcome.notSignedIn — an unexpected, likely transient state
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t sign you in — try again in a moment.'**
+  String get friendsOutcomeNotSignedIn;
+
+  /// Shown for AddFriendOutcome.googleUpgradeCancelled — the user closed the Google account picker
+  ///
+  /// In en, this message translates to:
+  /// **'Adding friends needs a Google account — sign-in was cancelled.'**
+  String get friendsOutcomeUpgradeCancelled;
+
+  /// Shown for AddFriendOutcome.googleUpgradeAlreadyLinked
+  ///
+  /// In en, this message translates to:
+  /// **'That Google account is already linked to a different profile.'**
+  String get friendsOutcomeUpgradeAlreadyLinked;
 }
 
 class _AppLocalizationsDelegate

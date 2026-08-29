@@ -6,9 +6,8 @@ import '../design/colors.dart';
 import '../features/journey/presentation/lock_screen_controller.dart';
 import '../l10n/app_localizations.dart';
 
-/// The bottom nav shell wrapping all four tab branches (§6, trimmed to the
-/// four this base ships — no Friends tab yet). One `BottomNavigationBar`
-/// index per `StatefulShellBranch` in `router.dart`.
+/// The bottom nav shell wrapping all five tab branches (§6). One
+/// `BottomNavigationBar` index per `StatefulShellBranch` in `router.dart`.
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.navigationShell});
 
@@ -58,6 +57,10 @@ class AppShell extends ConsumerWidget {
               BottomNavigationBarItem(
                 icon: const Icon(Icons.emoji_events_outlined),
                 label: l10n.navAchievements,
+              ),
+              BottomNavigationBarItem(
+                icon: const Icon(Icons.people_outline),
+                label: l10n.navFriends,
               ),
               BottomNavigationBarItem(
                 icon: const Icon(Icons.settings_outlined),

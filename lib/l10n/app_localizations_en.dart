@@ -19,6 +19,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navAchievements => 'Trophies';
 
   @override
+  String get navFriends => 'Friends';
+
+  @override
   String get navSettings => 'Settings';
 
   @override
@@ -299,4 +302,85 @@ class AppLocalizationsEn extends AppLocalizations {
   String lockScreenBody(String day, String distance) {
     return '$day · $distance';
   }
+
+  @override
+  String get friendsTitle => 'Friends';
+
+  @override
+  String get friendsYouLabel => 'You';
+
+  @override
+  String get friendsAddButton => 'Add friend';
+
+  @override
+  String get friendsAddDialogTitle => 'Add a friend';
+
+  @override
+  String get friendsAddNicknameLabel => 'Nickname';
+
+  @override
+  String get friendsAddSubmit => 'Send request';
+
+  @override
+  String get friendsAddCancel => 'Cancel';
+
+  @override
+  String get friendsPendingIncomingTitle => 'Requests';
+
+  @override
+  String get friendsPendingOutgoingTitle => 'Sent';
+
+  @override
+  String friendsIncomingRequestLabel(String name) {
+    return '$name wants to be your friend';
+  }
+
+  @override
+  String friendsOutgoingRequestLabel(String name) {
+    return 'Request sent to $name';
+  }
+
+  @override
+  String get friendsAcceptButton => 'Accept';
+
+  @override
+  String get friendsDeclineButton => 'Decline';
+
+  @override
+  String get friendsCancelRequestButton => 'Cancel';
+
+  @override
+  String get friendsRemoveButton => 'Remove';
+
+  @override
+  String get friendsEmptyTitle => 'No friends yet';
+
+  @override
+  String get friendsEmptyBody =>
+      'Add a friend by their nickname to see how your quests compare.';
+
+  @override
+  String get friendsOutcomeSent => 'Friend request sent.';
+
+  @override
+  String get friendsOutcomeNicknameNotFound => 'No one has that nickname.';
+
+  @override
+  String get friendsOutcomeCannotAddSelf => 'That\'s your own nickname.';
+
+  @override
+  String get friendsOutcomeAlreadyExists =>
+      'You\'re already connected with that person.';
+
+  @override
+  String get friendsOutcomeNotSignedIn =>
+      'Couldn\'t sign you in — try again in a moment.';
+
+  @override
+  String get friendsOutcomeUpgradeCancelled =>
+      'Adding friends needs a Google account — sign-in was cancelled.';
+
+  @override
+  String get friendsOutcomeUpgradeAlreadyLinked =>
+      'That Google account is already linked to a different profile.';
 }

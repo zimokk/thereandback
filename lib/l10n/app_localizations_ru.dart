@@ -19,6 +19,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get navAchievements => 'Трофеи';
 
   @override
+  String get navFriends => 'Друзья';
+
+  @override
   String get navSettings => 'Настройки';
 
   @override
@@ -303,4 +306,86 @@ class AppLocalizationsRu extends AppLocalizations {
   String lockScreenBody(String day, String distance) {
     return '$day · $distance';
   }
+
+  @override
+  String get friendsTitle => 'Друзья';
+
+  @override
+  String get friendsYouLabel => 'Вы';
+
+  @override
+  String get friendsAddButton => 'Добавить друга';
+
+  @override
+  String get friendsAddDialogTitle => 'Добавить друга';
+
+  @override
+  String get friendsAddNicknameLabel => 'Ник';
+
+  @override
+  String get friendsAddSubmit => 'Отправить заявку';
+
+  @override
+  String get friendsAddCancel => 'Отмена';
+
+  @override
+  String get friendsPendingIncomingTitle => 'Заявки';
+
+  @override
+  String get friendsPendingOutgoingTitle => 'Отправлено';
+
+  @override
+  String friendsIncomingRequestLabel(String name) {
+    return '$name хочет добавить вас в друзья';
+  }
+
+  @override
+  String friendsOutgoingRequestLabel(String name) {
+    return 'Заявка отправлена: $name';
+  }
+
+  @override
+  String get friendsAcceptButton => 'Принять';
+
+  @override
+  String get friendsDeclineButton => 'Отклонить';
+
+  @override
+  String get friendsCancelRequestButton => 'Отменить';
+
+  @override
+  String get friendsRemoveButton => 'Удалить';
+
+  @override
+  String get friendsEmptyTitle => 'Пока нет друзей';
+
+  @override
+  String get friendsEmptyBody =>
+      'Добавьте друга по нику, чтобы сравнить прогресс в квесте.';
+
+  @override
+  String get friendsOutcomeSent => 'Заявка в друзья отправлена.';
+
+  @override
+  String get friendsOutcomeNicknameNotFound =>
+      'Пользователь с таким ником не найден.';
+
+  @override
+  String get friendsOutcomeCannotAddSelf => 'Это ваш собственный ник.';
+
+  @override
+  String get friendsOutcomeAlreadyExists =>
+      'Вы уже связаны с этим пользователем.';
+
+  @override
+  String get friendsOutcomeNotSignedIn =>
+      'Не удалось войти — попробуйте ещё раз через момент.';
+
+  @override
+  String get friendsOutcomeUpgradeCancelled =>
+      'Чтобы добавлять друзей, нужен аккаунт Google — вход отменён.';
+
+  @override
+  String get friendsOutcomeUpgradeAlreadyLinked =>
+      'Этот аккаунт Google уже привязан к другому профилю.';
 }
