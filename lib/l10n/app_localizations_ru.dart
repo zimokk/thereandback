@@ -220,14 +220,14 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не обязательно — прогресс работает и без аккаунта.';
 
   @override
-  String get settingsSignInStubTitle => 'Скоро';
+  String get settingsSignedInTitle => 'Вы вошли';
 
   @override
-  String get settingsSignInStubBody =>
-      'Вход в аккаунт пока не подключён — прогресс по квесту уже работает и без него.';
+  String get settingsSignedInSubtitle =>
+      'Аккаунт Google привязан — друзья могут найти вас по нику.';
 
   @override
-  String get settingsSignInStubClose => 'Закрыть';
+  String get settingsSignInSuccessMessage => 'Вход через Google выполнен.';
 
   @override
   String get settingsLanguageSectionTitle => 'Язык';
@@ -327,6 +327,16 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get friendsAddCancel => 'Отмена';
+
+  @override
+  String get friendsMyNicknameLabel => 'Ваш ник';
+
+  @override
+  String get friendsMyNicknameCopyTooltip => 'Скопировать ник';
+
+  @override
+  String get friendsMyNicknameCopied =>
+      'Ник скопирован — поделитесь им с другом.';
 
   @override
   String get friendsPendingIncomingTitle => 'Заявки';

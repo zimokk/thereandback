@@ -394,7 +394,8 @@ const double _markerTapPadding = AppSpacing.sm;
 
 /// Shows a marker's name and status (this task's requirement — "details on
 /// tap only") in a bottom sheet, following the same shape every other sheet
-/// in this app uses (see `settings_tab.dart`'s `_showSignInStub`): title,
+/// in this app uses (see `settings_tab.dart`'s
+/// `_showLockScreenTroubleshootSheet`): title,
 /// then status line, dismissible by the sheet's own default swipe-down/
 /// tap-outside gesture — no bespoke close button, since adding one needs a
 /// new l10n key and this change didn't add one.

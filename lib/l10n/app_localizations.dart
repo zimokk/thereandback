@@ -434,23 +434,23 @@ abstract class AppLocalizations {
   /// **'Optional — your progress already works without an account.'**
   String get settingsSignInSubtitle;
 
-  /// Title of the sheet shown when tapping sign-in today
+  /// Row title once the Google upgrade has linked the session
   ///
   /// In en, this message translates to:
-  /// **'Coming soon'**
-  String get settingsSignInStubTitle;
+  /// **'Signed in'**
+  String get settingsSignedInTitle;
 
-  /// Body of the sign-in stub sheet
+  /// Row subtitle once the Google upgrade has linked the session
   ///
   /// In en, this message translates to:
-  /// **'Account sign-in isn\'t wired up yet — your quest progress already works without it.'**
-  String get settingsSignInStubBody;
+  /// **'Your Google account is linked — friends can find you by your nickname.'**
+  String get settingsSignedInSubtitle;
 
-  /// Button that dismisses the sign-in stub sheet
+  /// Snackbar shown after GoogleUpgradeOutcome.success from the settings row
   ///
   /// In en, this message translates to:
-  /// **'Close'**
-  String get settingsSignInStubClose;
+  /// **'Signed in with Google.'**
+  String get settingsSignInSuccessMessage;
 
   /// Settings section heading for the language switch
   ///
@@ -625,6 +625,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Cancel'**
   String get friendsAddCancel;
+
+  /// Label above the signed-in user's own nickname, so a friend can find them by it
+  ///
+  /// In en, this message translates to:
+  /// **'Your nickname'**
+  String get friendsMyNicknameLabel;
+
+  /// Tooltip on the icon button that copies the user's own nickname to the clipboard
+  ///
+  /// In en, this message translates to:
+  /// **'Copy nickname'**
+  String get friendsMyNicknameCopyTooltip;
+
+  /// Snackbar shown after the copy-nickname button is tapped
+  ///
+  /// In en, this message translates to:
+  /// **'Nickname copied — share it with a friend.'**
+  String get friendsMyNicknameCopied;
 
   /// Section heading for incoming friend requests awaiting the user's own accept/decline
   ///

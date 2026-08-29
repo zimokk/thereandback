@@ -216,14 +216,14 @@ class AppLocalizationsEn extends AppLocalizations {
       'Optional — your progress already works without an account.';
 
   @override
-  String get settingsSignInStubTitle => 'Coming soon';
+  String get settingsSignedInTitle => 'Signed in';
 
   @override
-  String get settingsSignInStubBody =>
-      'Account sign-in isn\'t wired up yet — your quest progress already works without it.';
+  String get settingsSignedInSubtitle =>
+      'Your Google account is linked — friends can find you by your nickname.';
 
   @override
-  String get settingsSignInStubClose => 'Close';
+  String get settingsSignInSuccessMessage => 'Signed in with Google.';
 
   @override
   String get settingsLanguageSectionTitle => 'Language';
@@ -323,6 +323,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get friendsAddCancel => 'Cancel';
+
+  @override
+  String get friendsMyNicknameLabel => 'Your nickname';
+
+  @override
+  String get friendsMyNicknameCopyTooltip => 'Copy nickname';
+
+  @override
+  String get friendsMyNicknameCopied =>
+      'Nickname copied — share it with a friend.';
 
   @override
   String get friendsPendingIncomingTitle => 'Requests';

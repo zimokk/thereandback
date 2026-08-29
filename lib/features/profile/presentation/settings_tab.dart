@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/auth_provider.dart';
 import '../../../design/colors.dart';
 import '../../../design/spacing.dart';
 import '../../../design/typography.dart';
@@ -9,7 +10,7 @@ import '../../journey/presentation/lock_screen_controller.dart';
 import '../../journey/presentation/lock_screen_state.dart';
 import 'locale_provider.dart';
 
-/// Настройки (§6.5), trimmed to what this base ships: an optional sign-in
+/// Настройки (§6.5), trimmed to what this base ships: the Google sign-in
 /// entry point and a working language switch. Everything else in §6.5
 /// (stride, privacy, permission re-request, quest change) is a later slice.
 class SettingsTab extends ConsumerWidget {
@@ -20,6 +21,7 @@ class SettingsTab extends ConsumerWidget {
     final locale = ref.watch(appLocaleProvider);
     final l10n = AppLocalizations.of(context)!;
     final lockScreenSupported = ref.watch(lockScreenSupportedProvider);
+    final authState = ref.watch(authControllerProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -34,21 +36,35 @@ class SettingsTab extends ConsumerWidget {
           children: [
             _SectionCard(
               title: l10n.settingsAccountSectionTitle,
+              // Same upgrade the friends feature triggers when adding a
+              // friend while still anonymous (`AuthController
+              // .upgradeWithGoogle`) — this row is a second, equally real
+              // entry point to it, not a separate flow. Once linked
+              // (`!isAnonymous`) there's nothing left to tap: the row just
+              // confirms the state.
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(
-                  l10n.settingsSignInButton,
+                  authState.isAnonymous
+                      ? l10n.settingsSignInButton
+                      : l10n.settingsSignedInTitle,
                   style: AppTypography.body,
                 ),
                 subtitle: Text(
-                  l10n.settingsSignInSubtitle,
+                  authState.isAnonymous
+                      ? l10n.settingsSignInSubtitle
+                      : l10n.settingsSignedInSubtitle,
                   style: AppTypography.bodySecondary,
                 ),
-                trailing: const Icon(
-                  Icons.chevron_right,
+                trailing: Icon(
+                  authState.isAnonymous
+                      ? Icons.chevron_right
+                      : Icons.check_circle,
                   color: AppColors.gold,
                 ),
-                onTap: () => _showSignInStub(context, l10n),
+                onTap: authState.isAnonymous
+                    ? () => _signInWithGoogle(context, ref, l10n)
+                    : null,
               ),
             ),
             if (lockScreenSupported) ...[
@@ -94,39 +110,32 @@ class SettingsTab extends ConsumerWidget {
   }
 }
 
-/// Sign-in is a UI stub today: real Firebase Auth wiring is Phase 8 and
-/// needs its own architecture plan (§13) before it touches this button.
-/// §8 already treats anonymous auth as the MVP default and login as
-/// optional, so this is honest about what's here rather than pretending to
-/// authenticate.
-void _showSignInStub(BuildContext context, AppLocalizations l10n) {
-  showModalBottomSheet<void>(
-    context: context,
-    backgroundColor: AppColors.surface,
-    builder: (context) => Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(l10n.settingsSignInStubTitle, style: AppTypography.heading),
-          const SizedBox(height: AppSpacing.sm),
-          Text(l10n.settingsSignInStubBody, style: AppTypography.bodySecondary),
-          const SizedBox(height: AppSpacing.md),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                l10n.settingsSignInStubClose,
-                style: const TextStyle(color: AppColors.gold),
-              ),
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
+/// Upgrades the current anonymous Firebase session to a permanent one
+/// backed by a Google identity (§8, §14) — same call the friends feature
+/// makes from "Add friend" (`friends_providers.dart`'s
+/// `addFriendByNickname`), just triggered from Settings instead. The three
+/// `GoogleUpgradeOutcome` cases (§8's own outbound: success / a plain
+/// cancel / an identity already linked elsewhere) are rendered explicitly
+/// rather than only ever surfacing a bare exception.
+Future<void> _signInWithGoogle(
+  BuildContext context,
+  WidgetRef ref,
+  AppLocalizations l10n,
+) async {
+  final outcome = await ref
+      .read(authControllerProvider.notifier)
+      .upgradeWithGoogle();
+
+  if (!context.mounted) return;
+  final message = switch (outcome) {
+    GoogleUpgradeOutcome.success => l10n.settingsSignInSuccessMessage,
+    // The user just closed the account picker — not worth a toast.
+    GoogleUpgradeOutcome.cancelled => null,
+    GoogleUpgradeOutcome.alreadyLinked =>
+      l10n.friendsOutcomeUpgradeAlreadyLinked,
+  };
+  if (message == null) return;
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }
 
 /// The §7 "persistent lock screen / notification shade" toggle. Off by
