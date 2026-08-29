@@ -122,19 +122,28 @@ Future<void> _signInWithGoogle(
   WidgetRef ref,
   AppLocalizations l10n,
 ) async {
-  final outcome = await ref
-      .read(authControllerProvider.notifier)
-      .upgradeWithGoogle();
+  String? message;
+  try {
+    final outcome = await ref
+        .read(authControllerProvider.notifier)
+        .upgradeWithGoogle();
+    message = switch (outcome) {
+      GoogleUpgradeOutcome.success => l10n.settingsSignInSuccessMessage,
+      // The user just closed the account picker — not worth a toast.
+      GoogleUpgradeOutcome.cancelled => null,
+      GoogleUpgradeOutcome.alreadyLinked =>
+        l10n.friendsOutcomeUpgradeAlreadyLinked,
+    };
+  } catch (_) {
+    // Anything beyond the known GoogleUpgradeOutcome cases — no network,
+    // Google sign-in misconfigured on this build, a plugin/platform
+    // exception. Without this the row used to fail silently: the Future
+    // rejected with nothing awaiting it, so the tap visibly did nothing
+    // (§7 — never a dead end, not even a silent one).
+    message = context.mounted ? l10n.settingsSignInErrorMessage : null;
+  }
 
-  if (!context.mounted) return;
-  final message = switch (outcome) {
-    GoogleUpgradeOutcome.success => l10n.settingsSignInSuccessMessage,
-    // The user just closed the account picker — not worth a toast.
-    GoogleUpgradeOutcome.cancelled => null,
-    GoogleUpgradeOutcome.alreadyLinked =>
-      l10n.friendsOutcomeUpgradeAlreadyLinked,
-  };
-  if (message == null) return;
+  if (!context.mounted || message == null) return;
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }
 

@@ -226,6 +226,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSignInSuccessMessage => 'Signed in with Google.';
 
   @override
+  String get settingsSignInErrorMessage =>
+      'Couldn\'t sign in — please try again.';
+
+  @override
   String get settingsLanguageSectionTitle => 'Language';
 
   @override

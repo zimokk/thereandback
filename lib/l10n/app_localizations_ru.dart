@@ -230,6 +230,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsSignInSuccessMessage => 'Вход через Google выполнен.';
 
   @override
+  String get settingsSignInErrorMessage =>
+      'Не удалось войти — попробуйте ещё раз.';
+
+  @override
   String get settingsLanguageSectionTitle => 'Язык';
 
   @override

@@ -148,6 +148,8 @@
   "@settingsSignedInSubtitle": {"description": "Row subtitle once the Google upgrade has linked the session"},
   "settingsSignInSuccessMessage": "Signed in with Google.",
   "@settingsSignInSuccessMessage": {"description": "Snackbar shown after GoogleUpgradeOutcome.success from the settings row"},
+  "settingsSignInErrorMessage": "Couldn't sign in — please try again.",
+  "@settingsSignInErrorMessage": {"description": "Snackbar shown when upgradeWithGoogle() throws (e.g. no network, misconfigured Google sign-in) rather than returning a known GoogleUpgradeOutcome"},
   "settingsLanguageSectionTitle": "Language",
   "@settingsLanguageSectionTitle": {"description": "Settings section heading for the language switch"},
   "settingsLanguageRussian": "Русский",
