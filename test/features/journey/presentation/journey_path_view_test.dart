@@ -15,8 +15,9 @@ import 'package:thereandback/l10n/app_localizations.dart';
 
 /// The scene's own rendering, isolated from `JourneyTab`'s catalog/gate
 /// switching (`journey_tab_test.dart` covers that) — the wavy-line
-/// placeholder and the traveler icon fixed at the horizontal centre
-/// (§6.1's eventual "You" anchor, in placeholder form until Phase 5).
+/// placeholder and the traveler icon resting at the horizontal centre at
+/// rest, swaying opposite the line's own motion once panned (§6.1's
+/// eventual "You" anchor plus parallax, in placeholder form until Phase 5).
 Widget _app(Widget child) {
   return MaterialApp(
     theme: buildAppTheme(),
@@ -55,54 +56,60 @@ void main() {
     expect(iconCenter.dx, moreOrLessEquals(screenWidth / 2, epsilon: 1));
   });
 
-  testWidgets(
-    'dragging the scene horizontally moves the traveler icon vertically — '
-    'the wavy line rising and falling under a horizontally-fixed icon '
-    '(§6.1, placeholder ahead of the real Flame scene)',
-    (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
-          ],
-          child: _app(const JourneyPathView()),
-        ),
-      );
+  testWidgets('dragging the scene moves the traveler icon both vertically and '
+      'horizontally — swaying opposite the direction the line itself pans, '
+      'a parallax cue between foreground (icon) and background (line) '
+      '(§6.1, placeholder ahead of the real Flame scene)', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+        ],
+        child: _app(const JourneyPathView()),
+      ),
+    );
 
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(JourneyPathView)),
-      );
-      container
-          .read(selectedJourneyProvider.notifier)
-          .start('odyssey-ithaca', now: DateTime.now());
-      await tester.pump();
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(JourneyPathView)),
+    );
+    container
+        .read(selectedJourneyProvider.notifier)
+        .start('odyssey-ithaca', now: DateTime.now());
+    await tester.pump();
 
-      final beforeY = tester.getCenter(find.byIcon(Icons.directions_walk)).dy;
-      final beforeX = tester.getCenter(find.byIcon(Icons.directions_walk)).dx;
+    final beforeY = tester.getCenter(find.byIcon(Icons.directions_walk)).dy;
+    final beforeX = tester.getCenter(find.byIcon(Icons.directions_walk)).dx;
 
-      // Dragging on the painted scene area specifically (not anywhere in
-      // `JourneyPathView`'s bounds, which also include the label text below
-      // it) — half the placeholder wave's wavelength (see
-      // journey_path_view.dart), a phase shift of exactly π, which flips
-      // the sign of the wave's sin() term. The only way the traveler's
-      // height could stay the same is landing exactly on sin() == 0, a
-      // measure-zero coincidence for these constants and this test
-      // surface's width.
-      await tester.drag(
-        find.byKey(const Key('journeyPathScene')),
-        const Offset(-130, 0),
-      );
-      await tester.pump();
+    // Dragging on the painted scene area specifically (not anywhere in
+    // `JourneyPathView`'s bounds, which also include the label text below
+    // it). -300px is comfortably past where `_travelerOffsetX` saturates
+    // at `_travelerSwayRange` (its sway stops growing once the pan
+    // advances a bit further than that) and lands well clear of the few
+    // drag amounts that happen to leave the wave's height nearly
+    // unchanged for these constants — chosen empirically rather than
+    // solved for, since the icon's own x now feeds back into the height
+    // it reads off the line (see `_travelerOffsetX`'s doc comment), which
+    // rules out the old single-function half-wavelength trick.
+    //
+    // Dragging left advances `_panMeters`, which `_wavyPathY` renders as
+    // its visible pattern shifting toward larger x (see that function's
+    // and `_travelerOffsetX`'s doc comments) — so the icon, swaying the
+    // opposite way, moves toward *smaller* x here.
+    await tester.drag(
+      find.byKey(const Key('journeyPathScene')),
+      const Offset(-300, 0),
+    );
+    await tester.pump();
 
-      final afterY = tester.getCenter(find.byIcon(Icons.directions_walk)).dy;
-      final afterX = tester.getCenter(find.byIcon(Icons.directions_walk)).dx;
+    final afterY = tester.getCenter(find.byIcon(Icons.directions_walk)).dy;
+    final afterX = tester.getCenter(find.byIcon(Icons.directions_walk)).dx;
 
-      expect(afterY, isNot(closeTo(beforeY, 0.5)));
-      // The icon never leaves horizontal centre — only the line moves under
-      // it, matching the request that drove this placeholder.
-      expect(afterX, moreOrLessEquals(beforeX, epsilon: 0.5));
-    },
-  );
+    expect(afterY, isNot(closeTo(beforeY, 0.5)));
+    // The icon sways opposite the line's own pan direction — the
+    // parallax cue this test exists for, not the icon staying rigidly
+    // pinned to centre.
+    expect(afterX, lessThan(beforeX - 0.5));
+  });
 
   group('achievement markers (§6.1 — start/end line, markers ahead)', () {
     testWidgets('markers sit in one flat row pinned to the top of the scene, '

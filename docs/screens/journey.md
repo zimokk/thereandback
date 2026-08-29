@@ -16,14 +16,18 @@ Bottom tab 1 of 4 in this base (CLAUDE.md §6.1). Route: **`/journey`**
     unit line beneath it
   - `pointA → pointB`
   - A narrative placeholder line (see below)
-  - A **`CustomPaint` scene**: solid background + a wavy line + a traveler
-    icon (`Icons.directions_walk`) **pinned at the screen's horizontal
-    centre**, sitting on the line wherever it currently passes through
-    that centre — a `GestureDetector` pans the line horizontally under a
-    finger drag, which is what makes the icon appear to rise and fall as
-    the terrain moves past it. `_wavyPathY()` (`journey_path_view.dart`) is
-    the one function both the painter and the icon's position read, so
-    the two can never disagree about the curve's shape.
+  - A **`CustomPaint` scene**: solid background + a wavy line (background
+    layer) + a traveler icon (`Icons.directions_walk`, foreground layer)
+    resting on the line near the screen's horizontal centre — a
+    `GestureDetector` pans the line horizontally under a finger drag.
+    `_wavyPathY()` (`journey_path_view.dart`) is the one function both the
+    painter and the icon's position read, so the two can never disagree
+    about the curve's shape. The icon also **sways a small, bounded
+    distance opposite the screen direction the line's pattern shifts in**
+    (`_travelerOffsetX()`) — a parallax cue (§6.1: layers move at different
+    speeds/directions) rather than the icon staying rigidly glued to
+    centre; at rest (`_panMeters == 0`, a freshly started quest) it still
+    sits exactly at centre.
   - The line has a **start and an end**: it spans exactly `[0 m,
     journey.totalMeters]`, drawn at a fixed **per-quest scale**
     (`metersPerScreenWidthFor`, `domain/route_scale.dart` — 20 000 m per
@@ -144,10 +148,11 @@ started; permission-denied state renders the gate instead of a blank
 screen.
 
 `test/features/journey/presentation/journey_path_view_test.dart` covers the
-wavy-line placeholder scene directly: the traveler icon renders pinned at
-the screen's horizontal centre, and dragging the scene moves the icon
-vertically (not horizontally) — the line moving under a fixed icon, not
-the other way round. A second group covers the start/end line and markers:
+wavy-line placeholder scene directly: the traveler icon renders at the
+screen's horizontal centre at rest (fresh quest, no pan yet), and dragging
+the scene moves the icon both vertically and horizontally — swaying opposite
+the screen direction the line's own pattern shifts in, the parallax cue
+`_travelerOffsetX()` exists for. A second group covers the start/end line and markers:
 every achievement marker sits at the same fixed top offset regardless of
 its position along the route; a marker renders muted before its threshold
 and gold right after `applySyncedProgress` crosses it; panning is clamped
