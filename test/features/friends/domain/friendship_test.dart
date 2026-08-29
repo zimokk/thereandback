@@ -65,5 +65,20 @@ void main() {
       expect(hidden.isHiddenBy('alice'), isTrue);
       expect(hidden.isHiddenBy('bob'), isFalse);
     });
+
+    test('isIncomingPendingFor/isOutgoingPendingFor split a pending request '
+        'by who sent it', () {
+      final pending = friendship.copyWith(status: FriendshipStatus.pending);
+
+      expect(pending.isIncomingPendingFor('bob'), isTrue); // alice sent it
+      expect(pending.isOutgoingPendingFor('bob'), isFalse);
+      expect(pending.isIncomingPendingFor('alice'), isFalse);
+      expect(pending.isOutgoingPendingFor('alice'), isTrue);
+    });
+
+    test('an accepted friendship is neither incoming nor outgoing pending', () {
+      expect(friendship.isIncomingPendingFor('bob'), isFalse);
+      expect(friendship.isOutgoingPendingFor('alice'), isFalse);
+    });
   });
 }

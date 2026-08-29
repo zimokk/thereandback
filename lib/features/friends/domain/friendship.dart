@@ -42,6 +42,16 @@ abstract class Friendship with _$Friendship {
   /// Whether [myUid] has chosen to hide their own progress from the other
   /// party of this friendship.
   bool isHiddenBy(String myUid) => hiddenBy[myUid] == true;
+
+  /// A pending request [myUid] received (needs their accept/decline) —
+  /// `false` for a request they themself sent, or a non-pending friendship.
+  bool isIncomingPendingFor(String myUid) =>
+      status == FriendshipStatus.pending && initiatorUid != myUid;
+
+  /// A pending request [myUid] themself sent (only they can cancel it) —
+  /// `false` for a request they received, or a non-pending friendship.
+  bool isOutgoingPendingFor(String myUid) =>
+      status == FriendshipStatus.pending && initiatorUid == myUid;
 }
 
 /// The one canonical friendship document id for an unordered pair of uids —
