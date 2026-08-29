@@ -144,6 +144,7 @@ Future<FriendsViewData> friendsView(Ref ref) async {
         nickname: profile?.nickname ?? friendUid,
         progressMeters: meters,
         isSelf: false,
+        pairId: friendship.pairId,
       );
     }),
   );

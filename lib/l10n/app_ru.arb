@@ -4,6 +4,7 @@
   "navJourney": "Путь",
   "navQuestStats": "Карта",
   "navAchievements": "Трофеи",
+  "navFriends": "Друзья",
   "navSettings": "Настройки",
 
   "unitMeters": "{count, plural, one{метр} few{метра} many{метров} other{метра}}",
@@ -88,5 +89,30 @@
 
   "lockScreenChannelName": "Прогресс похода",
   "lockScreenChannelDescription": "Показывает текущий прогресс похода в шторке уведомлений и на экране блокировки.",
-  "lockScreenBody": "{day} · {distance}"
+  "lockScreenBody": "{day} · {distance}",
+
+  "friendsTitle": "Друзья",
+  "friendsYouLabel": "Вы",
+  "friendsAddButton": "Добавить друга",
+  "friendsAddDialogTitle": "Добавить друга",
+  "friendsAddNicknameLabel": "Ник",
+  "friendsAddSubmit": "Отправить заявку",
+  "friendsAddCancel": "Отмена",
+  "friendsPendingIncomingTitle": "Заявки",
+  "friendsPendingOutgoingTitle": "Отправлено",
+  "friendsIncomingRequestLabel": "{name} хочет добавить вас в друзья",
+  "friendsOutgoingRequestLabel": "Заявка отправлена: {name}",
+  "friendsAcceptButton": "Принять",
+  "friendsDeclineButton": "Отклонить",
+  "friendsCancelRequestButton": "Отменить",
+  "friendsRemoveButton": "Удалить",
+  "friendsEmptyTitle": "Пока нет друзей",
+  "friendsEmptyBody": "Добавьте друга по нику, чтобы сравнить прогресс в квесте.",
+  "friendsOutcomeSent": "Заявка в друзья отправлена.",
+  "friendsOutcomeNicknameNotFound": "Пользователь с таким ником не найден.",
+  "friendsOutcomeCannotAddSelf": "Это ваш собственный ник.",
+  "friendsOutcomeAlreadyExists": "Вы уже связаны с этим пользователем.",
+  "friendsOutcomeNotSignedIn": "Не удалось войти — попробуйте ещё раз через момент.",
+  "friendsOutcomeUpgradeCancelled": "Чтобы добавлять друзей, нужен аккаунт Google — вход отменён.",
+  "friendsOutcomeUpgradeAlreadyLinked": "Этот аккаунт Google уже привязан к другому профилю."
 }

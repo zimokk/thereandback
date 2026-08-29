@@ -9,6 +9,7 @@ class FriendProgressRow {
     required this.nickname,
     required this.progressMeters,
     required this.isSelf,
+    this.pairId,
   });
 
   final String uid;
@@ -19,6 +20,11 @@ class FriendProgressRow {
   /// records history to diff against).
   final int progressMeters;
   final bool isSelf;
+
+  /// The `friendships/{pairId}` document backing this row — `null` for the
+  /// caller's own row (there is no friendship with yourself). Lets the UI
+  /// remove/decline without recomputing [pairIdFor] from two uids itself.
+  final String? pairId;
 
   /// Derived, never stored — see [pinColorIndexForUid].
   int get pinColorIndex => pinColorIndexForUid(uid);
