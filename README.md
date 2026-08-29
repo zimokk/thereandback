@@ -23,6 +23,22 @@ leaderboard.
 See `CLAUDE.md` for the full architecture and product spec, and
 `docs/implementation-plan.md` for the phased build-out.
 
+## Screens (developer reference names)
+
+The user-facing tab labels and their behavior are fixed in `CLAUDE.md` §6.
+Two of the five tabs already carry an internal dev codename there (`Quest
+Stats`, `Challengers`); the other three did not have one yet, so this table
+fixes all five in one place for use in code comments, PRs, and discussion —
+prefer these over ad-hoc names.
+
+| # | Tab (UI label) | Feature dir | Dev codename | Why |
+|---|---|---|---|---|
+| 1 | Путь / Path | `features/journey/` | **Wayfarer's Chronicle** | the main Flame scene: distance in meters, a narrative/historical beat of text, the traveler figure, and the horizontal parallax route line the user scrolls |
+| 2 | Карта / Map | `features/quest_map/` | **Quest Stats** | named in `CLAUDE.md` §6.2 |
+| 3 | Трофеи / Achievements | `features/achievements/` | **Trophy Case** | grid of achievement badges, earned vs. silhouetted |
+| 4 | Друзья / Friends | `features/friends/` | **Challengers** | named in `CLAUDE.md` §6.4 |
+| 5 | Настройки / Settings | `features/profile/` | **Waystation** | the one screen where the player stops to adjust gear (profile, stride length, privacy, permissions, quest switch) rather than move along the route |
+
 ## Prerequisites
 
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) (stable
