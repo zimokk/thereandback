@@ -1,0 +1,11 @@
+{
+  "name": "thereandback-rules-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1"
+  }
+}

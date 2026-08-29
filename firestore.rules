@@ -57,7 +57,10 @@ service cloud.firestore {
         allow read: if isSelf(uid) || (
           isSignedIn() &&
           get(/databases/$(database)/documents/friendships/$(sortedPairId(uid, request.auth.uid))).data.status == 'accepted' &&
-          get(/databases/$(database)/documents/friendships/$(sortedPairId(uid, request.auth.uid))).data.hiddenBy[uid] != true
+          // `.get(key, default)`, not `[uid]` — bracket access errors (and
+          // so denies) when the owner has never hidden from anyone, since
+          // `hiddenBy` then has no entry for this specific uid at all.
+          get(/databases/$(database)/documents/friendships/$(sortedPairId(uid, request.auth.uid))).data.hiddenBy.get(uid, false) != true
         );
         allow write: if isSelf(uid);
       }
@@ -94,11 +97,15 @@ service cloud.firestore {
           && request.resource.data.uids == resource.data.uids
           && request.resource.data.initiatorUid == resource.data.initiatorUid)
         ||
-        // Hide-progress toggle: only your own key in hiddenBy changes —
-        // the other party can never flip your own visibility.
+        // Hide-progress toggle: only the caller's own key in hiddenBy
+        // changes — checked at both levels, since `affectedKeys()` on the
+        // document diff alone only proves "hiddenBy is the field that
+        // changed", not which key inside it did. Without the second
+        // check, either party could flip the *other* party's visibility.
         (request.resource.data.status == resource.data.status
           && request.resource.data.uids == resource.data.uids
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hiddenBy', 'updatedAt']))
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hiddenBy', 'updatedAt'])
+          && request.resource.data.hiddenBy.diff(resource.data.hiddenBy).affectedKeys().hasOnly([request.auth.uid]))
       );
 
       // Remove a friend, decline a request, or cancel your own outgoing
