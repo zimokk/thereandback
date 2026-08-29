@@ -2,5 +2,25 @@
   "firestore": {
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "thereandgetback",
+          "appId": "1:443590986164:android:e1ec6fc89ae4f58ea68ae1",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "thereandgetback",
+          "configurations": {
+            "android": "1:443590986164:android:e1ec6fc89ae4f58ea68ae1",
+            "ios": "1:443590986164:ios:8d61d9d67922181ea68ae1"
+          }
+        }
+      }
+    }
   }
 }
