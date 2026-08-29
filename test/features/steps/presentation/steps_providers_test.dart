@@ -3,15 +3,20 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:thereandback/app/auth_provider.dart';
 import 'package:thereandback/app/database_provider.dart';
 import 'package:thereandback/core/local_owner.dart';
 import 'package:thereandback/data/drift/database.dart';
+import 'package:thereandback/data/firestore/progress_sync_repository.dart';
 import 'package:thereandback/features/journey/presentation/journey_providers.dart';
 import 'package:thereandback/features/steps/data/step_counting_service.dart';
 import 'package:thereandback/features/steps/presentation/steps_providers.dart';
 import 'package:thereandback/features/steps/presentation/steps_sync_state.dart';
 
 class _MockStepCountingService extends Mock implements StepCountingService {}
+
+class _MockProgressSyncRepository extends Mock
+    implements ProgressSyncRepository {}
 
 /// A [StepsSync] that starts out already granted, skipping the real
 /// `build()`'s health-plugin-touching `refreshStatus()` call — this test
@@ -48,6 +53,10 @@ void main() {
         stepsSyncProvider.overrideWith(() => _GrantedStepsSync()),
         // `testing` skill: never a real drift database in a test.
         appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+        // No signed-in uid — `sync()`'s Phase 8 progress push is then a
+        // fire-and-forget no-op, so these tests never touch Firebase at
+        // all (the push itself is covered separately, below).
+        currentUidProvider.overrideWithValue(null),
       ],
     );
     addTearDown(container.dispose);
@@ -182,6 +191,155 @@ void main() {
     expect(container.read(selectedJourneyProvider)!.progressMeters, 0);
   });
 
+  group('sync() progress push (§8, Phase 8) — foreground only', () {
+    late _MockStepCountingService adapter;
+    late _MockProgressSyncRepository progressSyncRepository;
+    late ProviderContainer container;
+
+    setUp(() {
+      adapter = _MockStepCountingService();
+      progressSyncRepository = _MockProgressSyncRepository();
+      when(
+        () => progressSyncRepository.pushProgress(
+          uid: any(named: 'uid'),
+          journeyId: any(named: 'journeyId'),
+          meters: any(named: 'meters'),
+          startedAt: any(named: 'startedAt'),
+          isCurrent: any(named: 'isCurrent'),
+        ),
+      ).thenAnswer((_) async {});
+
+      container = ProviderContainer(
+        overrides: [
+          stepCountingServiceProvider.overrideWithValue(adapter),
+          stepsSyncProvider.overrideWith(() => _GrantedStepsSync()),
+          appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+          currentUidProvider.overrideWithValue('uid-1'),
+          progressSyncRepositoryProvider.overrideWithValue(
+            progressSyncRepository,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+    });
+
+    test(
+      'a successful sync pushes the new total for the signed-in uid',
+      () async {
+        when(() => adapter.fetchDelta(any(), any()))
+            .thenAnswer((_) async => const StepsDelta(steps: 100));
+
+        final startedAt = DateTime.now();
+        container
+            .read(selectedJourneyProvider.notifier)
+            .start('odyssey-ithaca', now: startedAt);
+        container
+            .read(selectedJourneyProvider.notifier)
+            .applySyncedProgress(
+              progressMeters: 0,
+              syncedAt: startedAt.subtract(const Duration(minutes: 10)),
+            );
+
+        await container.read(stepsSyncProvider.notifier).sync();
+        // No extra pump needed: `unawaited(_pushProgress(...))` still
+        // synchronously *invokes* pushProgress() (evaluating that call is
+        // part of reaching its own `await`) before sync()'s own `finally`
+        // runs, so the mock call is already registered by the time sync()'s
+        // Future resolves.
+
+        final credited = container
+            .read(selectedJourneyProvider)!
+            .progressMeters;
+        verify(
+          () => progressSyncRepository.pushProgress(
+            uid: 'uid-1',
+            journeyId: 'odyssey-ithaca',
+            meters: credited,
+            startedAt: startedAt,
+            isCurrent: true,
+          ),
+        ).called(1);
+      },
+    );
+
+    test('a failed push never changes sync()\'s own result — the local drift '
+        'credit already happened and must stand regardless (§8: fully '
+        'offline-capable)', () async {
+      when(() => adapter.fetchDelta(any(), any()))
+          .thenAnswer((_) async => const StepsDelta(steps: 100));
+      when(
+        () => progressSyncRepository.pushProgress(
+          uid: any(named: 'uid'),
+          journeyId: any(named: 'journeyId'),
+          meters: any(named: 'meters'),
+          startedAt: any(named: 'startedAt'),
+          isCurrent: any(named: 'isCurrent'),
+        ),
+      ).thenThrow(Exception('offline'));
+
+      container
+          .read(selectedJourneyProvider.notifier)
+          .start('odyssey-ithaca', now: DateTime.now());
+      container
+          .read(selectedJourneyProvider.notifier)
+          .applySyncedProgress(
+            progressMeters: 0,
+            syncedAt: DateTime.now().subtract(const Duration(minutes: 10)),
+          );
+
+      await container.read(stepsSyncProvider.notifier).sync();
+
+      expect(container.read(stepsSyncProvider).lastSyncFlagged, isFalse);
+      expect(
+        container.read(selectedJourneyProvider)!.progressMeters,
+        greaterThan(0),
+      );
+    });
+
+    test(
+      'no signed-in uid yet is a no-op — the repository is never called',
+      () async {
+        when(() => adapter.fetchDelta(any(), any()))
+            .thenAnswer((_) async => const StepsDelta(steps: 100));
+
+        final noUidContainer = ProviderContainer(
+          overrides: [
+            stepCountingServiceProvider.overrideWithValue(adapter),
+            stepsSyncProvider.overrideWith(() => _GrantedStepsSync()),
+            appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+            currentUidProvider.overrideWithValue(null),
+            progressSyncRepositoryProvider.overrideWithValue(
+              progressSyncRepository,
+            ),
+          ],
+        );
+        addTearDown(noUidContainer.dispose);
+
+        noUidContainer
+            .read(selectedJourneyProvider.notifier)
+            .start('odyssey-ithaca', now: DateTime.now());
+        noUidContainer
+            .read(selectedJourneyProvider.notifier)
+            .applySyncedProgress(
+              progressMeters: 0,
+              syncedAt: DateTime.now().subtract(const Duration(minutes: 10)),
+            );
+
+        await noUidContainer.read(stepsSyncProvider.notifier).sync();
+
+        verifyNever(
+          () => progressSyncRepository.pushProgress(
+            uid: any(named: 'uid'),
+            journeyId: any(named: 'journeyId'),
+            meters: any(named: 'meters'),
+            startedAt: any(named: 'startedAt'),
+            isCurrent: any(named: 'isCurrent'),
+          ),
+        );
+      },
+    );
+  });
+
   _realStepsSyncGroup();
 }
 
@@ -210,6 +368,7 @@ void _realStepsSyncGroup() {
           overrides: [
             stepCountingServiceProvider.overrideWithValue(adapter),
             appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+            currentUidProvider.overrideWithValue(null),
           ],
         );
         addTearDown(container.dispose);
@@ -287,6 +446,7 @@ void _realStepsSyncGroup() {
               ),
             ),
           ),
+          currentUidProvider.overrideWithValue(null),
         ],
       );
       addTearDown(container.dispose);

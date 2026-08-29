@@ -62,14 +62,23 @@ class AuthController extends _$AuthController {
   }
 
   Future<void> _bootstrap() async {
-    final repository = ref.read(authRepositoryProvider);
-    final uid = await repository.ensureSignedIn();
-    state = state.copyWith(uid: uid, isAnonymous: repository.isAnonymous);
-
-    final subscription = repository.uidChanges().listen((uid) {
+    try {
+      final repository = ref.read(authRepositoryProvider);
+      final uid = await repository.ensureSignedIn();
       state = state.copyWith(uid: uid, isAnonymous: repository.isAnonymous);
-    });
-    ref.onDispose(subscription.cancel);
+
+      final subscription = repository.uidChanges().listen((uid) {
+        state = state.copyWith(uid: uid, isAnonymous: repository.isAnonymous);
+      });
+      ref.onDispose(subscription.cancel);
+    } catch (_) {
+      // Anonymous sign-in can fail (no network on a device's very first
+      // launch). Leave [state] at build()'s default (`uid: null`) rather
+      // than letting an unhandled error escape this un-awaited bootstrap —
+      // every consumer of [currentUidProvider] already treats `null` as
+      // "no session yet", the same state a slow-but-eventually-successful
+      // sign-in passes through anyway.
+    }
   }
 
   /// Upgrades the current anonymous session to a permanent one backed by a
