@@ -521,63 +521,66 @@ void main() {
           .called(1);
     });
 
-    test('the profile doc doesn\'t exist yet (ensureFriendProfileProvider\'s '
-        'own bootstrap hasn\'t landed) — still applies the email-derived '
-        'default rather than leaving the generic placeholder for good '
-        '(regression: used to only read the profile and bail out on null)',
-        () async {
-      final authRepository = _MockAuthRepository();
-      final googleAuthService = _MockGoogleAuthService();
-      final userProfileRepository = _MockUserProfileRepository();
-      when(() => googleAuthService.signIn())
-          .thenAnswer((_) async => const GoogleAuthTokens(idToken: 'id-token'));
-      when(
-        () => authRepository.linkWithGoogleCredential(
-          idToken: any(named: 'idToken'),
-        ),
-      ).thenAnswer((_) async => 'pupa@gmail.com');
+    test(
+      'the profile doc doesn\'t exist yet (ensureFriendProfileProvider\'s '
+      'own bootstrap hasn\'t landed) — still applies the email-derived '
+      'default rather than leaving the generic placeholder for good '
+      '(regression: used to only read the profile and bail out on null)',
+      () async {
+        final authRepository = _MockAuthRepository();
+        final googleAuthService = _MockGoogleAuthService();
+        final userProfileRepository = _MockUserProfileRepository();
+        when(
+          () => googleAuthService.signIn(),
+        ).thenAnswer((_) async => const GoogleAuthTokens(idToken: 'id-token'));
+        when(
+          () => authRepository.linkWithGoogleCredential(
+            idToken: any(named: 'idToken'),
+          ),
+        ).thenAnswer((_) async => 'pupa@gmail.com');
 
-      // Mirrors the real repository: `watchProfile` sees nothing until
-      // `createInitialProfileIfAbsent` actually creates the doc.
-      var created = false;
-      when(
-        () => userProfileRepository.createInitialProfileIfAbsent(
-          'uid-1',
-          nickname: any(named: 'nickname'),
-          avatarPresetIndex: any(named: 'avatarPresetIndex'),
-        ),
-      ).thenAnswer((_) async {
-        created = true;
-      });
-      when(() => userProfileRepository.watchProfile('uid-1')).thenAnswer(
-        (_) => Stream.value(
-          created
-              ? FriendProfile(
-                  uid: 'uid-1',
-                  nickname: defaultStarterNickname('uid-1'),
-                  avatarPresetIndex: 0,
-                )
-              : null,
-        ),
-      );
-      when(() => userProfileRepository.updateNickname('uid-1', 'pupa'))
-          .thenAnswer((_) async {});
+        // Mirrors the real repository: `watchProfile` sees nothing until
+        // `createInitialProfileIfAbsent` actually creates the doc.
+        var created = false;
+        when(
+          () => userProfileRepository.createInitialProfileIfAbsent(
+            'uid-1',
+            nickname: any(named: 'nickname'),
+            avatarPresetIndex: any(named: 'avatarPresetIndex'),
+          ),
+        ).thenAnswer((_) async {
+          created = true;
+        });
+        when(() => userProfileRepository.watchProfile('uid-1')).thenAnswer(
+          (_) => Stream.value(
+            created
+                ? FriendProfile(
+                    uid: 'uid-1',
+                    nickname: defaultStarterNickname('uid-1'),
+                    avatarPresetIndex: 0,
+                  )
+                : null,
+          ),
+        );
+        when(() => userProfileRepository.updateNickname('uid-1', 'pupa'))
+            .thenAnswer((_) async {});
 
-      final container = buildContainer(
-        authRepository: authRepository,
-        googleAuthService: googleAuthService,
-        userProfileRepository: userProfileRepository,
-      );
-      addTearDown(container.dispose);
+        final container = buildContainer(
+          authRepository: authRepository,
+          googleAuthService: googleAuthService,
+          userProfileRepository: userProfileRepository,
+        );
+        addTearDown(container.dispose);
 
-      final outcome = await container
-          .read(authControllerProvider.notifier)
-          .upgradeWithGoogle();
+        final outcome = await container
+            .read(authControllerProvider.notifier)
+            .upgradeWithGoogle();
 
-      expect(outcome, GoogleUpgradeOutcome.success);
-      verify(() => userProfileRepository.updateNickname('uid-1', 'pupa'))
-          .called(1);
-    });
+        expect(outcome, GoogleUpgradeOutcome.success);
+        verify(() => userProfileRepository.updateNickname('uid-1', 'pupa'))
+            .called(1);
+      },
+    );
 
     test('every numbered variant up to the cap also being taken still does '
         'not fail the upgrade — the placeholder is left in place rather than '
