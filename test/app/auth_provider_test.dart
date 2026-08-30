@@ -310,75 +310,70 @@ void main() {
       expect(container.read(authControllerProvider).uid, 'existing-uid');
     });
 
-    test(
-      "the device's own cold-start restore from drift hasn't finished yet "
-      'when reconciliation runs — waits for it rather than treating real, '
-      'not-yet-loaded local progress as zero (regression: a bare '
-      '`ref.read(selectedJourneyProvider)` could still see the pre-restore '
-      '`null` here, silently letting a smaller cloud total overwrite '
-      'genuine local progress via restoreFromCloud)',
-      () async {
-        when(() => progressSyncRepository.fetchCurrentProgress('existing-uid'))
-            .thenAnswer(
-              (_) async => RemoteQuestProgress(
-                journeyId: 'odyssey-ithaca',
-                meters: 1000,
-                startedAt: DateTime.utc(2026, 3, 1),
-              ),
-            );
+    test("the device's own cold-start restore from drift hasn't finished yet "
+        'when reconciliation runs — waits for it rather than treating real, '
+        'not-yet-loaded local progress as zero (regression: a bare '
+        '`ref.read(selectedJourneyProvider)` could still see the pre-restore '
+        '`null` here, silently letting a smaller cloud total overwrite '
+        'genuine local progress via restoreFromCloud)', () async {
+      when(() => progressSyncRepository.fetchCurrentProgress('existing-uid'))
+          .thenAnswer(
+            (_) async => RemoteQuestProgress(
+              journeyId: 'odyssey-ithaca',
+              meters: 1000,
+              startedAt: DateTime.utc(2026, 3, 1),
+            ),
+          );
 
-        // Writes straight to drift — unlike the other tests in this group,
-        // this deliberately never touches `selectedJourneyProvider` first,
-        // so its own `SelectedJourney.build()` (and so its unawaited
-        // cold-start `_restore()`) hasn't run yet when `upgradeWithGoogle()`
-        // is called below, the same way a freshly cold-started app hasn't
-        // read it yet either.
-        final startedAt = DateTime(2026, 3, 1);
-        await db
-            .into(db.selectedQuestRows)
-            .insertOnConflictUpdate(
-              SelectedQuestRowsCompanion.insert(
-                ownerId: localOwnerId,
-                journeyId: 'odyssey-ithaca',
-                startedAt: startedAt.toUtc(),
-              ),
-            );
-        await db
-            .into(db.stepIntervalRecords)
-            .insert(
-              StepIntervalRecordsCompanion.insert(
-                ownerId: localOwnerId,
-                journeyId: 'odyssey-ithaca',
-                intervalStart: startedAt.toUtc(),
-                intervalEnd: DateTime(2026, 3, 15).toUtc(),
-                steps: 0,
-                resolvedMeters: 90000,
-                syncedAt: DateTime(2026, 3, 15).toUtc(),
-              ),
-            );
+      // Writes straight to drift — unlike the other tests in this group,
+      // this deliberately never touches `selectedJourneyProvider` first,
+      // so its own `SelectedJourney.build()` (and so its unawaited
+      // cold-start `_restore()`) hasn't run yet when `upgradeWithGoogle()`
+      // is called below, the same way a freshly cold-started app hasn't
+      // read it yet either.
+      final startedAt = DateTime(2026, 3, 1);
+      await db
+          .into(db.selectedQuestRows)
+          .insertOnConflictUpdate(
+            SelectedQuestRowsCompanion.insert(
+              ownerId: localOwnerId,
+              journeyId: 'odyssey-ithaca',
+              startedAt: startedAt.toUtc(),
+            ),
+          );
+      await db
+          .into(db.stepIntervalRecords)
+          .insert(
+            StepIntervalRecordsCompanion.insert(
+              ownerId: localOwnerId,
+              journeyId: 'odyssey-ithaca',
+              intervalStart: startedAt.toUtc(),
+              intervalEnd: DateTime(2026, 3, 15).toUtc(),
+              steps: 0,
+              resolvedMeters: 90000,
+              syncedAt: DateTime(2026, 3, 15).toUtc(),
+            ),
+          );
 
-        final container = buildContainer();
+      final container = buildContainer();
 
-        await container
-            .read(authControllerProvider.notifier)
-            .upgradeWithGoogle();
+      await container.read(authControllerProvider.notifier).upgradeWithGoogle();
 
-        // The real, larger, persisted local total won — it was never
-        // overwritten by the smaller cloud total, and it's actually
-        // reflected in the provider's state (not stuck at the pre-restore
-        // `null`).
-        expect(container.read(selectedJourneyProvider)!.progressMeters, 90000);
-        verify(
-          () => progressSyncRepository.pushProgress(
-            uid: 'existing-uid',
-            journeyId: 'odyssey-ithaca',
-            meters: 90000,
-            startedAt: startedAt,
-            isCurrent: true,
-          ),
-        ).called(1);
-      },
-    );
+      // The real, larger, persisted local total won — it was never
+      // overwritten by the smaller cloud total, and it's actually
+      // reflected in the provider's state (not stuck at the pre-restore
+      // `null`).
+      expect(container.read(selectedJourneyProvider)!.progressMeters, 90000);
+      verify(
+        () => progressSyncRepository.pushProgress(
+          uid: 'existing-uid',
+          journeyId: 'odyssey-ithaca',
+          meters: 90000,
+          startedAt: startedAt,
+          isCurrent: true,
+        ),
+      ).called(1);
+    });
   });
 
   group('upgradeWithGoogle — default nickname from the Google email (§14)', () {
