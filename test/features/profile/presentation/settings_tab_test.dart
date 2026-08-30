@@ -51,6 +51,34 @@ class _FixedAuthController extends AuthController {
   AuthState build() => _state;
 }
 
+/// A plain mutable counter — `overrideWith`'s factory is called again on
+/// every `ref.invalidate`, creating a fresh `_RecoveringAuthController`
+/// instance each time, so the attempt count has to live outside the
+/// notifier itself to survive across invalidations.
+class _Counter {
+  int value = 0;
+}
+
+/// An `AuthController` that starts with no uid at all (mirroring
+/// `_bootstrap()`'s own anonymous-sign-in-failed fallback) and only resolves
+/// one once its `build()` is re-run — used by the regression test below for
+/// the nickname row's retry, which must re-run *this* build, not just
+/// `ensureFriendProfileProvider`'s.
+class _RecoveringAuthController extends AuthController {
+  _RecoveringAuthController(this._attempts);
+
+  final _Counter _attempts;
+
+  @override
+  AuthState build() {
+    final state = _attempts.value == 0
+        ? const AuthState()
+        : const AuthState(uid: 'uid-1', isAnonymous: false);
+    _attempts.value++;
+    return state;
+  }
+}
+
 /// A `LockScreenController` with a fixed state — same fake pattern
 /// `permission_gate_test.dart` uses for `StepsSync` — so the
 /// `healthConnectMissing` render below doesn't depend on
@@ -82,6 +110,10 @@ Widget _wrap(
   // "never a real platform plugin in a widget test" rule as the lock-screen
   // fakes below applies to `AuthController`'s real Firebase bootstrap.
   AuthState authState = const AuthState(isAnonymous: true),
+  // Escape hatch for a test that needs `authControllerProvider.build()` to
+  // actually re-run on invalidation (e.g. `_RecoveringAuthController`)
+  // rather than always answer with the same fixed `authState`.
+  AuthController Function()? authControllerFactory,
   GoogleAuthService? googleAuthService,
   AuthRepository? authRepository,
   UserProfileRepository? userProfileRepository,
@@ -113,7 +145,7 @@ Widget _wrap(
       androidLockScreenChannelProvider.overrideWithValue(channel),
       stepCountingServiceProvider.overrideWithValue(stepCountingService),
       authControllerProvider.overrideWith(
-        () => _FixedAuthController(authState),
+        authControllerFactory ?? () => _FixedAuthController(authState),
       ),
       if (googleAuthService != null)
         googleAuthServiceProvider.overrideWithValue(googleAuthService),
@@ -395,6 +427,55 @@ void main() {
           avatarPresetIndex: any(named: 'avatarPresetIndex'),
         ),
       ).called(greaterThanOrEqualTo(2));
+    },
+  );
+
+  testWidgets(
+    'tapping the nickname row when no uid ever resolved (the anonymous '
+    'sign-in itself failed, e.g. no network on cold start) retries the auth '
+    'bootstrap too, not just ensureFriendProfileProvider — regression: the '
+    "retry used to invalidate only ensureFriendProfileProvider, which just "
+    "no-ops forever on a null uid, so the row stayed stuck on \"loading\" "
+    'even after being tapped',
+    (tester) async {
+      final userProfileRepository = _MockUserProfileRepository();
+      when(
+        () => userProfileRepository.createInitialProfileIfAbsent(
+          'uid-1',
+          nickname: any(named: 'nickname'),
+          avatarPresetIndex: any(named: 'avatarPresetIndex'),
+        ),
+      ).thenAnswer((_) async {});
+      when(() => userProfileRepository.watchProfile('uid-1')).thenAnswer(
+        (_) => Stream.value(
+          const FriendProfile(
+            uid: 'uid-1',
+            nickname: 'Odysseus',
+            avatarPresetIndex: 0,
+          ),
+        ),
+      );
+
+      final attempts = _Counter();
+      await tester.pumpWidget(
+        _wrap(
+          const SettingsTab(),
+          authControllerFactory: () => _RecoveringAuthController(attempts),
+          userProfileRepository: userProfileRepository,
+        ),
+      );
+      await tester.pump();
+
+      // No uid yet — the row shows the loading placeholder.
+      expect(find.text('—'), findsOneWidget);
+
+      await tester.tap(find.text('—'));
+      await tester.pumpAndSettle();
+
+      // The retried bootstrap now resolves a uid, whose profile stream
+      // immediately has a real nickname — the row must actually recover,
+      // not just re-show the same "not ready" snackbar forever.
+      expect(find.text('Odysseus'), findsOneWidget);
     },
   );
 
