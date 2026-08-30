@@ -36,6 +36,10 @@
   "@journeyNarrativeComingSoon": {
     "description": "Empty-state line shown where a NarrativeBeat will render once quest content exists (Phase 11) — this is a UI empty state, not quest narrative itself (§11)"
   },
+  "journeyReturnToYouButton": "You",
+  "@journeyReturnToYouButton": {
+    "description": "Small button shown on the Путь scene only while the view is rewound away from the traveler's real position — jumps back to it (§6.1's 'You >' anchor). Also its accessibility label."
+  },
 
   "stepsPermissionExplainTitle": "Let your steps move you",
   "@stepsPermissionExplainTitle": {"description": "Title of the card explaining why step access is requested, shown before the OS prompt (§7)"},

@@ -164,6 +164,12 @@ abstract class AppLocalizations {
   /// **'Narrative for this stretch of the road is still being written.'**
   String get journeyNarrativeComingSoon;
 
+  /// Small button shown on the Путь scene only while the view is rewound away from the traveler's real position — jumps back to it (§6.1's 'You >' anchor). Also its accessibility label.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get journeyReturnToYouButton;
+
   /// Title of the card explaining why step access is requested, shown before the OS prompt (§7)
   ///
   /// In en, this message translates to:

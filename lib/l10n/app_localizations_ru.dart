@@ -66,6 +66,9 @@ class AppLocalizationsRu extends AppLocalizations {
       'Рассказ об этом участке пути ещё пишется.';
 
   @override
+  String get journeyReturnToYouButton => 'Вы';
+
+  @override
   String get stepsPermissionExplainTitle => 'Пусть шаги двигают вас';
 
   @override

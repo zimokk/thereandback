@@ -46,6 +46,11 @@ import 'journey_providers.dart';
 ///   как будто тень, показывая где он был"). Hidden once it would coincide
 ///   with the solid marker (`_panMeters == progressMeters`, i.e. currently
 ///   looking at `You`) — one figure there, not two overlapping ones.
+/// - A small [_ReturnToYouButton] appears in the corner whenever the ghost
+///   is showing — the same rewound-away-from-You condition — and jumps
+///   [_JourneyPathViewState._returnToYou] straight back, animated
+///   ("прыжок анимированный, не мгновенный", same rule the eventual `You >`
+///   anchor above follows).
 ///
 /// Whenever the view is at `You` (`_panMeters == progressMeters`) when new
 /// progress lands, the pan follows it forward automatically — "riding
@@ -77,7 +82,8 @@ class JourneyPathView extends ConsumerStatefulWidget {
   ConsumerState<JourneyPathView> createState() => _JourneyPathViewState();
 }
 
-class _JourneyPathViewState extends ConsumerState<JourneyPathView> {
+class _JourneyPathViewState extends ConsumerState<JourneyPathView>
+    with SingleTickerProviderStateMixin {
   /// The route position, in meters from point A, currently centered under
   /// screen centre — ephemeral view state, not progress: it resets on
   /// rebuild and is never persisted or read by any provider (see the class
@@ -112,8 +118,17 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView> {
   /// pixels-per-meter ratio.
   double _sceneWidth = 0;
 
+  /// Drives the small "return to You" button's animated jump (see
+  /// [_returnToYou]) — `null` when no jump is in flight. Kept as a field
+  /// (rather than fire-and-forget) so a drag that starts mid-jump can stop
+  /// it (see [_onHorizontalDragUpdate]) instead of fighting it for control
+  /// of [_panMeters].
+  AnimationController? _returnController;
+
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
     if (_sceneWidth <= 0) return; // not laid out yet — nothing to scroll.
+    // A manual drag always wins over an in-flight animated jump.
+    _returnController?.stop();
     final pixelsPerMeter = _sceneWidth / metersPerScreenWidthFor(_journeyId);
     setState(() {
       // Dragging left (negative dx) reveals what's further down the route
@@ -126,6 +141,33 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView> {
         _progressMeters.toDouble(),
       );
     });
+  }
+
+  /// Jumps the view back to `You`, animated rather than an instant snap
+  /// (§6.1's "`You >`" anchor: "прыжок анимированный, не мгновенный") — the
+  /// small button that appears whenever the view is rewound away from the
+  /// real position calls this (this task's requirement).
+  void _returnToYou() {
+    final start = _panMeters;
+    final end = _progressMeters.toDouble();
+    if (start == end) return; // already there — nothing to animate.
+
+    _returnController?.dispose();
+    final controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+    final jump = CurvedAnimation(parent: controller, curve: Curves.easeOutCubic)
+        .drive(Tween<double>(begin: start, end: end));
+    jump.addListener(() => setState(() => _panMeters = jump.value));
+    _returnController = controller;
+    controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _returnController?.dispose();
+    super.dispose();
   }
 
   @override
@@ -248,6 +290,19 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView> {
                         y: solidY,
                         solid: true,
                       ),
+                      // Only while rewound away from You — once the ghost
+                      // is gone there is nowhere left to jump back to
+                      // (this task's requirement).
+                      if (showGhost)
+                        Positioned(
+                          right: AppSpacing.sm,
+                          bottom: AppSpacing.sm,
+                          child: _ReturnToYouButton(
+                            key: const Key('returnToYouButton'),
+                            label: l10n.journeyReturnToYouButton,
+                            onTap: _returnToYou,
+                          ),
+                        ),
                     ],
                   );
                 },
@@ -378,6 +433,58 @@ class _TravelerMarker extends StatelessWidget {
                   alpha: _travelerGhostOpacity,
                 ),
           size: size,
+        ),
+      ),
+    );
+  }
+}
+
+/// Diameter of [_ReturnToYouButton], in logical pixels — small, per this
+/// task's own request, not a full anchor bar (§6.1's eventual `< Start`/
+/// `You >` pair is a separate, later addition).
+const double _returnToYouButtonSize = 36;
+
+/// Icon size inside [_ReturnToYouButton], in logical pixels.
+const double _returnToYouIconSize = 18;
+
+/// The small "jump back to You" button (this task's requirement) — shown
+/// only while [_JourneyPathViewState] is rewound away from the real
+/// position ([_JourneyPathViewState.build]'s `showGhost`). A round gold-
+/// bordered button rather than a text pill, so it reads as a map/compass
+/// "recenter" control instead of competing with the achievement markers'
+/// own icon language.
+class _ReturnToYouButton extends StatelessWidget {
+  const _ReturnToYouButton({
+    super.key,
+    required this.label,
+    required this.onTap,
+  });
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        color: AppColors.surface.withValues(alpha: 0.9),
+        shape: const CircleBorder(
+          side: BorderSide(color: AppColors.gold, width: AppStroke.icon),
+        ),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: const SizedBox(
+            width: _returnToYouButtonSize,
+            height: _returnToYouButtonSize,
+            child: Icon(
+              Icons.my_location,
+              color: AppColors.gold,
+              size: _returnToYouIconSize,
+            ),
+          ),
         ),
       ),
     );

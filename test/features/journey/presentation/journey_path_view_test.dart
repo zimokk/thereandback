@@ -32,6 +32,7 @@ Widget _app(Widget child) {
 
 final _travelerSolid = find.byKey(const Key('travelerSolid'));
 final _travelerGhost = find.byKey(const Key('travelerGhost'));
+final _returnToYouButton = find.byKey(const Key('returnToYouButton'));
 
 void main() {
   testWidgets(
@@ -267,6 +268,140 @@ void main() {
       );
     },
   );
+
+  group('return-to-You button', () {
+    testWidgets('hidden at You, appears once rewound', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+          ],
+          child: _app(const JourneyPathView()),
+        ),
+      );
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(JourneyPathView)),
+      );
+      final notifier = container.read(selectedJourneyProvider.notifier);
+      notifier.start('odyssey-ithaca', now: DateTime.now());
+      notifier.applySyncedProgress(
+        progressMeters: 500000,
+        syncedAt: DateTime.now(),
+      );
+      await tester.pump();
+
+      expect(_returnToYouButton, findsNothing);
+
+      await tester.drag(
+        find.byKey(const Key('journeyPathScene')),
+        const Offset(200, 0),
+      );
+      await tester.pump();
+
+      expect(_returnToYouButton, findsOneWidget);
+    });
+
+    testWidgets(
+      'tapping it animates the view back to You — the ghost disappears '
+      'and the solid traveler ends up centred again',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+            ],
+            child: _app(const JourneyPathView()),
+          ),
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(JourneyPathView)),
+        );
+        final notifier = container.read(selectedJourneyProvider.notifier);
+        notifier.start('odyssey-ithaca', now: DateTime.now());
+        notifier.applySyncedProgress(
+          progressMeters: 500000,
+          syncedAt: DateTime.now(),
+        );
+        await tester.pump();
+
+        await tester.drag(
+          find.byKey(const Key('journeyPathScene')),
+          const Offset(200, 0),
+        );
+        await tester.pump();
+        expect(_travelerGhost, findsOneWidget);
+
+        await tester.tap(_returnToYouButton);
+        // The jump is animated (§6.1: "не мгновенно"), not instant — pump
+        // through it rather than a single frame.
+        await tester.pumpAndSettle();
+
+        expect(_travelerGhost, findsNothing);
+        expect(_returnToYouButton, findsNothing);
+        final screenWidth = tester.getSize(find.byType(JourneyPathView)).width;
+        expect(
+          tester.getCenter(_travelerSolid).dx,
+          moreOrLessEquals(screenWidth / 2, epsilon: 1),
+        );
+      },
+    );
+
+    testWidgets(
+      'starting a new drag mid-jump stops the animation instead of '
+      'fighting it for control of the pan',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+            ],
+            child: _app(const JourneyPathView()),
+          ),
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(JourneyPathView)),
+        );
+        final notifier = container.read(selectedJourneyProvider.notifier);
+        notifier.start('odyssey-ithaca', now: DateTime.now());
+        notifier.applySyncedProgress(
+          progressMeters: 500000,
+          syncedAt: DateTime.now(),
+        );
+        await tester.pump();
+
+        await tester.drag(
+          find.byKey(const Key('journeyPathScene')),
+          const Offset(200, 0),
+        );
+        await tester.pump();
+
+        await tester.tap(_returnToYouButton);
+        // Only a few frames in — the animation is still mid-flight.
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(_travelerGhost, findsOneWidget);
+        final midJumpX = tester.getCenter(_travelerGhost).dx;
+
+        // A fresh drag interrupts the jump — it should not throw, and the
+        // view should end up wherever the drag left it, not snap back to
+        // wherever the jump was headed.
+        await tester.drag(
+          find.byKey(const Key('journeyPathScene')),
+          const Offset(50, 0),
+        );
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+        expect(_travelerGhost, findsOneWidget);
+        expect(
+          tester.getCenter(_travelerGhost).dx,
+          isNot(moreOrLessEquals(midJumpX, epsilon: 0.5)),
+        );
+      },
+    );
+  });
 
   testWidgets("the line's height at a given route position doesn't change just "
       'because the view has been rewound further — fixed terrain the camera '

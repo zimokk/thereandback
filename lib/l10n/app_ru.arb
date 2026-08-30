@@ -14,6 +14,7 @@
   "journeyCatalogStartButton": "Начать поход",
   "journeyDayCounter": "День {day}",
   "journeyNarrativeComingSoon": "Рассказ об этом участке пути ещё пишется.",
+  "journeyReturnToYouButton": "Вы",
 
   "stepsPermissionExplainTitle": "Пусть шаги двигают вас",
   "stepsPermissionExplainBody": "There and Back читает данные о шагах и пройденном расстоянии, чтобы двигать вашего путника по маршруту. Эти данные не покидают устройство — кроме итогового прогресса по квесту.",

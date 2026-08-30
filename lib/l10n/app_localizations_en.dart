@@ -62,6 +62,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Narrative for this stretch of the road is still being written.';
 
   @override
+  String get journeyReturnToYouButton => 'You';
+
+  @override
   String get stepsPermissionExplainTitle => 'Let your steps move you';
 
   @override
