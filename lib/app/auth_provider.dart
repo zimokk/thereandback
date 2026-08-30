@@ -10,6 +10,7 @@ import '../data/firebase/firebase_providers.dart';
 import '../data/firebase/google_sign_in_service.dart';
 import '../data/firestore/firestore_providers.dart';
 import '../data/firestore/user_profile_repository.dart';
+import '../features/friends/domain/friendship.dart' show pinColorIndexForUid;
 import '../features/journey/presentation/journey_providers.dart';
 
 part 'auth_provider.freezed.dart';
@@ -222,12 +223,27 @@ class AuthController extends _$AuthController {
   /// land on one rather than a `Traveler-xxxxxx` placeholder just because
   /// the exact email-derived name happened to be taken).
   ///
+  /// Ensures `users/{uid}` exists (the same idempotent
+  /// [UserProfileRepository.createInitialProfileIfAbsent] call
+  /// `ensureFriendProfileProvider` makes) before deciding whether the
+  /// nickname is still the default — **not** a former bug's own read-only
+  /// check. That used to just read the profile and bail out on `null`,
+  /// which raced `ensureFriendProfileProvider`'s own lazy bootstrap: on a
+  /// fresh anonymous session, the Google upgrade can complete (cached
+  /// account, no picker shown) before that background write ever lands, so
+  /// this saw no profile, did nothing, and the placeholder created moments
+  /// later by the other bootstrap never got renamed — no default nickname
+  /// ever showed up. Calling it here too is safe either way it races:
+  /// `createInitialProfileIfAbsent`'s own transaction already de-dupes two
+  /// concurrent creators of the exact same uid+nickname (the loser throws
+  /// `NicknameTakenException`, caught by whichever caller runs second).
+  ///
   /// Best-effort and never lets a problem here undo the upgrade that
-  /// already succeeded: no email, a not-yet-existing profile, every
-  /// numbered variant up to the cap also being taken, or any other failure
-  /// (e.g. this device being offline) all just leave the placeholder in
-  /// place silently — the user can still rename themselves by hand
-  /// (§6.5), so this is a convenience, not a guarantee.
+  /// already succeeded: no email, every numbered variant up to the cap
+  /// also being taken, or any other failure (e.g. this device being
+  /// offline) all just leave the placeholder in place silently — the user
+  /// can still rename themselves by hand (§6.5), so this is a convenience,
+  /// not a guarantee.
   Future<void> _applyDefaultNicknameFromGoogleEmail(
     String uid,
     String? email,
@@ -238,6 +254,18 @@ class AuthController extends _$AuthController {
 
     try {
       final profileRepository = ref.read(userProfileRepositoryProvider);
+      try {
+        await profileRepository.createInitialProfileIfAbsent(
+          uid,
+          nickname: defaultStarterNickname(uid),
+          avatarPresetIndex: pinColorIndexForUid(uid),
+        );
+      } on NicknameTakenException {
+        // Lost the create race to `ensureFriendProfileProvider`'s own
+        // bootstrap running concurrently — the profile exists either way,
+        // which is all this call needed; fall through to the rename check
+        // below rather than treating this as a failure.
+      }
       final profile = await profileRepository.watchProfile(uid).first;
       final isStillDefault =
           profile != null && profile.nickname == defaultStarterNickname(uid);

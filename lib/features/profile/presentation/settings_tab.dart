@@ -196,15 +196,23 @@ Future<void> _signInWithGoogle(
 }
 
 /// Handles a tap on the nickname row while [SettingsTab] hasn't resolved a
-/// nickname yet — retries [ensureFriendProfileProvider] (in case its first
-/// write failed, e.g. a transient Firestore error, and just never got
-/// another chance) and tells the user why nothing opened, rather than the
-/// tap being a silent no-op.
+/// nickname yet. Retries both [authControllerProvider] and
+/// [ensureFriendProfileProvider] — not just the latter: if the very first
+/// anonymous sign-in failed (no network on cold start, the one case
+/// `AuthController._bootstrap()`'s own catch already anticipates),
+/// `currentUidProvider` stays `null` forever, `ensureFriendProfileProvider`
+/// then no-ops on every call (it bails out immediately when `uid == null`),
+/// and re-invalidating only it retried the wrong thing — this row's
+/// "loading" message never went away even after a tap. Re-running
+/// `authControllerProvider`'s `build()` gives the anonymous sign-in itself
+/// another chance; `ensureFriendProfileProvider` also still covers its own
+/// original case (the profile write failing after a uid already existed).
 void _retryProfileLoad(
   BuildContext context,
   WidgetRef ref,
   AppLocalizations l10n,
 ) {
+  ref.invalidate(authControllerProvider);
   ref.invalidate(ensureFriendProfileProvider);
   showAppSnackBar(context, l10n.settingsNicknameNotReadyMessage);
 }
