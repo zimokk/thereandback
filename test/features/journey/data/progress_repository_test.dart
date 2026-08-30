@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:test/test.dart';
 import 'package:thereandback/data/drift/database.dart';
 import 'package:thereandback/features/journey/data/progress_repository.dart';
@@ -173,6 +174,159 @@ void main() {
       expect(result, hasLength(1));
       expect(result.single.meters, 75);
       expect(result.single.end, DateTime.utc(2026, 3, 10, 0, 10).toLocal());
+    });
+  });
+
+  group('restoreFromCloud (§8, §14 — "repeat login")', () {
+    test(
+      'a fresh owner with no prior quest loads the cloud total back',
+      () async {
+        final startedAt = DateTime.utc(2026, 3, 1);
+        final asOf = DateTime.utc(2026, 3, 10);
+
+        await repository.restoreFromCloud(
+          'owner-1',
+          journeyId: 'odyssey-ithaca',
+          startedAt: startedAt,
+          meters: 5230,
+          asOf: asOf,
+        );
+
+        final quest = await repository.loadSelectedQuest('owner-1');
+        expect(quest, isNotNull);
+        expect(quest!.journeyId, 'odyssey-ithaca');
+        expect(quest.startedAt, startedAt.toLocal());
+        expect(quest.progressMeters, 5230);
+        expect(quest.lastSyncedAt, asOf.toLocal());
+      },
+    );
+
+    test('clears this owner+journey\'s existing intervals first — the old '
+        'local total never keeps summing alongside the restored one', () async {
+      await repository.startQuest(
+        'owner-1',
+        journeyId: 'odyssey-ithaca',
+        startedAt: DateTime.utc(2026, 3, 1),
+      );
+      await db
+          .into(db.stepIntervalRecords)
+          .insert(
+            StepIntervalRecordsCompanion.insert(
+              ownerId: 'owner-1',
+              journeyId: 'odyssey-ithaca',
+              intervalStart: DateTime.utc(2026, 3, 1),
+              intervalEnd: DateTime.utc(2026, 3, 1, 0, 10),
+              steps: 100,
+              resolvedMeters: 75,
+              syncedAt: DateTime.utc(2026, 3, 1, 0, 10),
+            ),
+          );
+
+      await repository.restoreFromCloud(
+        'owner-1',
+        journeyId: 'odyssey-ithaca',
+        startedAt: DateTime.utc(2026, 3, 5),
+        meters: 400000,
+        asOf: DateTime.utc(2026, 3, 20),
+      );
+
+      final quest = await repository.loadSelectedQuest('owner-1');
+      // Not 400075 — the pre-restore 75 m local interval must be gone,
+      // not summed alongside the cloud total.
+      expect(quest!.progressMeters, 400000);
+    });
+
+    test(
+      'a zero cloud total seeds no interval row, so the next real sync\'s '
+      'own intervalStart (== lastSyncedAt) never collides with a seed row '
+      'at the same instant and gets silently dropped by insertOrIgnore',
+      () async {
+        final startedAt = DateTime.utc(2026, 3, 1);
+
+        await repository.restoreFromCloud(
+          'owner-1',
+          journeyId: 'odyssey-ithaca',
+          startedAt: startedAt,
+          meters: 0,
+          asOf: startedAt,
+        );
+
+        final quest = await repository.loadSelectedQuest('owner-1');
+        expect(quest!.progressMeters, 0);
+        expect(quest.lastSyncedAt, startedAt.toLocal());
+
+        final rows = await db.select(db.stepIntervalRecords).get();
+        expect(rows, isEmpty);
+      },
+    );
+
+    test(
+      'a real sync recorded right after a non-zero restore is not dropped '
+      'by the idempotency key — its intervalStart (the restore\'s asOf) '
+      'never collides with the seed row\'s own intervalStart (startedAt)',
+      () async {
+        final startedAt = DateTime.utc(2026, 3, 1);
+        final asOf = DateTime.utc(2026, 3, 10);
+
+        await repository.restoreFromCloud(
+          'owner-1',
+          journeyId: 'odyssey-ithaca',
+          startedAt: startedAt,
+          meters: 5000,
+          asOf: asOf,
+        );
+
+        final inserted = await db
+            .into(db.stepIntervalRecords)
+            .insertReturningOrNull(
+              StepIntervalRecordsCompanion.insert(
+                ownerId: 'owner-1',
+                journeyId: 'odyssey-ithaca',
+                intervalStart: asOf,
+                intervalEnd: DateTime.utc(2026, 3, 10, 0, 10),
+                steps: 100,
+                resolvedMeters: 75,
+                syncedAt: DateTime.utc(2026, 3, 10, 0, 10),
+              ),
+              mode: InsertMode.insertOrIgnore,
+            );
+        expect(inserted, isNotNull);
+
+        final quest = await repository.loadSelectedQuest('owner-1');
+        expect(quest!.progressMeters, 5075);
+      },
+    );
+
+    test('a different owner\'s progress is untouched by a restore', () async {
+      await repository.startQuest(
+        'owner-2',
+        journeyId: 'odyssey-ithaca',
+        startedAt: DateTime.utc(2026, 3, 1),
+      );
+      await db
+          .into(db.stepIntervalRecords)
+          .insert(
+            StepIntervalRecordsCompanion.insert(
+              ownerId: 'owner-2',
+              journeyId: 'odyssey-ithaca',
+              intervalStart: DateTime.utc(2026, 3, 1),
+              intervalEnd: DateTime.utc(2026, 3, 1, 0, 10),
+              steps: 100,
+              resolvedMeters: 75,
+              syncedAt: DateTime.utc(2026, 3, 1, 0, 10),
+            ),
+          );
+
+      await repository.restoreFromCloud(
+        'owner-1',
+        journeyId: 'odyssey-ithaca',
+        startedAt: DateTime.utc(2026, 3, 5),
+        meters: 400000,
+        asOf: DateTime.utc(2026, 3, 20),
+      );
+
+      final other = await repository.loadSelectedQuest('owner-2');
+      expect(other!.progressMeters, 75);
     });
   });
 }

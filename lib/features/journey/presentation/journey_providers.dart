@@ -50,6 +50,15 @@ class SelectedJourney extends _$SelectedJourney {
     if (restored != null) state = restored;
   }
 
+  /// Re-reads the persisted quest from drift, discarding whatever is
+  /// currently in memory. Used by `AuthController`
+  /// (`app/auth_provider.dart`, §8, §14 — "repeat login") after it writes a
+  /// reconciled cloud total into drift via `ProgressRepository
+  /// .restoreFromCloud` behind this provider's back — this state needs to
+  /// be told to catch up, the same way [build]'s own [_restore] call
+  /// populates it on a cold start.
+  Future<void> reload() => _restore();
+
   /// Starts a quest. `lastSyncedAt` seeds to the exact moment the user
   /// tapped "Start quest" (§5.2) — steps taken earlier that day, before the
   /// quest existed, are never counted.

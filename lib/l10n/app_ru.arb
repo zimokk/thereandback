@@ -5,6 +5,7 @@
   "navQuestStats": "Карта",
   "navAchievements": "Трофеи",
   "navFriends": "Друзья",
+  "navFriendsLockedTooltip": "Сначала войдите и задайте ник в Настройках",
   "navSettings": "Настройки",
 
   "unitMeters": "{count, plural, one{метр} few{метра} many{метров} other{метра}}",
@@ -67,6 +68,7 @@
   "settingsSignedInTitle": "Вы вошли",
   "settingsSignedInSubtitle": "Аккаунт Google привязан — друзья могут найти вас по нику.",
   "settingsSignInSuccessMessage": "Вход через Google выполнен.",
+  "settingsSignInRestoredMessage": "Вход выполнен — синхронизировано с вашим существующим аккаунтом.",
   "settingsSignInErrorMessage": "Не удалось войти — попробуйте ещё раз.",
   "settingsNicknameSectionTitle": "Ник",
   "settingsNicknameLoading": "—",
@@ -124,11 +126,12 @@
   "friendsRemoveButton": "Удалить",
   "friendsEmptyTitle": "Пока нет друзей",
   "friendsEmptyBody": "Добавьте друга по нику, чтобы сравнить прогресс в квесте.",
+  "friendsLockedTitle": "Друзья пока недоступны",
+  "friendsLockedBody": "Войдите и задайте ник в Настройках, чтобы видеть и добавлять друзей.",
   "friendsOutcomeSent": "Заявка в друзья отправлена.",
   "friendsOutcomeNicknameNotFound": "Пользователь с таким ником не найден.",
   "friendsOutcomeCannotAddSelf": "Это ваш собственный ник.",
   "friendsOutcomeAlreadyExists": "Вы уже связаны с этим пользователем.",
   "friendsOutcomeNotSignedIn": "Не удалось войти — попробуйте ещё раз через момент.",
-  "friendsOutcomeUpgradeCancelled": "Чтобы добавлять друзей, нужен аккаунт Google — вход отменён.",
-  "friendsOutcomeUpgradeAlreadyLinked": "Этот аккаунт Google уже привязан к другому профилю."
+  "friendsOutcomeUpgradeCancelled": "Чтобы добавлять друзей, нужен аккаунт Google — вход отменён."
 }

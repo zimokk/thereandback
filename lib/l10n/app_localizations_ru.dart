@@ -22,6 +22,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get navFriends => 'Друзья';
 
   @override
+  String get navFriendsLockedTooltip =>
+      'Сначала войдите и задайте ник в Настройках';
+
+  @override
   String get navSettings => 'Настройки';
 
   @override
@@ -233,6 +237,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsSignInSuccessMessage => 'Вход через Google выполнен.';
 
   @override
+  String get settingsSignInRestoredMessage =>
+      'Вход выполнен — синхронизировано с вашим существующим аккаунтом.';
+
+  @override
   String get settingsSignInErrorMessage =>
       'Не удалось войти — попробуйте ещё раз.';
 
@@ -417,6 +425,13 @@ class AppLocalizationsRu extends AppLocalizations {
       'Добавьте друга по нику, чтобы сравнить прогресс в квесте.';
 
   @override
+  String get friendsLockedTitle => 'Друзья пока недоступны';
+
+  @override
+  String get friendsLockedBody =>
+      'Войдите и задайте ник в Настройках, чтобы видеть и добавлять друзей.';
+
+  @override
   String get friendsOutcomeSent => 'Заявка в друзья отправлена.';
 
   @override
@@ -437,8 +452,4 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get friendsOutcomeUpgradeCancelled =>
       'Чтобы добавлять друзей, нужен аккаунт Google — вход отменён.';
-
-  @override
-  String get friendsOutcomeUpgradeAlreadyLinked =>
-      'Этот аккаунт Google уже привязан к другому профилю.';
 }

@@ -22,6 +22,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navFriends => 'Friends';
 
   @override
+  String get navFriendsLockedTooltip =>
+      'Sign in and set a nickname in Settings first';
+
+  @override
   String get navSettings => 'Settings';
 
   @override
@@ -229,6 +233,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSignInSuccessMessage => 'Signed in with Google.';
 
   @override
+  String get settingsSignInRestoredMessage =>
+      'Signed in — synced with your existing account.';
+
+  @override
   String get settingsSignInErrorMessage =>
       'Couldn\'t sign in — please try again.';
 
@@ -413,6 +421,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Add a friend by their nickname to see how your quests compare.';
 
   @override
+  String get friendsLockedTitle => 'Friends isn\'t available yet';
+
+  @override
+  String get friendsLockedBody =>
+      'Sign in and set a nickname in Settings to see and add friends.';
+
+  @override
   String get friendsOutcomeSent => 'Friend request sent.';
 
   @override
@@ -432,8 +447,4 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get friendsOutcomeUpgradeCancelled =>
       'Adding friends needs a Google account — sign-in was cancelled.';
-
-  @override
-  String get friendsOutcomeUpgradeAlreadyLinked =>
-      'That Google account is already linked to a different profile.';
 }

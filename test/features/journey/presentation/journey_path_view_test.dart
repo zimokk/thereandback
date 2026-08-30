@@ -682,5 +682,35 @@ void main() {
         expect(find.text(expectedStatus), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'a faint dotted guide line runs from each visible marker down to the '
+      'wavy path — quest-map parity (§6.2), not just a floating icon',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+            ],
+            child: _app(const JourneyPathView()),
+          ),
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(JourneyPathView)),
+        );
+        container
+            .read(selectedJourneyProvider.notifier)
+            .start('odyssey-ithaca', now: DateTime.now());
+        await tester.pump();
+
+        // The wavy path itself is drawn with `canvas.drawPath` (a single
+        // continuous stroke); a marker's own guide is the only thing this
+        // painter ever draws with `canvas.drawLine` — so any line() call at
+        // all is evidence a guide was painted, without needing to pin down
+        // every dash segment's exact endpoints.
+        expect(find.byKey(const Key('journeyPathScene')), paints..line());
+      },
+    );
   });
 }

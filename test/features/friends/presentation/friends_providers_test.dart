@@ -438,6 +438,59 @@ void main() {
       verifyNever(() => userProfileRepository.updateNickname(any(), any()));
     });
   });
+
+  group('friendsUnlocked (this task\'s requirement — the tab stays inactive '
+      'until login + a nickname, §6.4/§6.5/§8)', () {
+    test('locked while still anonymous, even with a resolved profile', () {
+      when(() => userProfileRepository.watchProfile('me')).thenAnswer(
+        (_) => Stream.value(
+          const FriendProfile(
+            uid: 'me',
+            nickname: 'Traveler-abc123',
+            avatarPresetIndex: 0,
+          ),
+        ),
+      );
+      final container = buildContainer(
+        authState: const AuthState(uid: 'me', isAnonymous: true),
+      );
+
+      expect(container.read(friendsUnlockedProvider), isFalse);
+    });
+
+    test('locked once logged in but the profile/nickname has not resolved '
+        'yet', () {
+      when(() => userProfileRepository.watchProfile('me'))
+          .thenAnswer((_) => Stream.value(null));
+      final container = buildContainer(
+        authState: const AuthState(uid: 'me', isAnonymous: false),
+      );
+
+      expect(container.read(friendsUnlockedProvider), isFalse);
+    });
+
+    test('unlocked once logged in and the profile has a nickname', () async {
+      when(() => userProfileRepository.watchProfile('me')).thenAnswer(
+        (_) => Stream.value(
+          const FriendProfile(
+            uid: 'me',
+            nickname: 'pupa',
+            avatarPresetIndex: 0,
+          ),
+        ),
+      );
+      final container = buildContainer(
+        authState: const AuthState(uid: 'me', isAnonymous: false),
+      );
+
+      // myProfileProvider is a Stream-backed provider — its first real
+      // value needs a beat to arrive, same as every other test in this
+      // file that reads through it.
+      await container.read(myProfileProvider.future);
+
+      expect(container.read(friendsUnlockedProvider), isTrue);
+    });
+  });
 }
 
 class _CancellingGoogleAuth implements GoogleAuthService {
