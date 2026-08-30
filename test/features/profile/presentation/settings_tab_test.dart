@@ -19,12 +19,15 @@ import 'package:thereandback/features/journey/presentation/lock_screen_controlle
 import 'package:thereandback/features/journey/presentation/lock_screen_state.dart';
 import 'package:thereandback/features/profile/presentation/locale_provider.dart';
 import 'package:thereandback/features/profile/presentation/settings_tab.dart';
+import 'package:thereandback/features/steps/data/android_background_sync.dart';
 import 'package:thereandback/features/steps/data/step_counting_service.dart'
     show StepCountingService, RuntimePermissionResult;
 import 'package:thereandback/features/steps/presentation/steps_providers.dart';
 import 'package:thereandback/l10n/app_localizations.dart';
 
 class _MockChannel extends Mock implements AndroidLockScreenChannel {}
+
+class _MockBackgroundSync extends Mock implements AndroidBackgroundSync {}
 
 class _MockStepCountingService extends Mock implements StepCountingService {}
 
@@ -126,7 +129,14 @@ Widget _wrap(
   ProgressSyncRepository? progressSyncRepository,
 }) {
   final channel = _MockChannel();
+  final backgroundSync = _MockBackgroundSync();
   final stepCountingService = _MockStepCountingService();
+  // `LockScreenController.enable()` registers this once every permission is
+  // granted (`android_background_sync_test.dart`'s own real target) — never
+  // the real `Workmanager()` here, which has no platform implementation in
+  // a widget test (`lock_screen_controller_test.dart` uses the same fake).
+  when(() => backgroundSync.register()).thenAnswer((_) async {});
+  when(() => backgroundSync.cancel()).thenAnswer((_) async {});
   when(() => channel.hasNotificationPermission())
       .thenAnswer((_) async => notificationsGranted);
   when(() => stepCountingService.hasBackgroundHealthPermission())
@@ -149,6 +159,7 @@ Widget _wrap(
     overrides: [
       lockScreenSupportedProvider.overrideWithValue(lockScreenSupported),
       androidLockScreenChannelProvider.overrideWithValue(channel),
+      androidBackgroundSyncProvider.overrideWithValue(backgroundSync),
       stepCountingServiceProvider.overrideWithValue(stepCountingService),
       authControllerProvider.overrideWith(
         authControllerFactory ?? () => _FixedAuthController(authState),
