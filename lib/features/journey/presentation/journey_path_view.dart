@@ -83,7 +83,7 @@ class JourneyPathView extends ConsumerStatefulWidget {
 }
 
 class _JourneyPathViewState extends ConsumerState<JourneyPathView>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   /// The route position, in meters from point A, currently centered under
   /// screen centre — ephemeral view state, not progress: it resets on
   /// rebuild and is never persisted or read by any provider (see the class
