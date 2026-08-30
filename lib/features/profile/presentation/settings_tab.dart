@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,13 +8,15 @@ import '../../../design/colors.dart';
 import '../../../design/spacing.dart';
 import '../../../design/typography.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../friends/presentation/friends_providers.dart';
 import '../../journey/presentation/lock_screen_controller.dart';
 import '../../journey/presentation/lock_screen_state.dart';
 import 'locale_provider.dart';
 
 /// Настройки (§6.5), trimmed to what this base ships: the Google sign-in
-/// entry point and a working language switch. Everything else in §6.5
-/// (stride, privacy, permission re-request, quest change) is a later slice.
+/// entry point, an editable nickname, and a working language switch.
+/// Everything else in §6.5 (stride, privacy, permission re-request, quest
+/// change) is a later slice.
 class SettingsTab extends ConsumerWidget {
   const SettingsTab({super.key});
 
@@ -22,6 +26,13 @@ class SettingsTab extends ConsumerWidget {
     final l10n = AppLocalizations.of(context)!;
     final lockScreenSupported = ref.watch(lockScreenSupportedProvider);
     final authState = ref.watch(authControllerProvider);
+    // Bootstraps the signed-in user's own `users/{uid}` profile the first
+    // time a uid exists — same fire-and-forget call the Challengers tab
+    // makes (`ensureFriendProfileProvider`'s own doc comment). Watching it
+    // here too means the nickname row below works even for someone who
+    // never opens the Friends tab first.
+    ref.watch(ensureFriendProfileProvider);
+    final nickname = ref.watch(myProfileProvider).value?.nickname;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -65,6 +76,27 @@ class SettingsTab extends ConsumerWidget {
                 onTap: authState.isAnonymous
                     ? () => _signInWithGoogle(context, ref, l10n)
                     : null,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _SectionCard(
+              title: l10n.settingsNicknameSectionTitle,
+              child: ListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  nickname ?? l10n.settingsNicknameLoading,
+                  style: AppTypography.body.copyWith(color: AppColors.gold),
+                ),
+                trailing: const Icon(Icons.edit, color: AppColors.gold),
+                // Nothing to edit until the profile has loaded (no uid yet,
+                // or ensureFriendProfileProvider's first write hasn't
+                // landed) — same disabled-until-ready shape as the sign-in
+                // row above rather than opening a dialog with no starting
+                // value.
+                onTap: nickname == null
+                    ? null
+                    : () =>
+                          _showEditNicknameDialog(context, ref, l10n, nickname),
               ),
             ),
             if (lockScreenSupported) ...[
@@ -151,6 +183,92 @@ Future<void> _signInWithGoogle(
   }
 
   if (!context.mounted || message == null) return;
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+}
+
+/// Prompts for a new nickname, pre-filled with the current one — same
+/// dialog shape as `challengers_tab.dart`'s add-friend dialog.
+void _showEditNicknameDialog(
+  BuildContext context,
+  WidgetRef ref,
+  AppLocalizations l10n,
+  String currentNickname,
+) {
+  final controller = TextEditingController(text: currentNickname);
+  showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      backgroundColor: AppColors.surface,
+      title: Text(
+        l10n.settingsNicknameEditDialogTitle,
+        style: AppTypography.heading,
+      ),
+      content: TextField(
+        controller: controller,
+        autofocus: true,
+        style: AppTypography.body,
+        decoration: InputDecoration(labelText: l10n.settingsNicknameFieldLabel),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          child: Text(
+            l10n.settingsNicknameCancelButton,
+            style: const TextStyle(color: AppColors.textSecondary),
+          ),
+        ),
+        TextButton(
+          onPressed: () {
+            final newNickname = controller.text.trim();
+            Navigator.of(dialogContext).pop();
+            // Empty, or retyped exactly as-is — nothing to save, and
+            // updateNickname() would just reject an empty one anyway (the
+            // Firestore doc requires a non-empty `usernames/{...}` key).
+            if (newNickname.isEmpty || newNickname == currentNickname) return;
+            unawaited(_updateNickname(context, ref, l10n, newNickname));
+          },
+          child: Text(
+            l10n.settingsNicknameSaveButton,
+            style: const TextStyle(color: AppColors.gold),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+/// Renames the signed-in user's own nickname (§6.5, §8) via
+/// `FriendsController.updateNickname` — the same `usernames/{nicknameLower}`
+/// uniqueness registry "add friend by nickname" already relies on, so a
+/// taken nickname is rejected here the same way it would be there. Every
+/// `UpdateNicknameOutcome` case is rendered explicitly, plus a catch-all for
+/// anything else (mirrors `_signInWithGoogle` above — never a silent dead
+/// end, §7).
+Future<void> _updateNickname(
+  BuildContext context,
+  WidgetRef ref,
+  AppLocalizations l10n,
+  String newNickname,
+) async {
+  String message;
+  try {
+    final outcome = await ref
+        .read(friendsControllerProvider.notifier)
+        .updateNickname(newNickname);
+    message = switch (outcome) {
+      UpdateNicknameOutcome.success => l10n.settingsNicknameUpdatedMessage,
+      UpdateNicknameOutcome.nicknameTaken => l10n.settingsNicknameTakenMessage,
+      // Not reachable from this row in practice (it's disabled until a
+      // profile — and so a uid — exists), but rendered rather than assumed
+      // impossible.
+      UpdateNicknameOutcome.notSignedIn => l10n.settingsNicknameErrorMessage,
+    };
+  } catch (error) {
+    debugPrint('Nickname update failed: $error');
+    message = l10n.settingsNicknameErrorMessage;
+  }
+
+  if (!context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }
 

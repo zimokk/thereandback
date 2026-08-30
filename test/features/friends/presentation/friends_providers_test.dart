@@ -386,6 +386,58 @@ void main() {
       verifyNever(() => userProfileRepository.resolveUidForNickname(any()));
     });
   });
+
+  group('FriendsController.updateNickname', () {
+    test('a successful rename returns success', () async {
+      when(() => userProfileRepository.updateNickname('me', 'NewNick'))
+          .thenAnswer((_) async {});
+      when(() => friendshipRepository.watchMyFriendships('me'))
+          .thenAnswer((_) => Stream.value(const []));
+
+      final container = buildContainer(quest: null);
+      await container.read(friendshipsProvider.future);
+
+      final outcome = await container
+          .read(friendsControllerProvider.notifier)
+          .updateNickname('NewNick');
+
+      expect(outcome, UpdateNicknameOutcome.success);
+      verify(() => userProfileRepository.updateNickname('me', 'NewNick'))
+          .called(1);
+    });
+
+    test('a nickname already claimed by someone else returns nicknameTaken, '
+        'not a thrown exception', () async {
+      when(() => userProfileRepository.updateNickname('me', 'Taken'))
+          .thenThrow(const NicknameTakenException('Taken'));
+      when(() => friendshipRepository.watchMyFriendships('me'))
+          .thenAnswer((_) => Stream.value(const []));
+
+      final container = buildContainer(quest: null);
+      await container.read(friendshipsProvider.future);
+
+      final outcome = await container
+          .read(friendsControllerProvider.notifier)
+          .updateNickname('Taken');
+
+      expect(outcome, UpdateNicknameOutcome.nicknameTaken);
+    });
+
+    test('no signed-in uid returns notSignedIn without touching the '
+        'repository', () async {
+      final container = buildContainer(
+        quest: null,
+        authState: const AuthState(),
+      );
+
+      final outcome = await container
+          .read(friendsControllerProvider.notifier)
+          .updateNickname('Anything');
+
+      expect(outcome, UpdateNicknameOutcome.notSignedIn);
+      verifyNever(() => userProfileRepository.updateNickname(any(), any()));
+    });
+  });
 }
 
 class _CancellingGoogleAuth implements GoogleAuthService {

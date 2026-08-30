@@ -6,6 +6,9 @@ import 'package:thereandback/app/auth_provider.dart';
 import 'package:thereandback/app/theme.dart';
 import 'package:thereandback/data/firebase/auth_repository.dart';
 import 'package:thereandback/data/firebase/google_sign_in_service.dart';
+import 'package:thereandback/data/firestore/firestore_providers.dart';
+import 'package:thereandback/data/firestore/user_profile_repository.dart';
+import 'package:thereandback/features/friends/domain/friend_profile.dart';
 import 'package:thereandback/features/journey/data/android_lock_screen_channel.dart';
 import 'package:thereandback/features/journey/presentation/lock_screen_controller.dart';
 import 'package:thereandback/features/journey/presentation/lock_screen_state.dart';
@@ -23,6 +26,9 @@ class _MockStepCountingService extends Mock implements StepCountingService {}
 class _MockAuthRepository extends Mock implements AuthRepository {}
 
 class _MockGoogleAuthService extends Mock implements GoogleAuthService {}
+
+class _MockUserProfileRepository extends Mock
+    implements UserProfileRepository {}
 
 /// An [AuthController] that starts from a fixed state and skips the real
 /// `build()`'s Firebase bootstrap — same trick `auth_provider_test.dart`'s
@@ -70,6 +76,7 @@ Widget _wrap(
   AuthState authState = const AuthState(isAnonymous: true),
   GoogleAuthService? googleAuthService,
   AuthRepository? authRepository,
+  UserProfileRepository? userProfileRepository,
 }) {
   final channel = _MockChannel();
   final stepCountingService = _MockStepCountingService();
@@ -103,6 +110,8 @@ Widget _wrap(
         googleAuthServiceProvider.overrideWithValue(googleAuthService),
       if (authRepository != null)
         authRepositoryProvider.overrideWithValue(authRepository),
+      if (userProfileRepository != null)
+        userProfileRepositoryProvider.overrideWithValue(userProfileRepository),
     ],
     child: Consumer(
       builder: (context, ref, _) {
@@ -213,6 +222,139 @@ void main() {
 
       expect(find.text('Вы вошли'), findsOneWidget);
       expect(find.text('Войти'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'shows a loading placeholder before the profile has loaded, then the '
+    'nickname once ensureFriendProfileProvider\'s stream emits it',
+    (tester) async {
+      final userProfileRepository = _MockUserProfileRepository();
+      when(
+        () => userProfileRepository.createInitialProfileIfAbsent(
+          'uid-1',
+          nickname: any(named: 'nickname'),
+          avatarPresetIndex: any(named: 'avatarPresetIndex'),
+        ),
+      ).thenAnswer((_) async {});
+      when(() => userProfileRepository.watchProfile('uid-1')).thenAnswer(
+        (_) => Stream.value(
+          const FriendProfile(
+            uid: 'uid-1',
+            nickname: 'Odysseus',
+            avatarPresetIndex: 0,
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(
+        _wrap(
+          const SettingsTab(),
+          authState: const AuthState(uid: 'uid-1', isAnonymous: false),
+          userProfileRepository: userProfileRepository,
+        ),
+      );
+      // Before the first pump settles, myProfileProvider is still on its
+      // initial loading state.
+      expect(find.text('—'), findsOneWidget);
+
+      await tester.pumpAndSettle();
+
+      expect(find.text('Odysseus'), findsOneWidget);
+      expect(find.text('—'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'editing the nickname calls updateNickname and shows a success message',
+    (tester) async {
+      final userProfileRepository = _MockUserProfileRepository();
+      when(
+        () => userProfileRepository.createInitialProfileIfAbsent(
+          'uid-1',
+          nickname: any(named: 'nickname'),
+          avatarPresetIndex: any(named: 'avatarPresetIndex'),
+        ),
+      ).thenAnswer((_) async {});
+      when(() => userProfileRepository.watchProfile('uid-1')).thenAnswer(
+        (_) => Stream.value(
+          const FriendProfile(
+            uid: 'uid-1',
+            nickname: 'Odysseus',
+            avatarPresetIndex: 0,
+          ),
+        ),
+      );
+      when(() => userProfileRepository.updateNickname('uid-1', 'Nobody'))
+          .thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        _wrap(
+          const SettingsTab(),
+          authState: const AuthState(uid: 'uid-1', isAnonymous: false),
+          userProfileRepository: userProfileRepository,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Odysseus'));
+      await tester.pumpAndSettle();
+
+      // The dialog's field starts pre-filled with the current nickname —
+      // clear it and type the new one rather than appending to it.
+      await tester.enterText(find.byType(TextField), 'Nobody');
+      await tester.tap(find.text('Сохранить'));
+      await tester.pumpAndSettle();
+
+      verify(() => userProfileRepository.updateNickname('uid-1', 'Nobody'))
+          .called(1);
+      expect(find.text('Ник изменён.'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'a nickname already taken by someone else shows that specific message',
+    (tester) async {
+      final userProfileRepository = _MockUserProfileRepository();
+      when(
+        () => userProfileRepository.createInitialProfileIfAbsent(
+          'uid-1',
+          nickname: any(named: 'nickname'),
+          avatarPresetIndex: any(named: 'avatarPresetIndex'),
+        ),
+      ).thenAnswer((_) async {});
+      when(() => userProfileRepository.watchProfile('uid-1')).thenAnswer(
+        (_) => Stream.value(
+          const FriendProfile(
+            uid: 'uid-1',
+            nickname: 'Odysseus',
+            avatarPresetIndex: 0,
+          ),
+        ),
+      );
+      when(() => userProfileRepository.updateNickname('uid-1', 'Penelope'))
+          .thenThrow(const NicknameTakenException('Penelope'));
+
+      await tester.pumpWidget(
+        _wrap(
+          const SettingsTab(),
+          authState: const AuthState(uid: 'uid-1', isAnonymous: false),
+          userProfileRepository: userProfileRepository,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Odysseus'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(find.byType(TextField), 'Penelope');
+      await tester.tap(find.text('Сохранить'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Этот ник уже занят — попробуйте другой.'),
+        findsOneWidget,
+      );
     },
   );
 
