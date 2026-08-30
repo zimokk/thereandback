@@ -142,6 +142,11 @@ void main() {
       final authRepository = _MockAuthRepository();
       when(() => googleAuthService.signIn())
           .thenAnswer((_) async => const GoogleAuthTokens(idToken: 'id-token'));
+      // upgradeWithGoogle() calls this itself before linking, guarding the
+      // race where AuthController.build()'s own unawaited bootstrap hasn't
+      // finished yet (auth_provider_test.dart covers that call directly).
+      when(() => authRepository.ensureSignedIn())
+          .thenAnswer((_) async => 'anon-1');
       when(
         () => authRepository.linkWithGoogleCredential(
           idToken: any(named: 'idToken'),
@@ -170,6 +175,8 @@ void main() {
     final authRepository = _MockAuthRepository();
     when(() => googleAuthService.signIn())
         .thenAnswer((_) async => const GoogleAuthTokens(idToken: 'id-token'));
+    when(() => authRepository.ensureSignedIn())
+        .thenAnswer((_) async => 'anon-1');
     when(
       () => authRepository.linkWithGoogleCredential(
         idToken: any(named: 'idToken'),
