@@ -1,4 +1,5 @@
 import 'package:test/test.dart';
+import 'package:thereandback/core/app_theme_id.dart';
 import 'package:thereandback/features/journey/domain/journey.dart';
 import 'package:thereandback/features/journey/domain/lock_screen_snapshot.dart';
 import 'package:thereandback/features/journey/domain/quest_selection.dart';
@@ -10,6 +11,7 @@ void main() {
     pointA: 'Troy',
     pointB: 'Ithaca',
     totalMeters: 100000,
+    themeId: AppThemeId.odyssey,
   );
 
   group('buildLockScreenSnapshot', () {

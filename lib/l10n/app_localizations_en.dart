@@ -318,6 +318,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLanguageEnglish => 'English';
 
   @override
+  String get settingsThemeSectionTitle => 'Theme';
+
+  @override
+  String get settingsThemeSectionSubtitle =>
+      'Defaults to your current quest\'s own theme.';
+
+  @override
+  String get settingsThemeFollowQuest => 'Quest theme';
+
+  @override
+  String get settingsThemeClassic => 'Classic';
+
+  @override
+  String get settingsThemeOdyssey => 'Odyssey';
+
+  @override
   String get settingsLockScreenSectionTitle => 'Lock screen';
 
   @override
@@ -451,6 +467,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get friendsEmptyBody =>
       'Add a friend by their nickname to see how your quests compare.';
+
+  @override
+  String get friendsEmptyOdysseyTitle => 'The journey is better together';
+
+  @override
+  String get friendsEmptyOdysseyBody =>
+      'Add friends by nickname and compare who has traveled further on their own Odyssey.';
 
   @override
   String get friendsLockedTitle => 'Friends isn\'t available yet';

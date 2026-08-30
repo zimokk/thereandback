@@ -37,12 +37,16 @@ network, fully offline):
    there is no helmet emoji, and a hand-drawn silhouette matches §9's
    "solid-fill silhouette, no gradients" art direction the way a borrowed
    glyph wouldn't.
-3. Each landmark from `map.json`, marked with an emoji picked for what it
-   is (`emojiForLandmarkId` — 🐖 for Circe, who turns Odysseus's crew into
-   pigs; 🪷 for the Lotus-Eaters; and so on), on the same dark halo. An id
-   the map doesn't have an emoji for falls back to a plain pin (📍) rather
-   than crashing — future quests will hit that fallback until someone picks
-   glyphs for their landmarks too.
+3. Each landmark from `map.json`, marked with a monochrome Material icon
+   picked for what it is (`iconForLandmarkId`, painted in
+   `AppColors.mapLandmarkInk` — a transformation glyph for Circe, who
+   turns Odysseus's crew into pigs; a spa/flower glyph for the
+   Lotus-Eaters; and so on), on the same dark halo. Colour emoji used to
+   stand in here but read as out of place against the map's ink/parchment
+   illustration style (styling fix); a single ink tone matches it instead.
+   An id the map doesn't have an icon for falls back to a plain pin
+   (`Icons.location_on`) rather than crashing — future quests will hit
+   that fallback until someone picks icons for their landmarks too.
 
 **The route itself is never drawn.** `map.json`'s polyline still positions
 both the traveler and the visual reasoning behind where each landmark's
@@ -197,8 +201,8 @@ tap tests grow the test surface first (`_growViewportForTapping`) since the
 illustration's own aspect ratio makes the map taller than the default
 800×600 test window, and `tester.tapAt` dispatches at a raw screen
 coordinate that a point past the window's edge would silently miss. Plus
-`emojiForLandmarkId` on its own: every shipped Odyssey id gets a distinct
-emoji, and an unknown id falls back to a pin. (The helmet, the emoji
+`iconForLandmarkId` on its own: every shipped Odyssey id gets a distinct
+icon, and an unknown id falls back to a pin. (The helmet, the landmark
 glyphs, and the tooltip bubbles' exact pixels are eyeballed against a real
 render during development, the way the route trace itself was — nothing
 here asserts on painted pixels, only on the widget tree taps produce.)

@@ -1,3 +1,4 @@
+import '../../../core/app_theme_id.dart';
 import '../domain/journey.dart';
 
 /// The quest catalog (CLAUDE.md §8, §14): read-only for the client. In the
@@ -15,6 +16,7 @@ const journeyCatalog = <Journey>[
     pointA: 'Troy',
     pointB: 'Ithaca',
     totalMeters: 2850000,
+    themeId: AppThemeId.odyssey,
   ),
 ];
 

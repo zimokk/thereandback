@@ -390,7 +390,7 @@ void main() {
     );
   });
 
-  group('emojiForLandmarkId', () {
+  group('iconForLandmarkId', () {
     // Every id the shipped Odyssey map.json actually uses — see
     // assets/journeys/odyssey-ithaca/map.json.
     const shippedIds = [
@@ -403,13 +403,16 @@ void main() {
       'ithaca',
     ];
 
-    test('gives every shipped landmark its own, distinct emoji', () {
-      final emoji = shippedIds.map(emojiForLandmarkId).toSet();
-      expect(emoji, hasLength(shippedIds.length));
+    test('gives every shipped landmark its own, distinct icon', () {
+      final icons = shippedIds.map(iconForLandmarkId).toSet();
+      expect(icons, hasLength(shippedIds.length));
     });
 
     test('falls back to a plain pin for an id it does not know', () {
-      expect(emojiForLandmarkId('some-future-quests-landmark'), '📍');
+      expect(
+        iconForLandmarkId('some-future-quests-landmark'),
+        Icons.location_on,
+      );
     });
   });
 }

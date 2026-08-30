@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/auth_provider.dart';
+import '../../../core/app_theme_id.dart';
 import '../../../design/colors.dart';
 import '../../../design/components/app_snackbar.dart';
 import '../../../design/spacing.dart';
@@ -13,6 +14,7 @@ import '../../friends/presentation/friends_providers.dart';
 import '../../journey/presentation/lock_screen_controller.dart';
 import '../../journey/presentation/lock_screen_state.dart';
 import 'locale_provider.dart';
+import 'theme_provider.dart';
 
 /// Настройки (§6.5), trimmed to what this base ships: the Google sign-in
 /// entry point, an editable nickname, and a working language switch.
@@ -90,7 +92,7 @@ class SettingsTab extends ConsumerWidget {
                 ),
                 trailing: Tooltip(
                   message: l10n.settingsNicknameEditTooltip,
-                  child: const Icon(Icons.edit, color: AppColors.gold),
+                  child: const Icon(Icons.edit, color: AppColors.goldMuted),
                 ),
                 // Used to be `onTap: nickname == null ? null : ...` — a
                 // literal no-op while the profile hadn't loaded (no uid
@@ -144,6 +146,8 @@ class SettingsTab extends ConsumerWidget {
                 ),
               ),
             ),
+            const SizedBox(height: AppSpacing.md),
+            const _ThemeSection(),
           ],
         ),
       ),
@@ -511,6 +515,71 @@ void _showLockScreenTroubleshootSheet(
   );
 }
 
+/// The theme picker (§6.5, §14 — "добавь темы... по умолчанию тема
+/// текущего похода"). `groupValue: null` reads as "follow the active
+/// quest's theme" — [AppThemeOverride]'s own default — rather than being a
+/// fourth, separate option to pick; picking a concrete theme pins it until
+/// the user comes back here and picks "Тема похода" again.
+class _ThemeSection extends ConsumerWidget {
+  const _ThemeSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+    final override = ref.watch(appThemeOverrideProvider);
+
+    return _SectionCard(
+      title: l10n.settingsThemeSectionTitle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.settingsThemeSectionSubtitle,
+            style: AppTypography.bodySecondary,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          RadioGroup<AppThemeId?>(
+            groupValue: override,
+            onChanged: (value) =>
+                ref.read(appThemeOverrideProvider.notifier).setOverride(value),
+            child: Column(
+              children: [
+                RadioListTile<AppThemeId?>(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    l10n.settingsThemeFollowQuest,
+                    style: AppTypography.body,
+                  ),
+                  value: null,
+                  activeColor: AppColors.gold,
+                ),
+                RadioListTile<AppThemeId?>(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    l10n.settingsThemeClassic,
+                    style: AppTypography.body,
+                  ),
+                  value: AppThemeId.classic,
+                  activeColor: AppColors.gold,
+                ),
+                RadioListTile<AppThemeId?>(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    l10n.settingsThemeOdyssey,
+                    style: AppTypography.body,
+                  ),
+                  value: AppThemeId.odyssey,
+                  activeColor: AppColors.gold,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _SectionCard extends StatelessWidget {
   const _SectionCard({required this.title, required this.child});
 
@@ -519,21 +588,36 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        border: Border.all(
+          color: AppColors.cardBorder,
+          width: AppStroke.cardBorder,
+        ),
+      ),
       // ListTile/RadioListTile paint their background and ink splashes on
       // the nearest Material ancestor — without this, the surrounding
-      // DecoratedBox below hides both (and Flutter asserts about it).
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(AppRadius.card),
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: AppTypography.label),
-            const SizedBox(height: AppSpacing.sm),
-            child,
-          ],
+      // Container below hides both (and Flutter asserts about it). Nested
+      // inside the Container (rather than being the card itself, as an
+      // `AppCard` would be) so the hairline border above draws outside the
+      // ink-clipping Material, never cut by it.
+      child: Material(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.card),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: AppTypography.label),
+              const SizedBox(height: AppSpacing.sm),
+              child,
+            ],
+          ),
         ),
       ),
     );

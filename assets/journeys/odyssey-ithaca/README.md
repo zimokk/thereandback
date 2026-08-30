@@ -54,16 +54,19 @@ the drawn dashes the whole way, not just look right zoomed out.
 invariants and that the file still matches the catalog's route length, but
 it cannot see a route traced loosely, or onto the wrong drawing.
 
-## The traveler marker and landmark emoji
+## The traveler marker and landmark icons
 
 `QuestMapView` marks the traveler's position with a small vector Corinthian
 helmet (painted, not an emoji — there is no helmet emoji, and a hand-drawn
-silhouette fits §9's art direction) and each landmark with an emoji picked
-for what it is, in `emojiForLandmarkId`
-(`lib/features/quest_map/presentation/quest_map_view.dart`). Adding a
+silhouette fits §9's art direction) and each landmark with a monochrome
+Material icon picked for what it is, painted in `AppColors.mapLandmarkInk`,
+in `iconForLandmarkId`
+(`lib/features/quest_map/presentation/quest_map_view.dart`) — a styling fix
+replaced the original colour emoji (a mermaid, a pink pig) once they read as
+out of place against the map's ink/parchment illustration style. Adding a
 landmark to `map.json` — for the Odyssey or a future quest — that isn't in
-that lookup is safe (it falls back to a plain pin, 📍) but loses the
-per-landmark identity; add its id and an emoji to the lookup too.
+that lookup is safe (it falls back to a plain pin, `Icons.location_on`) but
+loses the per-landmark identity; add its id and an icon to the lookup too.
 
 ## Known gap
 

@@ -620,6 +620,36 @@ abstract class AppLocalizations {
   /// **'English'**
   String get settingsLanguageEnglish;
 
+  /// Settings section heading for the app theme picker (§6.5, §14)
+  ///
+  /// In en, this message translates to:
+  /// **'Theme'**
+  String get settingsThemeSectionTitle;
+
+  /// Explains the null/"follow quest" default under the theme picker
+  ///
+  /// In en, this message translates to:
+  /// **'Defaults to your current quest\'s own theme.'**
+  String get settingsThemeSectionSubtitle;
+
+  /// Theme option: follow the active quest's own theme (AppThemeOverride == null) rather than an explicit pin
+  ///
+  /// In en, this message translates to:
+  /// **'Quest theme'**
+  String get settingsThemeFollowQuest;
+
+  /// Theme option label for AppThemeId.classic
+  ///
+  /// In en, this message translates to:
+  /// **'Classic'**
+  String get settingsThemeClassic;
+
+  /// Theme option label for AppThemeId.odyssey
+  ///
+  /// In en, this message translates to:
+  /// **'Odyssey'**
+  String get settingsThemeOdyssey;
+
   /// Settings section heading for the persistent lock-screen/notification-shade progress toggle (§7)
   ///
   /// In en, this message translates to:
@@ -853,6 +883,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add a friend by their nickname to see how your quests compare.'**
   String get friendsEmptyBody;
+
+  /// Odyssey-themed variant of friendsEmptyTitle, shown instead of it when effectiveThemeProvider is AppThemeId.odyssey (§6.4, §14 "themes")
+  ///
+  /// In en, this message translates to:
+  /// **'The journey is better together'**
+  String get friendsEmptyOdysseyTitle;
+
+  /// Odyssey-themed variant of friendsEmptyBody
+  ///
+  /// In en, this message translates to:
+  /// **'Add friends by nickname and compare who has traveled further on their own Odyssey.'**
+  String get friendsEmptyOdysseyBody;
 
   /// Title shown by ChallengersTab in place of its real content while friendsUnlockedProvider is false
   ///
