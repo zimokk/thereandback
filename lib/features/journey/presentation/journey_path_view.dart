@@ -157,8 +157,10 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     );
-    final jump = CurvedAnimation(parent: controller, curve: Curves.easeOutCubic)
-        .drive(Tween<double>(begin: start, end: end));
+    final jump = CurvedAnimation(
+      parent: controller,
+      curve: Curves.easeOutCubic,
+    ).drive(Tween<double>(begin: start, end: end));
     jump.addListener(() => setState(() => _panMeters = jump.value));
     _returnController = controller;
     controller.forward();

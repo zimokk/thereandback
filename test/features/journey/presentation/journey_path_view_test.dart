@@ -178,43 +178,42 @@ void main() {
     },
   );
 
-  testWidgets(
-    'while the view is at You, new progress carries it forward '
-    'automatically — it does not get left behind at a stale position',
-    (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
-          ],
-          child: _app(const JourneyPathView()),
-        ),
-      );
+  testWidgets('while the view is at You, new progress carries it forward '
+      'automatically — it does not get left behind at a stale position', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+        ],
+        child: _app(const JourneyPathView()),
+      ),
+    );
 
-      final container = ProviderScope.containerOf(
-        tester.element(find.byType(JourneyPathView)),
-      );
-      final notifier = container.read(selectedJourneyProvider.notifier);
-      notifier.start('odyssey-ithaca', now: DateTime.now());
-      await tester.pump();
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(JourneyPathView)),
+    );
+    final notifier = container.read(selectedJourneyProvider.notifier);
+    notifier.start('odyssey-ithaca', now: DateTime.now());
+    await tester.pump();
 
-      // Still at You (0 m == 0 m progress) — new progress lands.
-      notifier.applySyncedProgress(
-        progressMeters: 5000,
-        syncedAt: DateTime.now(),
-      );
-      await tester.pump();
+    // Still at You (0 m == 0 m progress) — new progress lands.
+    notifier.applySyncedProgress(
+      progressMeters: 5000,
+      syncedAt: DateTime.now(),
+    );
+    await tester.pump();
 
-      // No ghost appeared — the view rode along with the new progress
-      // rather than being left behind at the old (now stale) position.
-      expect(_travelerGhost, findsNothing);
-      final screenWidth = tester.getSize(find.byType(JourneyPathView)).width;
-      expect(
-        tester.getCenter(_travelerSolid).dx,
-        moreOrLessEquals(screenWidth / 2, epsilon: 1),
-      );
-    },
-  );
+    // No ghost appeared — the view rode along with the new progress
+    // rather than being left behind at the old (now stale) position.
+    expect(_travelerGhost, findsNothing);
+    final screenWidth = tester.getSize(find.byType(JourneyPathView)).width;
+    expect(
+      tester.getCenter(_travelerSolid).dx,
+      moreOrLessEquals(screenWidth / 2, epsilon: 1),
+    );
+  });
 
   testWidgets(
     'a deliberately rewound view is never yanked forward by new progress — '
@@ -348,59 +347,56 @@ void main() {
       },
     );
 
-    testWidgets(
-      'starting a new drag mid-jump stops the animation instead of '
-      'fighting it for control of the pan',
-      (tester) async {
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
-            ],
-            child: _app(const JourneyPathView()),
-          ),
-        );
+    testWidgets('starting a new drag mid-jump stops the animation instead of '
+        'fighting it for control of the pan', (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+          ],
+          child: _app(const JourneyPathView()),
+        ),
+      );
 
-        final container = ProviderScope.containerOf(
-          tester.element(find.byType(JourneyPathView)),
-        );
-        final notifier = container.read(selectedJourneyProvider.notifier);
-        notifier.start('odyssey-ithaca', now: DateTime.now());
-        notifier.applySyncedProgress(
-          progressMeters: 500000,
-          syncedAt: DateTime.now(),
-        );
-        await tester.pump();
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(JourneyPathView)),
+      );
+      final notifier = container.read(selectedJourneyProvider.notifier);
+      notifier.start('odyssey-ithaca', now: DateTime.now());
+      notifier.applySyncedProgress(
+        progressMeters: 500000,
+        syncedAt: DateTime.now(),
+      );
+      await tester.pump();
 
-        await tester.drag(
-          find.byKey(const Key('journeyPathScene')),
-          const Offset(200, 0),
-        );
-        await tester.pump();
+      await tester.drag(
+        find.byKey(const Key('journeyPathScene')),
+        const Offset(200, 0),
+      );
+      await tester.pump();
 
-        await tester.tap(_returnToYouButton);
-        // Only a few frames in — the animation is still mid-flight.
-        await tester.pump(const Duration(milliseconds: 200));
-        expect(_travelerGhost, findsOneWidget);
-        final midJumpX = tester.getCenter(_travelerGhost).dx;
+      await tester.tap(_returnToYouButton);
+      // Only a few frames in — the animation is still mid-flight.
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(_travelerGhost, findsOneWidget);
+      final midJumpX = tester.getCenter(_travelerGhost).dx;
 
-        // A fresh drag interrupts the jump — it should not throw, and the
-        // view should end up wherever the drag left it, not snap back to
-        // wherever the jump was headed.
-        await tester.drag(
-          find.byKey(const Key('journeyPathScene')),
-          const Offset(50, 0),
-        );
-        await tester.pump();
+      // A fresh drag interrupts the jump — it should not throw, and the
+      // view should end up wherever the drag left it, not snap back to
+      // wherever the jump was headed.
+      await tester.drag(
+        find.byKey(const Key('journeyPathScene')),
+        const Offset(50, 0),
+      );
+      await tester.pump();
 
-        expect(tester.takeException(), isNull);
-        expect(_travelerGhost, findsOneWidget);
-        expect(
-          tester.getCenter(_travelerGhost).dx,
-          isNot(moreOrLessEquals(midJumpX, epsilon: 0.5)),
-        );
-      },
-    );
+      expect(tester.takeException(), isNull);
+      expect(_travelerGhost, findsOneWidget);
+      expect(
+        tester.getCenter(_travelerGhost).dx,
+        isNot(moreOrLessEquals(midJumpX, epsilon: 0.5)),
+      );
+    });
   });
 
   testWidgets("the line's height at a given route position doesn't change just "
