@@ -77,6 +77,7 @@
   "settingsNicknameUpdatedMessage": "Ник изменён.",
   "settingsNicknameTakenMessage": "Этот ник уже занят — попробуйте другой.",
   "settingsNicknameErrorMessage": "Не удалось изменить ник — попробуйте ещё раз.",
+  "settingsNicknameNotReadyMessage": "Профиль ещё загружается — попробуйте через секунду.",
   "settingsLanguageSectionTitle": "Язык",
   "settingsLanguageRussian": "Русский",
   "settingsLanguageEnglish": "English",

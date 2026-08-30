@@ -87,16 +87,24 @@ class SettingsTab extends ConsumerWidget {
                   nickname ?? l10n.settingsNicknameLoading,
                   style: AppTypography.body.copyWith(color: AppColors.gold),
                 ),
-                trailing: const Icon(Icons.edit, color: AppColors.gold),
-                // Nothing to edit until the profile has loaded (no uid yet,
-                // or ensureFriendProfileProvider's first write hasn't
-                // landed) — same disabled-until-ready shape as the sign-in
-                // row above rather than opening a dialog with no starting
-                // value.
-                onTap: nickname == null
-                    ? null
-                    : () =>
-                          _showEditNicknameDialog(context, ref, l10n, nickname),
+                trailing: Tooltip(
+                  message: l10n.settingsNicknameEditTooltip,
+                  child: const Icon(Icons.edit, color: AppColors.gold),
+                ),
+                // Used to be `onTap: nickname == null ? null : ...` — a
+                // literal no-op while the profile hadn't loaded (no uid
+                // yet, or ensureFriendProfileProvider's first write hasn't
+                // landed, or that write failed outright and never
+                // retries on its own). Visually indistinguishable from the
+                // enabled row, so a tap there just silently did nothing —
+                // the same dead-end shape the sign-in row above used to
+                // have before it was fixed to surface a message (§7: never
+                // a dead end, not even silent). Now it always does
+                // something: opens the editor once a nickname exists, or
+                // retries the bootstrap write and says so otherwise.
+                onTap: () => nickname == null
+                    ? _retryProfileLoad(context, ref, l10n)
+                    : _showEditNicknameDialog(context, ref, l10n, nickname),
               ),
             ),
             if (lockScreenSupported) ...[
@@ -184,6 +192,22 @@ Future<void> _signInWithGoogle(
 
   if (!context.mounted || message == null) return;
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+}
+
+/// Handles a tap on the nickname row while [SettingsTab] hasn't resolved a
+/// nickname yet — retries [ensureFriendProfileProvider] (in case its first
+/// write failed, e.g. a transient Firestore error, and just never got
+/// another chance) and tells the user why nothing opened, rather than the
+/// tap being a silent no-op.
+void _retryProfileLoad(
+  BuildContext context,
+  WidgetRef ref,
+  AppLocalizations l10n,
+) {
+  ref.invalidate(ensureFriendProfileProvider);
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(l10n.settingsNicknameNotReadyMessage)));
 }
 
 /// Prompts for a new nickname, pre-filled with the current one — same

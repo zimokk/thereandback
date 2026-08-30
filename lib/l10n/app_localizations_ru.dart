@@ -266,6 +266,10 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось изменить ник — попробуйте ещё раз.';
 
   @override
+  String get settingsNicknameNotReadyMessage =>
+      'Профиль ещё загружается — попробуйте через секунду.';
+
+  @override
   String get settingsLanguageSectionTitle => 'Язык';
 
   @override

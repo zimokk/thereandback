@@ -262,6 +262,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t update nickname — please try again.';
 
   @override
+  String get settingsNicknameNotReadyMessage =>
+      'Still loading your profile — try again in a moment.';
+
+  @override
   String get settingsLanguageSectionTitle => 'Language';
 
   @override

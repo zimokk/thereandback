@@ -518,6 +518,12 @@ abstract class AppLocalizations {
   /// **'Couldn\'t update nickname — please try again.'**
   String get settingsNicknameErrorMessage;
 
+  /// Snackbar shown when the nickname row is tapped before the profile has loaded — retries the bootstrap write instead of leaving the tap a silent no-op
+  ///
+  /// In en, this message translates to:
+  /// **'Still loading your profile — try again in a moment.'**
+  String get settingsNicknameNotReadyMessage;
+
   /// Settings section heading for the language switch
   ///
   /// In en, this message translates to:
