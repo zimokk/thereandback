@@ -2,6 +2,7 @@ import 'package:workmanager/workmanager.dart';
 
 import '../../../core/local_owner.dart';
 import '../../../data/drift/database.dart';
+import '../../achievements/data/achievement_repository.dart';
 import '../../journey/data/android_lock_screen_channel.dart';
 import '../../journey/data/journey_catalog.dart';
 import '../../journey/data/progress_repository.dart';
@@ -94,6 +95,7 @@ void androidBackgroundSyncCallbackDispatcher() {
       final engine = StepsSyncEngine(
         stepCountingService: stepCountingService,
         stepSampleRepository: DriftStepSampleRepository(db),
+        achievementRepository: DriftAchievementRepository(db),
       );
       final now = DateTime.now();
       final result = await engine.sync(quest: quest, now: now);

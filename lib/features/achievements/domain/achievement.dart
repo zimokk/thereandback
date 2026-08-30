@@ -35,6 +35,17 @@ enum AchievementKind {
   /// than an arbitrary milestone, which is worth knowing at the catalog
   /// level even before anything downstream (an icon, a filter) reads it.
   landmarkReached,
+
+  /// Unlocked on any local calendar day whose total walked distance (across
+  /// every quest, not the current one — this task's requirement: a daily
+  /// fitness milestone, not part of any route's story) reaches
+  /// [AchievementDef.thresholdMeters]. Can unlock repeatedly, once per day
+  /// it happens — [evaluateAchievements] never evaluates this kind (it only
+  /// answers "unlocked against the current cumulative total", which doesn't
+  /// apply here); `achievement_unlocks.dart`'s
+  /// `computeDailyAchievementUnlockDates` does instead, and
+  /// `daily_achievement.dart`'s [DailyAchievementState] carries the result.
+  dailyDistance,
 }
 
 /// The evaluated state of one achievement for the current user.
@@ -51,6 +62,14 @@ abstract class AchievementState with _$AchievementState {
 
 /// Evaluates every achievement in [catalog] against [progressMeters]. Pure
 /// and total — one evaluator for the whole catalog, per §6.3.
+///
+/// Only meant for a catalog of [AchievementKind.distanceReached]/
+/// [AchievementKind.landmarkReached] defs (i.e. `achievementCatalog`, never
+/// `dailyAchievementCatalog`) — a single cumulative total can't answer
+/// "unlocked" for [AchievementKind.dailyDistance], which needs per-day
+/// totals instead (see `achievement_unlocks.dart`'s
+/// `computeDailyAchievementUnlockDates`). Passing a daily def here is a
+/// caller bug, not a case this function silently handles.
 List<AchievementState> evaluateAchievements({
   required int progressMeters,
   required List<AchievementDef> catalog,
@@ -70,6 +89,13 @@ List<AchievementState> evaluateAchievements({
               def: def,
               unlocked: unlocked,
               remainingMeters: remaining,
+            );
+          case AchievementKind.dailyDistance:
+            throw ArgumentError.value(
+              def,
+              'catalog',
+              'evaluateAchievements cannot evaluate a dailyDistance def — '
+                  'see this function\'s doc comment.',
             );
         }
       })

@@ -26,11 +26,11 @@ class SelectedQuestRows extends Table
     requiredDuringInsert: true,
     $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<int> startedAt = GeneratedColumn<int>(
+  late final GeneratedColumn<String> startedAt = GeneratedColumn<String>(
     'started_at',
     aliasedName,
     false,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: true,
     $customConstraints: 'NOT NULL',
   );
@@ -56,7 +56,7 @@ class SelectedQuestRows extends Table
         data['${effectivePrefix}journey_id'],
       )!,
       startedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}started_at'],
       )!,
     );
@@ -77,7 +77,7 @@ class SelectedQuestRowsData extends DataClass
     implements Insertable<SelectedQuestRowsData> {
   final String ownerId;
   final String journeyId;
-  final int startedAt;
+  final String startedAt;
   const SelectedQuestRowsData({
     required this.ownerId,
     required this.journeyId,
@@ -88,7 +88,7 @@ class SelectedQuestRowsData extends DataClass
     final map = <String, Expression>{};
     map['owner_id'] = Variable<String>(ownerId);
     map['journey_id'] = Variable<String>(journeyId);
-    map['started_at'] = Variable<int>(startedAt);
+    map['started_at'] = Variable<String>(startedAt);
     return map;
   }
 
@@ -108,7 +108,7 @@ class SelectedQuestRowsData extends DataClass
     return SelectedQuestRowsData(
       ownerId: serializer.fromJson<String>(json['ownerId']),
       journeyId: serializer.fromJson<String>(json['journeyId']),
-      startedAt: serializer.fromJson<int>(json['startedAt']),
+      startedAt: serializer.fromJson<String>(json['startedAt']),
     );
   }
   @override
@@ -117,14 +117,14 @@ class SelectedQuestRowsData extends DataClass
     return <String, dynamic>{
       'ownerId': serializer.toJson<String>(ownerId),
       'journeyId': serializer.toJson<String>(journeyId),
-      'startedAt': serializer.toJson<int>(startedAt),
+      'startedAt': serializer.toJson<String>(startedAt),
     };
   }
 
   SelectedQuestRowsData copyWith({
     String? ownerId,
     String? journeyId,
-    int? startedAt,
+    String? startedAt,
   }) => SelectedQuestRowsData(
     ownerId: ownerId ?? this.ownerId,
     journeyId: journeyId ?? this.journeyId,
@@ -163,7 +163,7 @@ class SelectedQuestRowsCompanion
     extends UpdateCompanion<SelectedQuestRowsData> {
   final Value<String> ownerId;
   final Value<String> journeyId;
-  final Value<int> startedAt;
+  final Value<String> startedAt;
   final Value<int> rowid;
   const SelectedQuestRowsCompanion({
     this.ownerId = const Value.absent(),
@@ -174,7 +174,7 @@ class SelectedQuestRowsCompanion
   SelectedQuestRowsCompanion.insert({
     required String ownerId,
     required String journeyId,
-    required int startedAt,
+    required String startedAt,
     this.rowid = const Value.absent(),
   }) : ownerId = Value(ownerId),
        journeyId = Value(journeyId),
@@ -182,7 +182,7 @@ class SelectedQuestRowsCompanion
   static Insertable<SelectedQuestRowsData> custom({
     Expression<String>? ownerId,
     Expression<String>? journeyId,
-    Expression<int>? startedAt,
+    Expression<String>? startedAt,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -196,7 +196,7 @@ class SelectedQuestRowsCompanion
   SelectedQuestRowsCompanion copyWith({
     Value<String>? ownerId,
     Value<String>? journeyId,
-    Value<int>? startedAt,
+    Value<String>? startedAt,
     Value<int>? rowid,
   }) {
     return SelectedQuestRowsCompanion(
@@ -217,7 +217,7 @@ class SelectedQuestRowsCompanion
       map['journey_id'] = Variable<String>(journeyId.value);
     }
     if (startedAt.present) {
-      map['started_at'] = Variable<int>(startedAt.value);
+      map['started_at'] = Variable<String>(startedAt.value);
     }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
@@ -268,19 +268,19 @@ class StepIntervalRecords extends Table
     requiredDuringInsert: true,
     $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<int> intervalStart = GeneratedColumn<int>(
+  late final GeneratedColumn<String> intervalStart = GeneratedColumn<String>(
     'interval_start',
     aliasedName,
     false,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: true,
     $customConstraints: 'NOT NULL',
   );
-  late final GeneratedColumn<int> intervalEnd = GeneratedColumn<int>(
+  late final GeneratedColumn<String> intervalEnd = GeneratedColumn<String>(
     'interval_end',
     aliasedName,
     false,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: true,
     $customConstraints: 'NOT NULL',
   );
@@ -317,11 +317,11 @@ class StepIntervalRecords extends Table
     $customConstraints: 'NOT NULL DEFAULT 0 CHECK (flagged_pace IN (0, 1))',
     defaultValue: const CustomExpression('0'),
   );
-  late final GeneratedColumn<int> syncedAt = GeneratedColumn<int>(
+  late final GeneratedColumn<String> syncedAt = GeneratedColumn<String>(
     'synced_at',
     aliasedName,
     false,
-    type: DriftSqlType.int,
+    type: DriftSqlType.string,
     requiredDuringInsert: true,
     $customConstraints: 'NOT NULL',
   );
@@ -369,11 +369,11 @@ class StepIntervalRecords extends Table
         data['${effectivePrefix}journey_id'],
       )!,
       intervalStart: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}interval_start'],
       )!,
       intervalEnd: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}interval_end'],
       )!,
       steps: attachedDatabase.typeMapping.read(
@@ -393,7 +393,7 @@ class StepIntervalRecords extends Table
         data['${effectivePrefix}flagged_pace'],
       )!,
       syncedAt: attachedDatabase.typeMapping.read(
-        DriftSqlType.int,
+        DriftSqlType.string,
         data['${effectivePrefix}synced_at'],
       )!,
     );
@@ -417,13 +417,13 @@ class StepIntervalRecordsData extends DataClass
   final int id;
   final String ownerId;
   final String journeyId;
-  final int intervalStart;
-  final int intervalEnd;
+  final String intervalStart;
+  final String intervalEnd;
   final int steps;
   final int? walkingDistanceMeters;
   final int resolvedMeters;
   final int flaggedPace;
-  final int syncedAt;
+  final String syncedAt;
   const StepIntervalRecordsData({
     required this.id,
     required this.ownerId,
@@ -442,15 +442,15 @@ class StepIntervalRecordsData extends DataClass
     map['id'] = Variable<int>(id);
     map['owner_id'] = Variable<String>(ownerId);
     map['journey_id'] = Variable<String>(journeyId);
-    map['interval_start'] = Variable<int>(intervalStart);
-    map['interval_end'] = Variable<int>(intervalEnd);
+    map['interval_start'] = Variable<String>(intervalStart);
+    map['interval_end'] = Variable<String>(intervalEnd);
     map['steps'] = Variable<int>(steps);
     if (!nullToAbsent || walkingDistanceMeters != null) {
       map['walking_distance_meters'] = Variable<int>(walkingDistanceMeters);
     }
     map['resolved_meters'] = Variable<int>(resolvedMeters);
     map['flagged_pace'] = Variable<int>(flaggedPace);
-    map['synced_at'] = Variable<int>(syncedAt);
+    map['synced_at'] = Variable<String>(syncedAt);
     return map;
   }
 
@@ -480,15 +480,15 @@ class StepIntervalRecordsData extends DataClass
       id: serializer.fromJson<int>(json['id']),
       ownerId: serializer.fromJson<String>(json['ownerId']),
       journeyId: serializer.fromJson<String>(json['journeyId']),
-      intervalStart: serializer.fromJson<int>(json['intervalStart']),
-      intervalEnd: serializer.fromJson<int>(json['intervalEnd']),
+      intervalStart: serializer.fromJson<String>(json['intervalStart']),
+      intervalEnd: serializer.fromJson<String>(json['intervalEnd']),
       steps: serializer.fromJson<int>(json['steps']),
       walkingDistanceMeters: serializer.fromJson<int?>(
         json['walkingDistanceMeters'],
       ),
       resolvedMeters: serializer.fromJson<int>(json['resolvedMeters']),
       flaggedPace: serializer.fromJson<int>(json['flaggedPace']),
-      syncedAt: serializer.fromJson<int>(json['syncedAt']),
+      syncedAt: serializer.fromJson<String>(json['syncedAt']),
     );
   }
   @override
@@ -498,13 +498,13 @@ class StepIntervalRecordsData extends DataClass
       'id': serializer.toJson<int>(id),
       'ownerId': serializer.toJson<String>(ownerId),
       'journeyId': serializer.toJson<String>(journeyId),
-      'intervalStart': serializer.toJson<int>(intervalStart),
-      'intervalEnd': serializer.toJson<int>(intervalEnd),
+      'intervalStart': serializer.toJson<String>(intervalStart),
+      'intervalEnd': serializer.toJson<String>(intervalEnd),
       'steps': serializer.toJson<int>(steps),
       'walkingDistanceMeters': serializer.toJson<int?>(walkingDistanceMeters),
       'resolvedMeters': serializer.toJson<int>(resolvedMeters),
       'flaggedPace': serializer.toJson<int>(flaggedPace),
-      'syncedAt': serializer.toJson<int>(syncedAt),
+      'syncedAt': serializer.toJson<String>(syncedAt),
     };
   }
 
@@ -512,13 +512,13 @@ class StepIntervalRecordsData extends DataClass
     int? id,
     String? ownerId,
     String? journeyId,
-    int? intervalStart,
-    int? intervalEnd,
+    String? intervalStart,
+    String? intervalEnd,
     int? steps,
     Value<int?> walkingDistanceMeters = const Value.absent(),
     int? resolvedMeters,
     int? flaggedPace,
-    int? syncedAt,
+    String? syncedAt,
   }) => StepIntervalRecordsData(
     id: id ?? this.id,
     ownerId: ownerId ?? this.ownerId,
@@ -609,13 +609,13 @@ class StepIntervalRecordsCompanion
   final Value<int> id;
   final Value<String> ownerId;
   final Value<String> journeyId;
-  final Value<int> intervalStart;
-  final Value<int> intervalEnd;
+  final Value<String> intervalStart;
+  final Value<String> intervalEnd;
   final Value<int> steps;
   final Value<int?> walkingDistanceMeters;
   final Value<int> resolvedMeters;
   final Value<int> flaggedPace;
-  final Value<int> syncedAt;
+  final Value<String> syncedAt;
   const StepIntervalRecordsCompanion({
     this.id = const Value.absent(),
     this.ownerId = const Value.absent(),
@@ -632,13 +632,13 @@ class StepIntervalRecordsCompanion
     this.id = const Value.absent(),
     required String ownerId,
     required String journeyId,
-    required int intervalStart,
-    required int intervalEnd,
+    required String intervalStart,
+    required String intervalEnd,
     required int steps,
     this.walkingDistanceMeters = const Value.absent(),
     required int resolvedMeters,
     this.flaggedPace = const Value.absent(),
-    required int syncedAt,
+    required String syncedAt,
   }) : ownerId = Value(ownerId),
        journeyId = Value(journeyId),
        intervalStart = Value(intervalStart),
@@ -650,13 +650,13 @@ class StepIntervalRecordsCompanion
     Expression<int>? id,
     Expression<String>? ownerId,
     Expression<String>? journeyId,
-    Expression<int>? intervalStart,
-    Expression<int>? intervalEnd,
+    Expression<String>? intervalStart,
+    Expression<String>? intervalEnd,
     Expression<int>? steps,
     Expression<int>? walkingDistanceMeters,
     Expression<int>? resolvedMeters,
     Expression<int>? flaggedPace,
-    Expression<int>? syncedAt,
+    Expression<String>? syncedAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -677,13 +677,13 @@ class StepIntervalRecordsCompanion
     Value<int>? id,
     Value<String>? ownerId,
     Value<String>? journeyId,
-    Value<int>? intervalStart,
-    Value<int>? intervalEnd,
+    Value<String>? intervalStart,
+    Value<String>? intervalEnd,
     Value<int>? steps,
     Value<int?>? walkingDistanceMeters,
     Value<int>? resolvedMeters,
     Value<int>? flaggedPace,
-    Value<int>? syncedAt,
+    Value<String>? syncedAt,
   }) {
     return StepIntervalRecordsCompanion(
       id: id ?? this.id,
@@ -713,10 +713,10 @@ class StepIntervalRecordsCompanion
       map['journey_id'] = Variable<String>(journeyId.value);
     }
     if (intervalStart.present) {
-      map['interval_start'] = Variable<int>(intervalStart.value);
+      map['interval_start'] = Variable<String>(intervalStart.value);
     }
     if (intervalEnd.present) {
-      map['interval_end'] = Variable<int>(intervalEnd.value);
+      map['interval_end'] = Variable<String>(intervalEnd.value);
     }
     if (steps.present) {
       map['steps'] = Variable<int>(steps.value);
@@ -733,7 +733,7 @@ class StepIntervalRecordsCompanion
       map['flagged_pace'] = Variable<int>(flaggedPace.value);
     }
     if (syncedAt.present) {
-      map['synced_at'] = Variable<int>(syncedAt.value);
+      map['synced_at'] = Variable<String>(syncedAt.value);
     }
     return map;
   }
@@ -772,4 +772,7 @@ class DatabaseAtV1 extends GeneratedDatabase {
   ];
   @override
   int get schemaVersion => 1;
+  @override
+  DriftDatabaseOptions get options =>
+      const DriftDatabaseOptions(storeDateTimeAsText: true);
 }

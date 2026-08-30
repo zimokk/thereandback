@@ -1,4 +1,5 @@
 import '../../../core/local_owner.dart';
+import '../../achievements/data/achievement_repository.dart';
 import '../../journey/domain/quest_selection.dart';
 import '../domain/stride.dart';
 import 'step_counting_service.dart';
@@ -33,10 +34,20 @@ class StepsSyncEngine {
   StepsSyncEngine({
     required this.stepCountingService,
     required this.stepSampleRepository,
+    required this.achievementRepository,
   });
 
   final StepCountingService stepCountingService;
   final StepSampleRepository stepSampleRepository;
+
+  /// Recomputes trophy unlock dates after a newly-credited interval (this
+  /// task's requirement — trophies persisted in the DB). Injected the same
+  /// way [stepSampleRepository] is, so both the foreground sync
+  /// (`steps_providers.dart`) and the Android background task
+  /// (`android_background_sync.dart`) go through the exact same code —
+  /// consistent with the rest of this engine's "one path for both callers"
+  /// design (see the class doc comment).
+  final AchievementRepository achievementRepository;
 
   /// Fetches the delta since [quest]'s `lastSyncedAt`, resolves it to meters
   /// via `stride.dart`, and records it idempotently. Does not touch any
@@ -85,6 +96,16 @@ class StepsSyncEngine {
           )
         : quest.progressMeters; // already credited — advance the sync
     // window only, per the idempotency guard above.
+
+    // Only worth recomputing when the history this reads actually changed —
+    // a replayed/duplicate interval (isNewInterval == false) leaves it
+    // identical to the last run's answer.
+    if (isNewInterval) {
+      await achievementRepository.refreshUnlocks(
+        ownerId: localOwnerId,
+        journeyId: quest.journeyId,
+      );
+    }
 
     return StepsSyncResult(
       progressMeters: progressMeters,

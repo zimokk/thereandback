@@ -1,0 +1,14 @@
+targets:
+  $default:
+    builders:
+      drift_dev:
+        options:
+          # Must match `AppDatabase.options`'s runtime
+          # `DriftDatabaseOptions(storeDateTimeAsText: true)`
+          # (`data/drift/database.dart`) — without this, `drift_dev schema
+          # dump` assumes the drift default (DateTime stored as an INTEGER
+          # unix epoch) and produces a schema snapshot that disagrees with
+          # what this app's database actually creates, which fails
+          # `SchemaVerifier`'s structural comparison the moment a migration
+          # adds a table with its own DateTime column (`migration_test.dart`).
+          store_date_time_values_as_text: true

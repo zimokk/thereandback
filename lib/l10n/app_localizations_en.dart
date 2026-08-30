@@ -210,6 +210,38 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get achievementDaily1kmTitle => '1 kilometer in a day';
+
+  @override
+  String get achievementDaily5kmTitle => '5 kilometers in a day';
+
+  @override
+  String get achievementDaily10kmTitle => '10 kilometers in a day';
+
+  @override
+  String get achievementDaily20kmTitle => '20 kilometers in a day';
+
+  @override
+  String get achievementDaily50kmTitle => '50 kilometers in a day';
+
+  @override
+  String get achievementsJourneyTabLabel => 'Quest';
+
+  @override
+  String get achievementsDailyTabLabel => 'Daily';
+
+  @override
+  String get achievementNeverUnlockedLabel => 'Not yet reached';
+
+  @override
+  String achievementUnlockedCountLabel(int count) {
+    return 'Reached: $count';
+  }
+
+  @override
+  String get achievementUnlockDatesSheetTitle => 'Dates reached';
+
+  @override
   String get settingsTitle => 'Settings';
 
   @override

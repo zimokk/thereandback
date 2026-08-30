@@ -31,12 +31,16 @@ class MeteredInterval {
   final int meters;
 }
 
+/// Truncates a [DateTime] down to its calendar date, discarding time of
+/// day — shared by [QuestTimeService] and, outside this file, by
+/// `features/achievements/domain/achievement_unlocks.dart`'s daily grouping
+/// (both need the exact same "which local day does this belong to" rule, so
+/// there is exactly one place that answers it, not two copies that could
+/// drift apart).
+DateTime calendarDate(DateTime d) => DateTime(d.year, d.month, d.day);
+
 class QuestTimeService {
   const QuestTimeService();
-
-  /// Truncates a [DateTime] down to its calendar date, discarding time of
-  /// day.
-  DateTime _calendarDate(DateTime d) => DateTime(d.year, d.month, d.day);
 
   /// The quest day counter shown as "Day N" (§5.3): the number of local
   /// calendar days between [startedAt] and [now], inclusive of both ends.
@@ -45,7 +49,7 @@ class QuestTimeService {
   /// `startedAt` (clock skew, or a quest that has not started yet) clamps to
   /// Day 1 rather than going negative.
   int questDay({required DateTime startedAt, required DateTime now}) {
-    final days = _calendarDate(now).difference(_calendarDate(startedAt)).inDays;
+    final days = calendarDate(now).difference(calendarDate(startedAt)).inDays;
     return (days < 0 ? 0 : days) + 1;
   }
 
@@ -80,12 +84,12 @@ class QuestTimeService {
     if (elapsedDays < 3) return progressMeters / elapsedDays;
 
     final windowDays = elapsedDays < 7 ? elapsedDays : 7;
-    final today = _calendarDate(now);
+    final today = calendarDate(now);
     final windowStart = today.subtract(Duration(days: windowDays - 1));
 
     var windowMeters = 0;
     for (final interval in recentIntervals) {
-      final day = _calendarDate(interval.end);
+      final day = calendarDate(interval.end);
       if (day.isBefore(windowStart) || day.isAfter(today)) continue;
       windowMeters += interval.meters;
     }

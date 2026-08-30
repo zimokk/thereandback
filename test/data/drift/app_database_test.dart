@@ -15,9 +15,9 @@ void main() {
   setUp(() => db = AppDatabase.forTesting());
   tearDown(() => db.close());
 
-  test('schemaVersion is 2 — LockScreenPreferenceRows added on top of the '
-      'v1 baseline (see migration_test.dart)', () {
-    expect(db.schemaVersion, 2);
+  test('schemaVersion is 3 — AchievementUnlockRows added on top of the '
+      'v2 baseline (see migration_test.dart)', () {
+    expect(db.schemaVersion, 3);
   });
 
   test('selectedQuestRows round-trips a row, keyed on ownerId', () async {
@@ -109,5 +109,33 @@ void main() {
     final rows = await db.select(db.lockScreenPreferenceRows).get();
     expect(rows, hasLength(1));
     expect(rows.single.enabled, isFalse);
+  });
+
+  test('achievementUnlockRows allows one row per (ownerId, achievementId, '
+      'unlockedLocalDate) — a daily trophy earning the same threshold '
+      'again on a different day is a second row, not an overwrite', () async {
+    await db
+        .into(db.achievementUnlockRows)
+        .insert(
+          AchievementUnlockRowsCompanion.insert(
+            ownerId: 'owner-1',
+            achievementId: 'daily-1km',
+            unlockedLocalDate: DateTime.utc(2026, 3, 10),
+          ),
+        );
+    await db
+        .into(db.achievementUnlockRows)
+        .insert(
+          AchievementUnlockRowsCompanion.insert(
+            ownerId: 'owner-1',
+            achievementId: 'daily-1km',
+            unlockedLocalDate: DateTime.utc(2026, 3, 12),
+          ),
+        );
+
+    final rows = await (db.select(
+      db.achievementUnlockRows,
+    )..where((t) => t.ownerId.equals('owner-1'))).get();
+    expect(rows, hasLength(2));
   });
 }

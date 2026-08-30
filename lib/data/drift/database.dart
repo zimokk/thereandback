@@ -91,6 +91,36 @@ class LockScreenPreferenceRows extends Table {
   Set<Column> get primaryKey => {ownerId};
 }
 
+/// One durable "this trophy was earned" event (§6.3, extended by the daily-
+/// trophies task: trophies persisted in the DB, not only derived live from
+/// current progress every time the Трофеи tab opens). `achievementId` is
+/// either a quest achievement's catalog id or a daily achievement's
+/// (`features/achievements/data/achievement_catalog.dart`'s
+/// `achievementCatalog`/`dailyAchievementCatalog`) — one table serves both
+/// Трофеи sections.
+///
+/// [unlockedLocalDate] is **not** a UTC instant like every other DateTime
+/// column in this database (§5.2) — it encodes a local calendar date (the
+/// date's own year/month/day, stored as that same triple at UTC midnight so
+/// no timezone conversion can shift it), because "which day this was
+/// earned" is what the UI shows, never a moment in time. Written and read
+/// back by `DriftAchievementRepository`'s own conversion helpers — nothing
+/// else should read or write this column directly.
+///
+/// A quest achievement earns at most one row ever (its unlock date, once
+/// found, never changes); a daily achievement (1/5/10/20/50 km in a day)
+/// can earn one row per calendar day it was reached — the primary key
+/// allows exactly that, and doubles as the idempotency guard
+/// `AchievementRepository.refreshUnlocks`'s `insertOrIgnore` relies on.
+class AchievementUnlockRows extends Table {
+  TextColumn get ownerId => text()();
+  TextColumn get achievementId => text()();
+  DateTimeColumn get unlockedLocalDate => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {ownerId, achievementId, unlockedLocalDate};
+}
+
 /// The app's local database (§8: drift/SQLite is the offline-first source
 /// of truth; Firestore is a sync layer added later, never the only store).
 ///
@@ -100,7 +130,12 @@ class LockScreenPreferenceRows extends Table {
 /// test — always an explicit in-memory override via
 /// `app/database_provider.dart`'s `appDatabaseProvider`).
 @DriftDatabase(
-  tables: [SelectedQuestRows, StepIntervalRecords, LockScreenPreferenceRows],
+  tables: [
+    SelectedQuestRows,
+    StepIntervalRecords,
+    LockScreenPreferenceRows,
+    AchievementUnlockRows,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
@@ -110,17 +145,21 @@ class AppDatabase extends _$AppDatabase {
   factory AppDatabase.forTesting() => AppDatabase(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
-  // v1 → v2: added LockScreenPreferenceRows (see its doc comment). A purely
-  // additive migration — existing SelectedQuestRows/StepIntervalRecords
-  // rows are untouched; a device upgrading from v1 just gets the new table
-  // created empty, same as a fresh install.
+  // v1 → v2: added LockScreenPreferenceRows (see its doc comment).
+  // v2 → v3: added AchievementUnlockRows (see its doc comment). Both are
+  // purely additive migrations — existing rows in every earlier table are
+  // untouched; a device upgrading from an older version just gets the new
+  // table(s) created empty, same as a fresh install.
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (Migrator m, int from, int to) async {
       if (from < 2) {
         await m.createTable(lockScreenPreferenceRows);
+      }
+      if (from < 3) {
+        await m.createTable(achievementUnlockRows);
       }
     },
   );

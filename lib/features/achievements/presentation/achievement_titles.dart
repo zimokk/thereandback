@@ -23,6 +23,11 @@ String achievementTitle(AppLocalizations l10n, AchievementDef def) {
       l10n.achievementPassedScyllaCharybdisTitle,
     'achievementPassedSirensTitle' => l10n.achievementPassedSirensTitle,
     'achievementJourneysEndTitle' => l10n.achievementJourneysEndTitle,
+    'achievementDaily1kmTitle' => l10n.achievementDaily1kmTitle,
+    'achievementDaily5kmTitle' => l10n.achievementDaily5kmTitle,
+    'achievementDaily10kmTitle' => l10n.achievementDaily10kmTitle,
+    'achievementDaily20kmTitle' => l10n.achievementDaily20kmTitle,
+    'achievementDaily50kmTitle' => l10n.achievementDaily50kmTitle,
     _ => def.titleKey,
   };
 }
