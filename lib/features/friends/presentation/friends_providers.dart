@@ -203,9 +203,15 @@ enum AddFriendOutcome {
   googleUpgradeAlreadyLinked,
 }
 
-/// Imperative actions for the Challengers tab (§6.4): sending a request by
-/// nickname (triggering the Google upgrade first if still anonymous),
-/// accepting, removing/declining, and the per-friend hide toggle (§7).
+/// The outcome of [FriendsController.updateNickname] — the UI renders each
+/// case explicitly, same shape as [AddFriendOutcome].
+enum UpdateNicknameOutcome { success, nicknameTaken, notSignedIn }
+
+/// Imperative actions for the Challengers tab (§6.4) and the Settings
+/// nickname editor (§6.5): sending a request by nickname (triggering the
+/// Google upgrade first if still anonymous), accepting, removing/declining,
+/// the per-friend hide toggle (§7), and renaming the signed-in user's own
+/// nickname.
 @riverpod
 class FriendsController extends _$FriendsController {
   @override
@@ -262,5 +268,25 @@ class FriendsController extends _$FriendsController {
     return ref
         .read(friendshipRepositoryProvider)
         .setHidden(pairId, ownerUid: myUid, hidden: hidden);
+  }
+
+  /// Renames the signed-in user's own nickname (§6.5's Settings editor).
+  /// [UserProfileRepository.updateNickname] does the actual work — atomic
+  /// release-old/claim-new against the `usernames/{nicknameLower}` registry
+  /// (§8), so two people can never end up holding the same nickname.
+  /// [myProfileProvider] picks up the rename on its own once it lands
+  /// (a live Firestore stream), no manual refresh needed here.
+  Future<UpdateNicknameOutcome> updateNickname(String newNickname) async {
+    final myUid = ref.read(currentUidProvider);
+    if (myUid == null) return UpdateNicknameOutcome.notSignedIn;
+
+    try {
+      await ref
+          .read(userProfileRepositoryProvider)
+          .updateNickname(myUid, newNickname);
+    } on NicknameTakenException {
+      return UpdateNicknameOutcome.nicknameTaken;
+    }
+    return UpdateNicknameOutcome.success;
   }
 }

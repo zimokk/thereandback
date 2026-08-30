@@ -458,6 +458,66 @@ abstract class AppLocalizations {
   /// **'Couldn\'t sign in — please try again.'**
   String get settingsSignInErrorMessage;
 
+  /// Settings section heading for the nickname row
+  ///
+  /// In en, this message translates to:
+  /// **'Nickname'**
+  String get settingsNicknameSectionTitle;
+
+  /// Placeholder shown in place of the nickname row before the profile has loaded
+  ///
+  /// In en, this message translates to:
+  /// **'—'**
+  String get settingsNicknameLoading;
+
+  /// Tooltip on the edit-nickname icon button
+  ///
+  /// In en, this message translates to:
+  /// **'Change nickname'**
+  String get settingsNicknameEditTooltip;
+
+  /// Title of the change-nickname dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Change nickname'**
+  String get settingsNicknameEditDialogTitle;
+
+  /// Label of the text field in the change-nickname dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Nickname'**
+  String get settingsNicknameFieldLabel;
+
+  /// Save button in the change-nickname dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get settingsNicknameSaveButton;
+
+  /// Cancel button in the change-nickname dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get settingsNicknameCancelButton;
+
+  /// Snackbar shown after UpdateNicknameOutcome.success
+  ///
+  /// In en, this message translates to:
+  /// **'Nickname updated.'**
+  String get settingsNicknameUpdatedMessage;
+
+  /// Snackbar shown after UpdateNicknameOutcome.nicknameTaken
+  ///
+  /// In en, this message translates to:
+  /// **'That nickname is already taken — try another one.'**
+  String get settingsNicknameTakenMessage;
+
+  /// Snackbar shown when updateNickname() throws rather than returning a known UpdateNicknameOutcome, or for UpdateNicknameOutcome.notSignedIn (shouldn't be reachable from the UI, since the row needs a loaded profile to be tappable, but rendered explicitly rather than silently doing nothing)
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t update nickname — please try again.'**
+  String get settingsNicknameErrorMessage;
+
   /// Settings section heading for the language switch
   ///
   /// In en, this message translates to:

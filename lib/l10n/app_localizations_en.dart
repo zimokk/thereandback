@@ -230,6 +230,38 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t sign in — please try again.';
 
   @override
+  String get settingsNicknameSectionTitle => 'Nickname';
+
+  @override
+  String get settingsNicknameLoading => '—';
+
+  @override
+  String get settingsNicknameEditTooltip => 'Change nickname';
+
+  @override
+  String get settingsNicknameEditDialogTitle => 'Change nickname';
+
+  @override
+  String get settingsNicknameFieldLabel => 'Nickname';
+
+  @override
+  String get settingsNicknameSaveButton => 'Save';
+
+  @override
+  String get settingsNicknameCancelButton => 'Cancel';
+
+  @override
+  String get settingsNicknameUpdatedMessage => 'Nickname updated.';
+
+  @override
+  String get settingsNicknameTakenMessage =>
+      'That nickname is already taken — try another one.';
+
+  @override
+  String get settingsNicknameErrorMessage =>
+      'Couldn\'t update nickname — please try again.';
+
+  @override
   String get settingsLanguageSectionTitle => 'Language';
 
   @override

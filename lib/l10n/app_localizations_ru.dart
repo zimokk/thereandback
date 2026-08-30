@@ -234,6 +234,38 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось войти — попробуйте ещё раз.';
 
   @override
+  String get settingsNicknameSectionTitle => 'Ник';
+
+  @override
+  String get settingsNicknameLoading => '—';
+
+  @override
+  String get settingsNicknameEditTooltip => 'Изменить ник';
+
+  @override
+  String get settingsNicknameEditDialogTitle => 'Изменить ник';
+
+  @override
+  String get settingsNicknameFieldLabel => 'Ник';
+
+  @override
+  String get settingsNicknameSaveButton => 'Сохранить';
+
+  @override
+  String get settingsNicknameCancelButton => 'Отмена';
+
+  @override
+  String get settingsNicknameUpdatedMessage => 'Ник изменён.';
+
+  @override
+  String get settingsNicknameTakenMessage =>
+      'Этот ник уже занят — попробуйте другой.';
+
+  @override
+  String get settingsNicknameErrorMessage =>
+      'Не удалось изменить ник — попробуйте ещё раз.';
+
+  @override
   String get settingsLanguageSectionTitle => 'Язык';
 
   @override
