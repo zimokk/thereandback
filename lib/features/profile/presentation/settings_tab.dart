@@ -196,23 +196,29 @@ Future<void> _signInWithGoogle(
 }
 
 /// Handles a tap on the nickname row while [SettingsTab] hasn't resolved a
-/// nickname yet. Retries both [authControllerProvider] and
+/// nickname yet. Retries both the auth bootstrap and
 /// [ensureFriendProfileProvider] — not just the latter: if the very first
 /// anonymous sign-in failed (no network on cold start, the one case
 /// `AuthController._bootstrap()`'s own catch already anticipates),
 /// `currentUidProvider` stays `null` forever, `ensureFriendProfileProvider`
 /// then no-ops on every call (it bails out immediately when `uid == null`),
 /// and re-invalidating only it retried the wrong thing — this row's
-/// "loading" message never went away even after a tap. Re-running
-/// `authControllerProvider`'s `build()` gives the anonymous sign-in itself
-/// another chance; `ensureFriendProfileProvider` also still covers its own
-/// original case (the profile write failing after a uid already existed).
+/// "loading" message never went away even after a tap.
+///
+/// Calls [AuthController.retryBootstrap] rather than
+/// `ref.invalidate(authControllerProvider)` — invalidating re-runs `build()`
+/// itself, which resets the whole session to its signed-out default
+/// (`uid: null`) for as long as the retry takes, flashing every uid-gated
+/// row (this one, sign-in, Друзья) to its signed-out look even when a uid
+/// was already known and the real problem was elsewhere — the visible
+/// "blink" a report of this bug described. `retryBootstrap()` re-attempts
+/// the same sign-in without ever clearing a uid it already has.
 void _retryProfileLoad(
   BuildContext context,
   WidgetRef ref,
   AppLocalizations l10n,
 ) {
-  ref.invalidate(authControllerProvider);
+  unawaited(ref.read(authControllerProvider.notifier).retryBootstrap());
   ref.invalidate(ensureFriendProfileProvider);
   showAppSnackBar(context, l10n.settingsNicknameNotReadyMessage);
 }

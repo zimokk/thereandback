@@ -34,12 +34,22 @@ ProgressRepository progressRepository(Ref ref) =>
 /// or `progressMeters` (see `docs/screens/steps-sync.md`).
 @riverpod
 class SelectedJourney extends _$SelectedJourney {
+  /// [build]'s own cold-start restore — kept around so [ensureRestored] can
+  /// await the exact same one-shot operation rather than firing a second,
+  /// redundant read. Defaults to an already-completed future (rather than
+  /// `late`) so a test double that overrides [build] without going through
+  /// this class's own — e.g. `friends_providers_test.dart`'s
+  /// `_FixedSelectedJourney` — still has [ensureRestored] resolve instantly
+  /// instead of throwing on an unset `late` field.
+  Future<void> _initialRestore = Future<void>.value();
+
   @override
   SelectedQuest? build() {
     // Same "fire an async check from a sync build()" idiom as
     // `StepsSync.build()` (steps/presentation/steps_providers.dart) — the
     // widget renders `null` for one frame until this resolves.
-    unawaited(_restore());
+    _initialRestore = _restore();
+    unawaited(_initialRestore);
     return null;
   }
 
@@ -49,6 +59,26 @@ class SelectedJourney extends _$SelectedJourney {
         .loadSelectedQuest(localOwnerId);
     if (restored != null) state = restored;
   }
+
+  /// Waits for [build]'s own cold-start restore to finish, if it hasn't
+  /// already — for a caller that needs to *read* [state] and treat it as
+  /// authoritative rather than possibly still the pre-restore `null`.
+  ///
+  /// `AuthController._reconcileProgressWithCloud` (`app/auth_provider.dart`,
+  /// §8, §14 — "repeat login") is the motivating case: it compares this
+  /// device's local progress against the cloud account's own total to
+  /// decide which one wins. Reading [state] with a bare `ref.read` there
+  /// used to race this provider's own unawaited startup restore — on a
+  /// device that already had real progress from a previous session, a
+  /// Google sign-in fired quickly enough (small quest catalog, cached
+  /// account, no picker shown) could read `state` while it was still
+  /// `null`, treat the device's actual progress as zero, and let a smaller
+  /// (or absent) cloud total silently overwrite it via `restoreFromCloud`.
+  /// Awaiting this first closes that window — safe even for a caller that
+  /// doesn't need it: once the initial restore has already resolved,
+  /// awaiting it again is an instant no-op, and it never re-fires the read
+  /// or touches [state] itself (unlike [reload], see below).
+  Future<void> ensureRestored() => _initialRestore;
 
   /// Re-reads the persisted quest from drift, discarding whatever is
   /// currently in memory. Used by `AuthController`
