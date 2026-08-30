@@ -127,23 +127,46 @@ class _StatsBody extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.md),
       children: [
-        Text(total.value, style: AppTypography.distanceHero),
-        Text(
-          localizedUnitLabel(l10n, total),
-          style: AppTypography.distanceUnit,
+        // "Quest Started"/"Estimated Arrival" sit to the right of the
+        // remaining-distance hero, not stacked below it (this task's
+        // requirement — the whole tab must fit on screen without scrolling
+        // past the header before reaching the map).
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(total.value, style: AppTypography.distanceHero),
+                  Text(
+                    localizedUnitLabel(l10n, total),
+                    style: AppTypography.distanceUnit,
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    l10n.questStatsToLabel(pointB),
+                    style: AppTypography.bodySecondary,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _StatColumn(
+                    label: l10n.questStatsStartedLabel,
+                    value: formatDate(startedAt, localeName: locale),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  _StatColumn(label: l10n.questStatsEtaLabel, value: etaLabel),
+                ],
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          l10n.questStatsToLabel(pointB),
-          style: AppTypography.bodySecondary,
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        _StatRow(
-          label: l10n.questStatsStartedLabel,
-          value: formatDate(startedAt, localeName: locale),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        _StatRow(label: l10n.questStatsEtaLabel, value: etaLabel),
         const SizedBox(height: AppSpacing.lg),
         Text(l10n.questMapSectionTitle, style: AppTypography.label),
         const SizedBox(height: AppSpacing.sm),
@@ -153,16 +176,16 @@ class _StatsBody extends StatelessWidget {
   }
 }
 
-class _StatRow extends StatelessWidget {
-  const _StatRow({required this.label, required this.value});
+class _StatColumn extends StatelessWidget {
+  const _StatColumn({required this.label, required this.value});
 
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label, style: AppTypography.bodySecondary),
         Text(value, style: AppTypography.body),
