@@ -93,6 +93,24 @@ class AuthController extends _$AuthController {
     }
   }
 
+  /// Re-runs the [_bootstrap] sign-in attempt without discarding whatever
+  /// [state] this controller already holds in the meantime — the nickname
+  /// row's retry (`settings_tab.dart`'s `_retryProfileLoad`, §6.5) needs to
+  /// give a stuck anonymous sign-in another chance, but calling
+  /// `ref.invalidate(authControllerProvider)` for that re-runs [build]
+  /// itself, which resets [state] to its bare default (`uid: null,
+  /// isAnonymous: true`) for as long as the new [_bootstrap] call takes to
+  /// resolve. Every uid-gated bit of UI (this row, the sign-in row, the
+  /// Друзья tab) briefly flashes its signed-out look even when a uid was
+  /// already known and the real problem was elsewhere (e.g. a transient
+  /// profile write) — the retry's own visible "blink" a report of this bug
+  /// described. Calling [_bootstrap] directly re-attempts
+  /// [AuthRepository.ensureSignedIn] and re-subscribes to
+  /// [AuthRepository.uidChanges] exactly as before, but only ever *sets*
+  /// [state] on success — it never clears it first, so a session that was
+  /// already resolved stays visibly signed in throughout the retry.
+  Future<void> retryBootstrap() => _bootstrap();
+
   /// Upgrades the current anonymous session to a permanent one backed by a
   /// Google identity (§8, §14) — called from the friends feature's
   /// "Add friend" flow when [AuthState.isAnonymous] is still `true`.
@@ -168,6 +186,12 @@ class AuthController extends _$AuthController {
     try {
       final progressSync = ref.read(progressSyncRepositoryProvider);
       final remote = await progressSync.fetchCurrentProgress(uid);
+      // `SelectedJourney.build()`'s own cold-start restore from drift is
+      // unawaited — reading `selectedJourneyProvider` here without waiting
+      // for it first could see `null` (and so treat real, not-yet-loaded
+      // local progress as zero) even on a device that already has some.
+      // See `SelectedJourney.ensureRestored`'s own doc comment.
+      await ref.read(selectedJourneyProvider.notifier).ensureRestored();
       final local = ref.read(selectedJourneyProvider);
       final localMeters = local?.progressMeters ?? 0;
 

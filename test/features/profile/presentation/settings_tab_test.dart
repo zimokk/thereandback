@@ -51,31 +51,37 @@ class _FixedAuthController extends AuthController {
   AuthState build() => _state;
 }
 
-/// A plain mutable counter — `overrideWith`'s factory is called again on
-/// every `ref.invalidate`, creating a fresh `_RecoveringAuthController`
-/// instance each time, so the attempt count has to live outside the
-/// notifier itself to survive across invalidations.
+/// A plain mutable counter, incremented each time [_RecoveringAuthController]
+/// actually retries — read by the regression test below to assert the retry
+/// path was exercised rather than some other code path recovering the uid.
 class _Counter {
   int value = 0;
 }
 
 /// An `AuthController` that starts with no uid at all (mirroring
 /// `_bootstrap()`'s own anonymous-sign-in-failed fallback) and only resolves
-/// one once its `build()` is re-run — used by the regression test below for
-/// the nickname row's retry, which must re-run *this* build, not just
-/// `ensureFriendProfileProvider`'s.
+/// one once [retryBootstrap] actually runs — used by the regression test
+/// below for the nickname row's retry, which must call *this* method, not
+/// just re-invalidate [ensureFriendProfileProvider].
+///
+/// Overrides [retryBootstrap] rather than relying on `build()` being re-run
+/// by `ref.invalidate` — the real retry path no longer invalidates the whole
+/// controller (see `AuthController.retryBootstrap`'s own doc comment on why:
+/// that used to blank `state` back to the signed-out default for the
+/// duration of the retry, a visible flicker), so a fake exercising the same
+/// path has to hook the same method.
 class _RecoveringAuthController extends AuthController {
   _RecoveringAuthController(this._attempts);
 
   final _Counter _attempts;
 
   @override
-  AuthState build() {
-    final state = _attempts.value == 0
-        ? const AuthState()
-        : const AuthState(uid: 'uid-1', isAnonymous: false);
+  AuthState build() => const AuthState();
+
+  @override
+  Future<void> retryBootstrap() async {
     _attempts.value++;
-    return state;
+    state = const AuthState(uid: 'uid-1', isAnonymous: false);
   }
 }
 
@@ -110,9 +116,9 @@ Widget _wrap(
   // "never a real platform plugin in a widget test" rule as the lock-screen
   // fakes below applies to `AuthController`'s real Firebase bootstrap.
   AuthState authState = const AuthState(isAnonymous: true),
-  // Escape hatch for a test that needs `authControllerProvider.build()` to
-  // actually re-run on invalidation (e.g. `_RecoveringAuthController`)
-  // rather than always answer with the same fixed `authState`.
+  // Escape hatch for a test that needs its own `AuthController` subclass
+  // (e.g. `_RecoveringAuthController`, which overrides `retryBootstrap()`)
+  // rather than always answering with the same fixed `authState`.
   AuthController Function()? authControllerFactory,
   GoogleAuthService? googleAuthService,
   AuthRepository? authRepository,
@@ -432,11 +438,11 @@ void main() {
 
   testWidgets(
     'tapping the nickname row when no uid ever resolved (the anonymous '
-    'sign-in itself failed, e.g. no network on cold start) retries the auth '
-    'bootstrap too, not just ensureFriendProfileProvider — regression: the '
-    "retry used to invalidate only ensureFriendProfileProvider, which just "
-    "no-ops forever on a null uid, so the row stayed stuck on \"loading\" "
-    'even after being tapped',
+    'sign-in itself failed, e.g. no network on cold start) calls '
+    'AuthController.retryBootstrap(), not just ensureFriendProfileProvider — '
+    'regression: the retry used to invalidate only '
+    'ensureFriendProfileProvider, which just no-ops forever on a null uid, '
+    'so the row stayed stuck on "loading" even after being tapped',
     (tester) async {
       final userProfileRepository = _MockUserProfileRepository();
       when(
@@ -476,6 +482,7 @@ void main() {
       // immediately has a real nickname — the row must actually recover,
       // not just re-show the same "not ready" snackbar forever.
       expect(find.text('Odysseus'), findsOneWidget);
+      expect(attempts.value, 1);
     },
   );
 
