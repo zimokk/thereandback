@@ -184,6 +184,96 @@
           ]
         ]
       }
+    },
+    {
+      "id": 2,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "lock_screen_preference_rows",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "owner_id",
+            "getter_name": "ownerId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "enabled",
+            "getter_name": "enabled",
+            "moor_type": "bool",
+            "nullable": false,
+            "customConstraints": null,
+            "defaultConstraints": "CHECK (\"enabled\" IN (0, 1))",
+            "dialectAwareDefaultConstraints": {
+              "sqlite": "CHECK (\"enabled\" IN (0, 1))"
+            },
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "owner_id"
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "references": [],
+      "type": "table",
+      "data": {
+        "name": "achievement_unlock_rows",
+        "was_declared_in_moor": false,
+        "columns": [
+          {
+            "name": "owner_id",
+            "getter_name": "ownerId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "achievement_id",
+            "getter_name": "achievementId",
+            "moor_type": "string",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          },
+          {
+            "name": "unlocked_local_date",
+            "getter_name": "unlockedLocalDate",
+            "moor_type": "dateTime",
+            "nullable": false,
+            "customConstraints": null,
+            "default_dart": null,
+            "default_client_dart": null,
+            "dsl_features": []
+          }
+        ],
+        "is_virtual": false,
+        "without_rowid": false,
+        "constraints": [],
+        "explicit_pk": [
+          "owner_id",
+          "achievement_id",
+          "unlocked_local_date"
+        ]
+      }
     }
   ],
   "fixed_sql": [
@@ -202,6 +292,24 @@
         {
           "dialect": "sqlite",
           "sql": "CREATE TABLE IF NOT EXISTS \"step_interval_records\" (\"id\" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, \"owner_id\" TEXT NOT NULL, \"journey_id\" TEXT NOT NULL, \"interval_start\" TEXT NOT NULL, \"interval_end\" TEXT NOT NULL, \"steps\" INTEGER NOT NULL, \"walking_distance_meters\" INTEGER NULL, \"resolved_meters\" INTEGER NOT NULL, \"flagged_pace\" INTEGER NOT NULL DEFAULT 0 CHECK (\"flagged_pace\" IN (0, 1)), \"synced_at\" TEXT NOT NULL, UNIQUE (\"owner_id\", \"journey_id\", \"interval_start\"));"
+        }
+      ]
+    },
+    {
+      "name": "lock_screen_preference_rows",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"lock_screen_preference_rows\" (\"owner_id\" TEXT NOT NULL, \"enabled\" INTEGER NOT NULL CHECK (\"enabled\" IN (0, 1)), PRIMARY KEY (\"owner_id\"));"
+        }
+      ]
+    },
+    {
+      "name": "achievement_unlock_rows",
+      "sql": [
+        {
+          "dialect": "sqlite",
+          "sql": "CREATE TABLE IF NOT EXISTS \"achievement_unlock_rows\" (\"owner_id\" TEXT NOT NULL, \"achievement_id\" TEXT NOT NULL, \"unlocked_local_date\" TEXT NOT NULL, PRIMARY KEY (\"owner_id\", \"achievement_id\", \"unlocked_local_date\"));"
         }
       ]
     }

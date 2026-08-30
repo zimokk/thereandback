@@ -1,6 +1,7 @@
 import 'package:mocktail/mocktail.dart';
 import 'package:test/test.dart';
 import 'package:thereandback/data/drift/database.dart';
+import 'package:thereandback/features/achievements/data/achievement_repository.dart';
 import 'package:thereandback/features/journey/domain/quest_selection.dart';
 import 'package:thereandback/features/steps/data/step_counting_service.dart';
 import 'package:thereandback/features/steps/data/step_sample_repository.dart';
@@ -23,6 +24,10 @@ void main() {
     engine = StepsSyncEngine(
       stepCountingService: adapter,
       stepSampleRepository: repository,
+      // Real, in-memory-backed repository, not a mock — this task's own
+      // achievement-persistence behavior is exercised for real, the same
+      // way `repository` above already is.
+      achievementRepository: DriftAchievementRepository(db),
     );
   });
   tearDown(() => db.close());

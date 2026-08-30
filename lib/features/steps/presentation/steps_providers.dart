@@ -8,6 +8,7 @@ import '../../../app/app_lifecycle.dart';
 import '../../../app/auth_provider.dart';
 import '../../../app/database_provider.dart';
 import '../../../data/firestore/firestore_providers.dart';
+import '../../achievements/presentation/achievements_providers.dart';
 import '../../journey/presentation/journey_providers.dart';
 import '../data/android_step_counting_service.dart';
 import '../data/ios_step_counting_service.dart';
@@ -203,6 +204,7 @@ class StepsSync extends _$StepsSync {
       final engine = StepsSyncEngine(
         stepCountingService: ref.read(stepCountingServiceProvider),
         stepSampleRepository: ref.read(stepSampleRepositoryProvider),
+        achievementRepository: ref.read(achievementRepositoryProvider),
       );
       final result = await engine.sync(quest: selected, now: DateTime.now());
 
@@ -213,6 +215,12 @@ class StepsSync extends _$StepsSync {
             syncedAt: result.syncedAt,
           );
       state = state.copyWith(lastSyncFlagged: result.flagged);
+      // `achievementUnlocksProvider` is `@riverpod` (autoDispose): it drops
+      // its cached read the moment nothing watches it (leaving the Трофеи
+      // tab), so the next visit already re-queries fresh — no manual
+      // invalidation needed here for that case. This covers the one case
+      // that isn't: the tab open and watching *right now*, mid-sync.
+      ref.invalidate(achievementUnlocksProvider);
 
       unawaited(
         _pushProgress(

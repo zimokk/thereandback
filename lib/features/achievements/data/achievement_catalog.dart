@@ -92,3 +92,42 @@ const achievementCatalog = <AchievementDef>[
     thresholdMeters: 2850000,
   ),
 ];
+
+/// Daily trophies (this task's requirement): a local calendar day's *total*
+/// walked distance, across every quest — not part of any route's story
+/// (§6.3 extended), evaluated by
+/// `achievement_unlocks.dart`'s `computeDailyAchievementUnlockDates`, never
+/// by `evaluateAchievements`. Shown in the Трофеи tab's own "Каждый день"
+/// section, separate from [achievementCatalog]'s quest trophies.
+const dailyAchievementCatalog = <AchievementDef>[
+  AchievementDef(
+    id: 'daily-1km',
+    titleKey: 'achievementDaily1kmTitle',
+    kind: AchievementKind.dailyDistance,
+    thresholdMeters: 1000,
+  ),
+  AchievementDef(
+    id: 'daily-5km',
+    titleKey: 'achievementDaily5kmTitle',
+    kind: AchievementKind.dailyDistance,
+    thresholdMeters: 5000,
+  ),
+  AchievementDef(
+    id: 'daily-10km',
+    titleKey: 'achievementDaily10kmTitle',
+    kind: AchievementKind.dailyDistance,
+    thresholdMeters: 10000,
+  ),
+  AchievementDef(
+    id: 'daily-20km',
+    titleKey: 'achievementDaily20kmTitle',
+    kind: AchievementKind.dailyDistance,
+    thresholdMeters: 20000,
+  ),
+  AchievementDef(
+    id: 'daily-50km',
+    titleKey: 'achievementDaily50kmTitle',
+    kind: AchievementKind.dailyDistance,
+    thresholdMeters: 50000,
+  ),
+];

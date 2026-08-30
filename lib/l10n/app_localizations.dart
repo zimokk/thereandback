@@ -422,6 +422,66 @@ abstract class AppLocalizations {
   /// **'{amount} left'**
   String achievementRemainingLabel(String amount);
 
+  /// Daily achievement title: walk 1 km within one local calendar day
+  ///
+  /// In en, this message translates to:
+  /// **'1 kilometer in a day'**
+  String get achievementDaily1kmTitle;
+
+  /// Daily achievement title: walk 5 km within one local calendar day
+  ///
+  /// In en, this message translates to:
+  /// **'5 kilometers in a day'**
+  String get achievementDaily5kmTitle;
+
+  /// Daily achievement title: walk 10 km within one local calendar day
+  ///
+  /// In en, this message translates to:
+  /// **'10 kilometers in a day'**
+  String get achievementDaily10kmTitle;
+
+  /// Daily achievement title: walk 20 km within one local calendar day
+  ///
+  /// In en, this message translates to:
+  /// **'20 kilometers in a day'**
+  String get achievementDaily20kmTitle;
+
+  /// Daily achievement title: walk 50 km within one local calendar day
+  ///
+  /// In en, this message translates to:
+  /// **'50 kilometers in a day'**
+  String get achievementDaily50kmTitle;
+
+  /// Трофеи screen's sub-tab label for quest-distance trophies
+  ///
+  /// In en, this message translates to:
+  /// **'Quest'**
+  String get achievementsJourneyTabLabel;
+
+  /// Трофеи screen's sub-tab label for daily-distance trophies
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get achievementsDailyTabLabel;
+
+  /// Caption on a daily achievement tile never reached on any day
+  ///
+  /// In en, this message translates to:
+  /// **'Not yet reached'**
+  String get achievementNeverUnlockedLabel;
+
+  /// Caption on a daily achievement tile reached on more than one day, and the small badge on its tile
+  ///
+  /// In en, this message translates to:
+  /// **'Reached: {count}'**
+  String achievementUnlockedCountLabel(int count);
+
+  /// Title of the bottom sheet listing the day(s) a trophy was earned
+  ///
+  /// In en, this message translates to:
+  /// **'Dates reached'**
+  String get achievementUnlockDatesSheetTitle;
+
   /// Settings tab app bar title
   ///
   /// In en, this message translates to:

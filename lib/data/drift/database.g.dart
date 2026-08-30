@@ -1137,6 +1137,298 @@ class LockScreenPreferenceRowsCompanion
   }
 }
 
+class $AchievementUnlockRowsTable extends AchievementUnlockRows
+    with TableInfo<$AchievementUnlockRowsTable, AchievementUnlockRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $AchievementUnlockRowsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _ownerIdMeta = const VerificationMeta(
+    'ownerId',
+  );
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+    'owner_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _achievementIdMeta = const VerificationMeta(
+    'achievementId',
+  );
+  @override
+  late final GeneratedColumn<String> achievementId = GeneratedColumn<String>(
+    'achievement_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _unlockedLocalDateMeta = const VerificationMeta(
+    'unlockedLocalDate',
+  );
+  @override
+  late final GeneratedColumn<DateTime> unlockedLocalDate =
+      GeneratedColumn<DateTime>(
+        'unlocked_local_date',
+        aliasedName,
+        false,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: true,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    ownerId,
+    achievementId,
+    unlockedLocalDate,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'achievement_unlock_rows';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<AchievementUnlockRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('owner_id')) {
+      context.handle(
+        _ownerIdMeta,
+        ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ownerIdMeta);
+    }
+    if (data.containsKey('achievement_id')) {
+      context.handle(
+        _achievementIdMeta,
+        achievementId.isAcceptableOrUnknown(
+          data['achievement_id']!,
+          _achievementIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_achievementIdMeta);
+    }
+    if (data.containsKey('unlocked_local_date')) {
+      context.handle(
+        _unlockedLocalDateMeta,
+        unlockedLocalDate.isAcceptableOrUnknown(
+          data['unlocked_local_date']!,
+          _unlockedLocalDateMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_unlockedLocalDateMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {
+    ownerId,
+    achievementId,
+    unlockedLocalDate,
+  };
+  @override
+  AchievementUnlockRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AchievementUnlockRow(
+      ownerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_id'],
+      )!,
+      achievementId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}achievement_id'],
+      )!,
+      unlockedLocalDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}unlocked_local_date'],
+      )!,
+    );
+  }
+
+  @override
+  $AchievementUnlockRowsTable createAlias(String alias) {
+    return $AchievementUnlockRowsTable(attachedDatabase, alias);
+  }
+}
+
+class AchievementUnlockRow extends DataClass
+    implements Insertable<AchievementUnlockRow> {
+  final String ownerId;
+  final String achievementId;
+  final DateTime unlockedLocalDate;
+  const AchievementUnlockRow({
+    required this.ownerId,
+    required this.achievementId,
+    required this.unlockedLocalDate,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['owner_id'] = Variable<String>(ownerId);
+    map['achievement_id'] = Variable<String>(achievementId);
+    map['unlocked_local_date'] = Variable<DateTime>(unlockedLocalDate);
+    return map;
+  }
+
+  AchievementUnlockRowsCompanion toCompanion(bool nullToAbsent) {
+    return AchievementUnlockRowsCompanion(
+      ownerId: Value(ownerId),
+      achievementId: Value(achievementId),
+      unlockedLocalDate: Value(unlockedLocalDate),
+    );
+  }
+
+  factory AchievementUnlockRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AchievementUnlockRow(
+      ownerId: serializer.fromJson<String>(json['ownerId']),
+      achievementId: serializer.fromJson<String>(json['achievementId']),
+      unlockedLocalDate: serializer.fromJson<DateTime>(
+        json['unlockedLocalDate'],
+      ),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'ownerId': serializer.toJson<String>(ownerId),
+      'achievementId': serializer.toJson<String>(achievementId),
+      'unlockedLocalDate': serializer.toJson<DateTime>(unlockedLocalDate),
+    };
+  }
+
+  AchievementUnlockRow copyWith({
+    String? ownerId,
+    String? achievementId,
+    DateTime? unlockedLocalDate,
+  }) => AchievementUnlockRow(
+    ownerId: ownerId ?? this.ownerId,
+    achievementId: achievementId ?? this.achievementId,
+    unlockedLocalDate: unlockedLocalDate ?? this.unlockedLocalDate,
+  );
+  AchievementUnlockRow copyWithCompanion(AchievementUnlockRowsCompanion data) {
+    return AchievementUnlockRow(
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      achievementId: data.achievementId.present
+          ? data.achievementId.value
+          : this.achievementId,
+      unlockedLocalDate: data.unlockedLocalDate.present
+          ? data.unlockedLocalDate.value
+          : this.unlockedLocalDate,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AchievementUnlockRow(')
+          ..write('ownerId: $ownerId, ')
+          ..write('achievementId: $achievementId, ')
+          ..write('unlockedLocalDate: $unlockedLocalDate')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(ownerId, achievementId, unlockedLocalDate);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AchievementUnlockRow &&
+          other.ownerId == this.ownerId &&
+          other.achievementId == this.achievementId &&
+          other.unlockedLocalDate == this.unlockedLocalDate);
+}
+
+class AchievementUnlockRowsCompanion
+    extends UpdateCompanion<AchievementUnlockRow> {
+  final Value<String> ownerId;
+  final Value<String> achievementId;
+  final Value<DateTime> unlockedLocalDate;
+  final Value<int> rowid;
+  const AchievementUnlockRowsCompanion({
+    this.ownerId = const Value.absent(),
+    this.achievementId = const Value.absent(),
+    this.unlockedLocalDate = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AchievementUnlockRowsCompanion.insert({
+    required String ownerId,
+    required String achievementId,
+    required DateTime unlockedLocalDate,
+    this.rowid = const Value.absent(),
+  }) : ownerId = Value(ownerId),
+       achievementId = Value(achievementId),
+       unlockedLocalDate = Value(unlockedLocalDate);
+  static Insertable<AchievementUnlockRow> custom({
+    Expression<String>? ownerId,
+    Expression<String>? achievementId,
+    Expression<DateTime>? unlockedLocalDate,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (ownerId != null) 'owner_id': ownerId,
+      if (achievementId != null) 'achievement_id': achievementId,
+      if (unlockedLocalDate != null) 'unlocked_local_date': unlockedLocalDate,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AchievementUnlockRowsCompanion copyWith({
+    Value<String>? ownerId,
+    Value<String>? achievementId,
+    Value<DateTime>? unlockedLocalDate,
+    Value<int>? rowid,
+  }) {
+    return AchievementUnlockRowsCompanion(
+      ownerId: ownerId ?? this.ownerId,
+      achievementId: achievementId ?? this.achievementId,
+      unlockedLocalDate: unlockedLocalDate ?? this.unlockedLocalDate,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (achievementId.present) {
+      map['achievement_id'] = Variable<String>(achievementId.value);
+    }
+    if (unlockedLocalDate.present) {
+      map['unlocked_local_date'] = Variable<DateTime>(unlockedLocalDate.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AchievementUnlockRowsCompanion(')
+          ..write('ownerId: $ownerId, ')
+          ..write('achievementId: $achievementId, ')
+          ..write('unlockedLocalDate: $unlockedLocalDate, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1146,6 +1438,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $StepIntervalRecordsTable(this);
   late final $LockScreenPreferenceRowsTable lockScreenPreferenceRows =
       $LockScreenPreferenceRowsTable(this);
+  late final $AchievementUnlockRowsTable achievementUnlockRows =
+      $AchievementUnlockRowsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1154,7 +1448,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     selectedQuestRows,
     stepIntervalRecords,
     lockScreenPreferenceRows,
+    achievementUnlockRows,
   ];
+  @override
+  DriftDatabaseOptions get options =>
+      const DriftDatabaseOptions(storeDateTimeAsText: true);
 }
 
 typedef $$SelectedQuestRowsTableCreateCompanionBuilder =
@@ -1809,6 +2107,191 @@ typedef $$LockScreenPreferenceRowsTableProcessedTableManager =
       LockScreenPreferenceRow,
       PrefetchHooks Function()
     >;
+typedef $$AchievementUnlockRowsTableCreateCompanionBuilder =
+    AchievementUnlockRowsCompanion Function({
+      required String ownerId,
+      required String achievementId,
+      required DateTime unlockedLocalDate,
+      Value<int> rowid,
+    });
+typedef $$AchievementUnlockRowsTableUpdateCompanionBuilder =
+    AchievementUnlockRowsCompanion Function({
+      Value<String> ownerId,
+      Value<String> achievementId,
+      Value<DateTime> unlockedLocalDate,
+      Value<int> rowid,
+    });
+
+class $$AchievementUnlockRowsTableFilterComposer
+    extends Composer<_$AppDatabase, $AchievementUnlockRowsTable> {
+  $$AchievementUnlockRowsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get achievementId => $composableBuilder(
+    column: $table.achievementId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get unlockedLocalDate => $composableBuilder(
+    column: $table.unlockedLocalDate,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$AchievementUnlockRowsTableOrderingComposer
+    extends Composer<_$AppDatabase, $AchievementUnlockRowsTable> {
+  $$AchievementUnlockRowsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get achievementId => $composableBuilder(
+    column: $table.achievementId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get unlockedLocalDate => $composableBuilder(
+    column: $table.unlockedLocalDate,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$AchievementUnlockRowsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $AchievementUnlockRowsTable> {
+  $$AchievementUnlockRowsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+
+  GeneratedColumn<String> get achievementId => $composableBuilder(
+    column: $table.achievementId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get unlockedLocalDate => $composableBuilder(
+    column: $table.unlockedLocalDate,
+    builder: (column) => column,
+  );
+}
+
+class $$AchievementUnlockRowsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $AchievementUnlockRowsTable,
+          AchievementUnlockRow,
+          $$AchievementUnlockRowsTableFilterComposer,
+          $$AchievementUnlockRowsTableOrderingComposer,
+          $$AchievementUnlockRowsTableAnnotationComposer,
+          $$AchievementUnlockRowsTableCreateCompanionBuilder,
+          $$AchievementUnlockRowsTableUpdateCompanionBuilder,
+          (
+            AchievementUnlockRow,
+            BaseReferences<
+              _$AppDatabase,
+              $AchievementUnlockRowsTable,
+              AchievementUnlockRow
+            >,
+          ),
+          AchievementUnlockRow,
+          PrefetchHooks Function()
+        > {
+  $$AchievementUnlockRowsTableTableManager(
+    _$AppDatabase db,
+    $AchievementUnlockRowsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$AchievementUnlockRowsTableFilterComposer(
+                $db: db,
+                $table: table,
+              ),
+          createOrderingComposer: () =>
+              $$AchievementUnlockRowsTableOrderingComposer(
+                $db: db,
+                $table: table,
+              ),
+          createComputedFieldComposer: () =>
+              $$AchievementUnlockRowsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> ownerId = const Value.absent(),
+                Value<String> achievementId = const Value.absent(),
+                Value<DateTime> unlockedLocalDate = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => AchievementUnlockRowsCompanion(
+                ownerId: ownerId,
+                achievementId: achievementId,
+                unlockedLocalDate: unlockedLocalDate,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String ownerId,
+                required String achievementId,
+                required DateTime unlockedLocalDate,
+                Value<int> rowid = const Value.absent(),
+              }) => AchievementUnlockRowsCompanion.insert(
+                ownerId: ownerId,
+                achievementId: achievementId,
+                unlockedLocalDate: unlockedLocalDate,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$AchievementUnlockRowsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $AchievementUnlockRowsTable,
+      AchievementUnlockRow,
+      $$AchievementUnlockRowsTableFilterComposer,
+      $$AchievementUnlockRowsTableOrderingComposer,
+      $$AchievementUnlockRowsTableAnnotationComposer,
+      $$AchievementUnlockRowsTableCreateCompanionBuilder,
+      $$AchievementUnlockRowsTableUpdateCompanionBuilder,
+      (
+        AchievementUnlockRow,
+        BaseReferences<
+          _$AppDatabase,
+          $AchievementUnlockRowsTable,
+          AchievementUnlockRow
+        >,
+      ),
+      AchievementUnlockRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -1822,4 +2305,6 @@ class $AppDatabaseManager {
         _db,
         _db.lockScreenPreferenceRows,
       );
+  $$AchievementUnlockRowsTableTableManager get achievementUnlockRows =>
+      $$AchievementUnlockRowsTableTableManager(_db, _db.achievementUnlockRows);
 }

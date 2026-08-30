@@ -957,14 +957,269 @@ class LockScreenPreferenceRowsCompanion
   }
 }
 
-class DatabaseAtV2 extends GeneratedDatabase {
-  DatabaseAtV2(QueryExecutor e) : super(e);
+class AchievementUnlockRows extends Table
+    with TableInfo<AchievementUnlockRows, AchievementUnlockRowsData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  AchievementUnlockRows(this.attachedDatabase, [this._alias]);
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+    'owner_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  late final GeneratedColumn<String> achievementId = GeneratedColumn<String>(
+    'achievement_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+    $customConstraints: 'NOT NULL',
+  );
+  late final GeneratedColumn<String> unlockedLocalDate =
+      GeneratedColumn<String>(
+        'unlocked_local_date',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+        $customConstraints: 'NOT NULL',
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    ownerId,
+    achievementId,
+    unlockedLocalDate,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'achievement_unlock_rows';
+  @override
+  Set<GeneratedColumn> get $primaryKey => {
+    ownerId,
+    achievementId,
+    unlockedLocalDate,
+  };
+  @override
+  AchievementUnlockRowsData map(
+    Map<String, dynamic> data, {
+    String? tablePrefix,
+  }) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return AchievementUnlockRowsData(
+      ownerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_id'],
+      )!,
+      achievementId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}achievement_id'],
+      )!,
+      unlockedLocalDate: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}unlocked_local_date'],
+      )!,
+    );
+  }
+
+  @override
+  AchievementUnlockRows createAlias(String alias) {
+    return AchievementUnlockRows(attachedDatabase, alias);
+  }
+
+  @override
+  List<String> get customConstraints => const [
+    'PRIMARY KEY(owner_id, achievement_id, unlocked_local_date)',
+  ];
+  @override
+  bool get dontWriteConstraints => true;
+}
+
+class AchievementUnlockRowsData extends DataClass
+    implements Insertable<AchievementUnlockRowsData> {
+  final String ownerId;
+  final String achievementId;
+  final String unlockedLocalDate;
+  const AchievementUnlockRowsData({
+    required this.ownerId,
+    required this.achievementId,
+    required this.unlockedLocalDate,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['owner_id'] = Variable<String>(ownerId);
+    map['achievement_id'] = Variable<String>(achievementId);
+    map['unlocked_local_date'] = Variable<String>(unlockedLocalDate);
+    return map;
+  }
+
+  AchievementUnlockRowsCompanion toCompanion(bool nullToAbsent) {
+    return AchievementUnlockRowsCompanion(
+      ownerId: Value(ownerId),
+      achievementId: Value(achievementId),
+      unlockedLocalDate: Value(unlockedLocalDate),
+    );
+  }
+
+  factory AchievementUnlockRowsData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return AchievementUnlockRowsData(
+      ownerId: serializer.fromJson<String>(json['ownerId']),
+      achievementId: serializer.fromJson<String>(json['achievementId']),
+      unlockedLocalDate: serializer.fromJson<String>(json['unlockedLocalDate']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'ownerId': serializer.toJson<String>(ownerId),
+      'achievementId': serializer.toJson<String>(achievementId),
+      'unlockedLocalDate': serializer.toJson<String>(unlockedLocalDate),
+    };
+  }
+
+  AchievementUnlockRowsData copyWith({
+    String? ownerId,
+    String? achievementId,
+    String? unlockedLocalDate,
+  }) => AchievementUnlockRowsData(
+    ownerId: ownerId ?? this.ownerId,
+    achievementId: achievementId ?? this.achievementId,
+    unlockedLocalDate: unlockedLocalDate ?? this.unlockedLocalDate,
+  );
+  AchievementUnlockRowsData copyWithCompanion(
+    AchievementUnlockRowsCompanion data,
+  ) {
+    return AchievementUnlockRowsData(
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      achievementId: data.achievementId.present
+          ? data.achievementId.value
+          : this.achievementId,
+      unlockedLocalDate: data.unlockedLocalDate.present
+          ? data.unlockedLocalDate.value
+          : this.unlockedLocalDate,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AchievementUnlockRowsData(')
+          ..write('ownerId: $ownerId, ')
+          ..write('achievementId: $achievementId, ')
+          ..write('unlockedLocalDate: $unlockedLocalDate')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(ownerId, achievementId, unlockedLocalDate);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is AchievementUnlockRowsData &&
+          other.ownerId == this.ownerId &&
+          other.achievementId == this.achievementId &&
+          other.unlockedLocalDate == this.unlockedLocalDate);
+}
+
+class AchievementUnlockRowsCompanion
+    extends UpdateCompanion<AchievementUnlockRowsData> {
+  final Value<String> ownerId;
+  final Value<String> achievementId;
+  final Value<String> unlockedLocalDate;
+  final Value<int> rowid;
+  const AchievementUnlockRowsCompanion({
+    this.ownerId = const Value.absent(),
+    this.achievementId = const Value.absent(),
+    this.unlockedLocalDate = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  AchievementUnlockRowsCompanion.insert({
+    required String ownerId,
+    required String achievementId,
+    required String unlockedLocalDate,
+    this.rowid = const Value.absent(),
+  }) : ownerId = Value(ownerId),
+       achievementId = Value(achievementId),
+       unlockedLocalDate = Value(unlockedLocalDate);
+  static Insertable<AchievementUnlockRowsData> custom({
+    Expression<String>? ownerId,
+    Expression<String>? achievementId,
+    Expression<String>? unlockedLocalDate,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (ownerId != null) 'owner_id': ownerId,
+      if (achievementId != null) 'achievement_id': achievementId,
+      if (unlockedLocalDate != null) 'unlocked_local_date': unlockedLocalDate,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  AchievementUnlockRowsCompanion copyWith({
+    Value<String>? ownerId,
+    Value<String>? achievementId,
+    Value<String>? unlockedLocalDate,
+    Value<int>? rowid,
+  }) {
+    return AchievementUnlockRowsCompanion(
+      ownerId: ownerId ?? this.ownerId,
+      achievementId: achievementId ?? this.achievementId,
+      unlockedLocalDate: unlockedLocalDate ?? this.unlockedLocalDate,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (achievementId.present) {
+      map['achievement_id'] = Variable<String>(achievementId.value);
+    }
+    if (unlockedLocalDate.present) {
+      map['unlocked_local_date'] = Variable<String>(unlockedLocalDate.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('AchievementUnlockRowsCompanion(')
+          ..write('ownerId: $ownerId, ')
+          ..write('achievementId: $achievementId, ')
+          ..write('unlockedLocalDate: $unlockedLocalDate, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class DatabaseAtV3 extends GeneratedDatabase {
+  DatabaseAtV3(QueryExecutor e) : super(e);
   late final SelectedQuestRows selectedQuestRows = SelectedQuestRows(this);
   late final StepIntervalRecords stepIntervalRecords = StepIntervalRecords(
     this,
   );
   late final LockScreenPreferenceRows lockScreenPreferenceRows =
       LockScreenPreferenceRows(this);
+  late final AchievementUnlockRows achievementUnlockRows =
+      AchievementUnlockRows(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -973,9 +1228,10 @@ class DatabaseAtV2 extends GeneratedDatabase {
     selectedQuestRows,
     stepIntervalRecords,
     lockScreenPreferenceRows,
+    achievementUnlockRows,
   ];
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
   @override
   DriftDatabaseOptions get options =>
       const DriftDatabaseOptions(storeDateTimeAsText: true);

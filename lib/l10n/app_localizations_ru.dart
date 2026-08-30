@@ -214,6 +214,38 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
+  String get achievementDaily1kmTitle => '1 километр за день';
+
+  @override
+  String get achievementDaily5kmTitle => '5 километров за день';
+
+  @override
+  String get achievementDaily10kmTitle => '10 километров за день';
+
+  @override
+  String get achievementDaily20kmTitle => '20 километров за день';
+
+  @override
+  String get achievementDaily50kmTitle => '50 километров за день';
+
+  @override
+  String get achievementsJourneyTabLabel => 'Поход';
+
+  @override
+  String get achievementsDailyTabLabel => 'Каждый день';
+
+  @override
+  String get achievementNeverUnlockedLabel => 'Ещё не получено';
+
+  @override
+  String achievementUnlockedCountLabel(int count) {
+    return 'Получено: $count';
+  }
+
+  @override
+  String get achievementUnlockDatesSheetTitle => 'Даты получения';
+
+  @override
   String get settingsTitle => 'Настройки';
 
   @override

@@ -77,4 +77,21 @@ void main() {
     expect(atThreshold.single.unlocked, isTrue);
     expect(atThreshold.single.remainingMeters, 0);
   });
+
+  test('a dailyDistance def is a caller bug, not something this cumulative '
+      'evaluator can answer — see achievement_unlocks.dart instead', () {
+    const dailyCatalog = [
+      AchievementDef(
+        id: 'daily-1km',
+        titleKey: 'achievementDaily1kmTitle',
+        kind: AchievementKind.dailyDistance,
+        thresholdMeters: 1000,
+      ),
+    ];
+
+    expect(
+      () => evaluateAchievements(progressMeters: 1000, catalog: dailyCatalog),
+      throwsArgumentError,
+    );
+  });
 }
