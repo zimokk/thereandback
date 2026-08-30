@@ -416,34 +416,40 @@ class _MapNotice extends StatelessWidget {
   }
 }
 
-/// Emoji standing in for each landmark on the map, keyed by
+/// Monochrome icon standing in for each landmark on the map, keyed by
 /// [MapLandmark.id] — a small piece of presentation styling, not quest
 /// content, so it lives here rather than in `map.json` (§11: the id itself
 /// is the stable, content-authored key; what glyph represents it on this
-/// screen is a display decision). An id this map doesn't know about (a
-/// future quest's landmarks) falls back to [_defaultLandmarkEmoji] rather
-/// than throwing — new quest content should never crash the map.
-const Map<String, String> _landmarkEmoji = {
-  'troy': '🏛️',
-  'aeaea-circe': '🐖', // Circe turns Odysseus's crew into pigs.
-  'lotus-eaters': '🪷',
-  'calypso': '🏝️',
-  'scylla-charybdis': '🌀',
-  'sirens': '🧜‍♀️',
-  'ithaca': '🏠',
+/// screen is a display decision).
+///
+/// Plain Material icons, painted in a single [AppColors.mapLandmarkInk]
+/// tone (styling fix) — colourful emoji (a mermaid, a pink pig) read as out
+/// of place against the map's ink/parchment illustration style; a
+/// consistent engraved-looking glyph set matches it instead. An id this map
+/// doesn't know about (a future quest's landmarks) falls back to
+/// [_defaultLandmarkIcon] rather than throwing — new quest content should
+/// never crash the map.
+const Map<String, IconData> _landmarkIcons = {
+  'troy': Icons.account_balance, // temple/columns
+  'aeaea-circe': Icons.change_circle_outlined, // Circe's transformation
+  'lotus-eaters': Icons.spa, // the lotus flower
+  'calypso': Icons.terrain, // the island
+  'scylla-charybdis': Icons.cyclone, // the whirlpool
+  'sirens': Icons.music_note, // the siren song
+  'ithaca': Icons.home,
 };
-const String _defaultLandmarkEmoji = '📍';
+const IconData _defaultLandmarkIcon = Icons.location_on;
 
-/// The emoji marker for one landmark id. Exposed at the top level (rather
+/// The icon marker for one landmark id. Exposed at the top level (rather
 /// than folded straight into the painter) so the mapping itself — every
 /// shipped id resolves to something, the fallback pin catches the rest —
 /// has a unit test that doesn't need a canvas.
 @visibleForTesting
-String emojiForLandmarkId(String landmarkId) =>
-    _landmarkEmoji[landmarkId] ?? _defaultLandmarkEmoji;
+IconData iconForLandmarkId(String landmarkId) =>
+    _landmarkIcons[landmarkId] ?? _defaultLandmarkIcon;
 
-/// Font size of a landmark's emoji marker, in logical pixels.
-const double _landmarkEmojiSize = 16;
+/// Size of a landmark's icon marker, in logical pixels.
+const double _landmarkIconSize = 16;
 
 /// Radius of the dark halo painted behind a landmark emoji, so it stays
 /// legible over both the pale ink lines and the black background.
@@ -526,10 +532,16 @@ class _RouteOverlayPainter extends CustomPainter {
       _landmarkHaloRadius,
       Paint()..color = AppColors.background.withValues(alpha: 0.55),
     );
+    final icon = iconForLandmarkId(landmark.id);
     final painter = TextPainter(
       text: TextSpan(
-        text: emojiForLandmarkId(landmark.id),
-        style: const TextStyle(fontSize: _landmarkEmojiSize),
+        text: String.fromCharCode(icon.codePoint),
+        style: TextStyle(
+          fontSize: _landmarkIconSize,
+          fontFamily: icon.fontFamily,
+          package: icon.fontPackage,
+          color: AppColors.mapLandmarkInk,
+        ),
       ),
       textDirection: TextDirection.ltr,
     )..layout();

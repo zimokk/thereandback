@@ -1,5 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../../../core/app_theme_id.dart';
+
 part 'journey.freezed.dart';
 
 /// A quest a user can walk: a path from [pointA] to [pointB] with a fixed
@@ -19,5 +21,9 @@ abstract class Journey with _$Journey {
     /// Total route length in meters. Always a whole, non-negative number —
     /// the domain never deals in fractional meters (§11).
     required int totalMeters,
+
+    /// Which visual flavor (§6.5, §14) Настройки defaults to for this quest
+    /// when the user hasn't pinned an explicit override.
+    required AppThemeId themeId,
   }) = _Journey;
 }

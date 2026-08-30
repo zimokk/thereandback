@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:thereandback/app/auth_provider.dart';
 import 'package:thereandback/app/theme.dart';
+import 'package:thereandback/core/app_theme_id.dart';
 import 'package:thereandback/data/firebase/google_sign_in_service.dart';
 import 'package:thereandback/data/firestore/firestore_providers.dart';
 import 'package:thereandback/data/firestore/friendship_repository.dart';
@@ -15,6 +16,7 @@ import 'package:thereandback/features/friends/domain/friendship.dart';
 import 'package:thereandback/features/friends/presentation/challengers_tab.dart';
 import 'package:thereandback/features/journey/domain/quest_selection.dart';
 import 'package:thereandback/features/journey/presentation/journey_providers.dart';
+import 'package:thereandback/features/profile/presentation/theme_provider.dart';
 import 'package:thereandback/l10n/app_localizations.dart';
 
 class _MockFriendshipRepository extends Mock implements FriendshipRepository {}
@@ -41,6 +43,13 @@ class _FixedAuthController extends AuthController {
   AuthState build() => _state;
 }
 
+class _FixedThemeOverride extends AppThemeOverride {
+  _FixedThemeOverride(this._state);
+  final AppThemeId? _state;
+  @override
+  AppThemeId? build() => _state;
+}
+
 Friendship _friendship({
   required String a,
   required String b,
@@ -63,6 +72,10 @@ Widget _wrap({
   required _MockProgressSyncRepository progressSyncRepository,
   required _MockGoogleAuthService googleAuthService,
   AuthState authState = const AuthState(uid: 'me', isAnonymous: false),
+  // Unset (the default) leaves AppThemeOverride at its own default (`null`
+  // — "follow the active quest"), which for the fixed odyssey-ithaca quest
+  // below resolves to AppThemeId.odyssey.
+  AppThemeId? themeOverride,
 }) {
   return ProviderScope(
     overrides: [
@@ -84,6 +97,10 @@ Widget _wrap({
           ),
         ),
       ),
+      if (themeOverride != null)
+        appThemeOverrideProvider.overrideWith(
+          () => _FixedThemeOverride(themeOverride),
+        ),
     ],
     child: MaterialApp(
       theme: buildAppTheme(),
@@ -134,9 +151,38 @@ void main() {
         });
   });
 
-  testWidgets('empty state renders when there are no friends or requests', (
-    tester,
-  ) async {
+  testWidgets(
+    'empty state renders the Odyssey-themed copy by default — the fixed '
+    'selectedJourneyProvider below is the odyssey-ithaca quest, and '
+    "effectiveThemeProvider's default (no override) follows it (§6.4, "
+    '§14 "themes")',
+    (tester) async {
+      when(() => friendshipRepository.watchMyFriendships('me'))
+          .thenAnswer((_) => Stream.value(const []));
+
+      await tester.pumpWidget(
+        _wrap(
+          friendshipRepository: friendshipRepository,
+          userProfileRepository: userProfileRepository,
+          progressSyncRepository: progressSyncRepository,
+          googleAuthService: googleAuthService,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('The journey is better together'), findsOneWidget);
+      expect(find.text('No friends yet'), findsNothing);
+      // The inline add-friend button this theme adds, wired to the same
+      // dialog the AppBar's own add-friend icon opens.
+      expect(find.text('Add friend'), findsOneWidget);
+      await tester.tap(find.text('Add friend'));
+      await tester.pumpAndSettle();
+      expect(find.text('Add a friend'), findsOneWidget); // dialog title
+    },
+  );
+
+  testWidgets('a non-Odyssey theme keeps the plain empty state instead of the '
+      'Odyssey illustration/copy', (tester) async {
     when(() => friendshipRepository.watchMyFriendships('me'))
         .thenAnswer((_) => Stream.value(const []));
 
@@ -146,11 +192,13 @@ void main() {
         userProfileRepository: userProfileRepository,
         progressSyncRepository: progressSyncRepository,
         googleAuthService: googleAuthService,
+        themeOverride: AppThemeId.classic,
       ),
     );
     await tester.pumpAndSettle();
 
     expect(find.text('No friends yet'), findsOneWidget);
+    expect(find.text('The journey is better together'), findsNothing);
   });
 
   testWidgets('a populated table shows the own row and an accepted friend', (

@@ -9,7 +9,11 @@ ThemeData buildAppTheme() {
   return ThemeData(
     brightness: Brightness.dark,
     scaffoldBackgroundColor: AppColors.background,
-    fontFamily: 'serif',
+    // Sans by default (styling fix — "обычный текст... sans-serif"); serif
+    // is opted into per-style below (headlineSmall) rather than being the
+    // app-wide fallback, since most default-styled text is ordinary UI
+    // copy, not one of AppTypography's few serif headings.
+    fontFamily: 'sans-serif',
     colorScheme: const ColorScheme.dark(
       primary: AppColors.gold,
       secondary: AppColors.gold,

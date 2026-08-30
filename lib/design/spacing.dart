@@ -21,4 +21,8 @@ abstract final class AppStroke {
 
   /// Stroke width for the placeholder path line on the Путь tab.
   static const double path = 2;
+
+  /// Hairline width for a card's [AppColors.cardBorder] edge — thin enough
+  /// to read as definition, not a heavy outline (§9 styling fix).
+  static const double cardBorder = 1;
 }

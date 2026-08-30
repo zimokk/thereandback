@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/app_theme_id.dart';
 import '../../../core/formatters.dart';
 import '../../../design/colors.dart';
+import '../../../design/components/app_card.dart';
 import '../../../design/components/app_snackbar.dart';
 import '../../../design/components/distance_text.dart';
 import '../../../design/spacing.dart';
 import '../../../design/typography.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../profile/presentation/theme_provider.dart';
 import '../domain/friend_progress.dart';
 import 'friends_providers.dart';
 
@@ -113,7 +116,7 @@ class ChallengersTab extends ConsumerWidget {
             if (view.rows.length <= 1 &&
                 view.incoming.isEmpty &&
                 view.outgoing.isEmpty)
-              _EmptyState(l10n: l10n)
+              _EmptyState(ref: ref, l10n: l10n)
             else
               for (final row in view.rows)
                 _FriendRow(
@@ -261,13 +264,8 @@ class _MyNicknameCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: Border.all(color: AppColors.gold),
-      ),
+    return AppCard(
+      highlighted: true,
       child: Row(
         children: [
           Expanded(
@@ -285,7 +283,7 @@ class _MyNicknameCard extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.copy, color: AppColors.gold),
+            icon: const Icon(Icons.copy, color: AppColors.goldMuted),
             tooltip: l10n.friendsMyNicknameCopyTooltip,
             onPressed: nickname == null
                 ? null
@@ -324,13 +322,8 @@ class _PendingRequestTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AppCard(
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-      ),
       child: Row(
         children: [
           Expanded(child: Text(label, style: AppTypography.body)),
@@ -375,14 +368,9 @@ class _FriendRow extends StatelessWidget {
         AppColors.friendPinPalette[row.pinColorIndex %
             AppColors.friendPinPalette.length];
 
-    return Container(
+    return AppCard(
+      highlighted: row.isSelf,
       margin: const EdgeInsets.only(bottom: AppSpacing.sm),
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.card),
-        border: row.isSelf ? Border.all(color: AppColors.gold) : null,
-      ),
       child: Row(
         children: [
           Container(
@@ -450,28 +438,56 @@ String _signedDeltaLabel(
   return '${formatted.value} $unit';
 }
 
+/// The Друзья tab's empty state — plain by default, but dressed up for
+/// [AppThemeId.odyssey] (this task's requirement: "🏛️ Путь интереснее
+/// вместе... это только для текущей темы Одиссея"). A future non-Odyssey
+/// theme falls back to the same plain copy classic already used, rather
+/// than inheriting Odyssey's illustration by accident.
 class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.l10n});
+  const _EmptyState({required this.ref, required this.l10n});
 
+  final WidgetRef ref;
   final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
+    final theme = ref.watch(effectiveThemeProvider);
+    final isOdyssey = theme == AppThemeId.odyssey;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xxl),
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
       child: Column(
         children: [
+          if (isOdyssey) ...[
+            // A placeholder glyph, not a real illustration asset — §9.1's
+            // art source is still undecided; cheap to swap for a drawn
+            // laurel-wreath/ship illustration once one exists.
+            const Text('🏛️', style: TextStyle(fontSize: 48)),
+            const SizedBox(height: AppSpacing.sm),
+          ],
           Text(
-            l10n.friendsEmptyTitle,
+            isOdyssey ? l10n.friendsEmptyOdysseyTitle : l10n.friendsEmptyTitle,
             style: AppTypography.heading,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            l10n.friendsEmptyBody,
+            isOdyssey ? l10n.friendsEmptyOdysseyBody : l10n.friendsEmptyBody,
             style: AppTypography.bodySecondary,
             textAlign: TextAlign.center,
           ),
+          if (isOdyssey) ...[
+            const SizedBox(height: AppSpacing.lg),
+            FilledButton.icon(
+              onPressed: () => _showAddFriendDialog(context, ref, l10n),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.gold,
+                foregroundColor: AppColors.background,
+              ),
+              icon: const Icon(Icons.add),
+              label: Text(l10n.friendsAddButton),
+            ),
+          ],
         ],
       ),
     );

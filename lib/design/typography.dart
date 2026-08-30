@@ -2,66 +2,81 @@ import 'package:flutter/widgets.dart';
 
 import 'colors.dart';
 
-/// Named text styles for the whole app (CLAUDE.md §9). One antiquarian serif
-/// everywhere — headings, distances, narrative.
+/// Named text styles for the whole app (CLAUDE.md §9).
 ///
-/// The exact font family is an open decision (CLAUDE.md §14): the final
-/// choice must be public-domain / OFL-licensed, verified before it is
-/// embedded — "looks old" is not a check. Until that's picked, every style
-/// below falls back to the generic `serif` font family so nothing here needs
-/// to change except the `fontFamily` value once a licensed font lands.
+/// Styling fix: the antiquarian serif set the right mood, but everywhere
+/// read atmospheric to the point of hurting legibility for ordinary UI
+/// text. The split is now: **serif** stays only for large screen/section
+/// headings, the gold distance hero and its unit, and the italic narrative
+/// line — the handful of places §9's referenced screenshots actually show
+/// it large. Everything else — labels, body copy, descriptions, bottom-nav
+/// captions — is a **modern sans-serif**, so the interface reads current
+/// without losing the atmosphere where it matters.
+///
+/// The exact families are still an open decision (CLAUDE.md §14): both must
+/// end up public-domain / OFL-licensed, verified before being embedded —
+/// "looks old" is not a check. Until they're picked, every style below falls
+/// back to its generic placeholder family, so nothing here needs to change
+/// except the two `fontFamily` values once licensed fonts land.
 abstract final class AppTypography {
-  static const String _fontFamilyPlaceholder = 'serif';
+  static const String _serifFontFamilyPlaceholder = 'serif';
+  static const String _sansFontFamilyPlaceholder = 'sans-serif';
 
-  /// The large gold distance number on the Путь tab (§5.4, §9).
+  /// The large gold distance number on the Путь tab (§5.4, §9). Serif —
+  /// this is the number the whole screen is built around.
   static const TextStyle distanceHero = TextStyle(
-    fontFamily: _fontFamilyPlaceholder,
+    fontFamily: _serifFontFamilyPlaceholder,
     fontSize: 56,
     fontWeight: FontWeight.w600,
     color: AppColors.gold,
     height: 1.0,
   );
 
-  /// The small unit label under [distanceHero] ("kilometers").
+  /// The small unit label under [distanceHero] ("kilometers"). Serif, to
+  /// read as one unit with the number above it.
   static const TextStyle distanceUnit = TextStyle(
-    fontFamily: _fontFamilyPlaceholder,
+    fontFamily: _serifFontFamilyPlaceholder,
     fontSize: 16,
     color: AppColors.gold,
     letterSpacing: 0.5,
   );
 
-  /// Screen / section headings.
+  /// Screen / section headings ("Настройки", "Друзья", a quest's own
+  /// title) — the "крупные заголовки" the styling fix keeps serif.
   static const TextStyle heading = TextStyle(
-    fontFamily: _fontFamilyPlaceholder,
+    fontFamily: _serifFontFamilyPlaceholder,
     fontSize: 24,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
   );
 
-  /// "Day N" style counters and stat labels.
+  /// "Day N" style counters, stat labels, small section-card captions —
+  /// regular content, not a heading, so sans per the styling fix.
   static const TextStyle label = TextStyle(
-    fontFamily: _fontFamilyPlaceholder,
+    fontFamily: _sansFontFamilyPlaceholder,
     fontSize: 18,
     color: AppColors.textPrimary,
   );
 
-  /// Regular body text.
+  /// Regular body text — sans per the styling fix ("обычный текст...
+  /// современным sans-serif").
   static const TextStyle body = TextStyle(
-    fontFamily: _fontFamilyPlaceholder,
+    fontFamily: _sansFontFamilyPlaceholder,
     fontSize: 15,
     color: AppColors.textPrimary,
   );
 
-  /// Secondary / muted body text.
+  /// Secondary / muted body text. Sans, same reasoning as [body].
   static const TextStyle bodySecondary = TextStyle(
-    fontFamily: _fontFamilyPlaceholder,
+    fontFamily: _sansFontFamilyPlaceholder,
     fontSize: 14,
     color: AppColors.textSecondary,
   );
 
-  /// Narrative lines — same serif, italic (§9).
+  /// Narrative lines — serif italic (§9): this is atmosphere, not a UI
+  /// label, so it stays exempt from the sans-serif switch above.
   static const TextStyle narrative = TextStyle(
-    fontFamily: _fontFamilyPlaceholder,
+    fontFamily: _serifFontFamilyPlaceholder,
     fontSize: 16,
     fontStyle: FontStyle.italic,
     color: AppColors.textPrimary,

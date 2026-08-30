@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/formatters.dart';
 import '../../../design/colors.dart';
+import '../../../design/components/app_scene_backdrop.dart';
 import '../../../design/components/distance_text.dart';
 import '../../../design/spacing.dart';
 import '../../../design/typography.dart';
@@ -214,156 +215,159 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView>
       catalog: achievementCatalog,
     );
 
-    return ColoredBox(
-      color: AppColors.background,
-      child: Column(
-        children: [
-          Expanded(
-            child: GestureDetector(
-              onHorizontalDragUpdate: _onHorizontalDragUpdate,
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final size = constraints.biggest;
-                  _sceneWidth = size.width;
-                  final centerX = size.width / 2;
-                  final midY = size.height / 2;
-                  final pixelsPerMeter =
-                      size.width / metersPerScreenWidthFor(_journeyId);
+    return Stack(
+      children: [
+        const Positioned.fill(child: AppSceneBackdrop()),
+        Column(
+          children: [
+            Expanded(
+              child: GestureDetector(
+                onHorizontalDragUpdate: _onHorizontalDragUpdate,
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final size = constraints.biggest;
+                    _sceneWidth = size.width;
+                    final centerX = size.width / 2;
+                    final midY = size.height / 2;
+                    final pixelsPerMeter =
+                        size.width / metersPerScreenWidthFor(_journeyId);
 
-                  // The real traveler, in the same world-space every
-                  // achievement marker uses (class doc comment) — it does
-                  // not read _panMeters at all, so rewinding the view never
-                  // moves it, only changes where on screen it lands.
-                  final solidX =
-                      centerX + (_progressMeters - _panMeters) * pixelsPerMeter;
-                  final solidY = _wavyPathY(
-                    meters: _progressMeters.toDouble(),
-                    pixelsPerMeter: pixelsPerMeter,
-                    midY: midY,
-                  );
+                    // The real traveler, in the same world-space every
+                    // achievement marker uses (class doc comment) — it does
+                    // not read _panMeters at all, so rewinding the view never
+                    // moves it, only changes where on screen it lands.
+                    final solidX =
+                        centerX +
+                        (_progressMeters - _panMeters) * pixelsPerMeter;
+                    final solidY = _wavyPathY(
+                      meters: _progressMeters.toDouble(),
+                      pixelsPerMeter: pixelsPerMeter,
+                      midY: midY,
+                    );
 
-                  // The rewind ghost — always screen-centred, since "what's
-                  // currently centred" is exactly what it stands for.
-                  final ghostY = _wavyPathY(
-                    meters: _panMeters,
-                    pixelsPerMeter: pixelsPerMeter,
-                    midY: midY,
-                  );
-                  // Hidden once it would coincide with the solid marker
-                  // (currently looking at `You`) — a pixel threshold, not
-                  // a meters one, so it holds regardless of this quest's
-                  // own meters-per-pixel scale.
-                  final showGhost = (solidX - centerX).abs() > 1.0;
+                    // The rewind ghost — always screen-centred, since "what's
+                    // currently centred" is exactly what it stands for.
+                    final ghostY = _wavyPathY(
+                      meters: _panMeters,
+                      pixelsPerMeter: pixelsPerMeter,
+                      midY: midY,
+                    );
+                    // Hidden once it would coincide with the solid marker
+                    // (currently looking at `You`) — a pixel threshold, not
+                    // a meters one, so it holds regardless of this quest's
+                    // own meters-per-pixel scale.
+                    final showGhost = (solidX - centerX).abs() > 1.0;
 
-                  // Each visible marker's screen x, resolved once and shared
-                  // by both the marker widget below and the painter's guide
-                  // line (this task's requirement — a faint dotted line from
-                  // each trophy down to the wavy path, quest-map parity,
-                  // §6.2) — computing it twice would risk the two drifting
-                  // apart on a future change to either loop.
-                  final visibleAchievements = [
-                    for (final state in achievementStates)
-                      if (state.def.thresholdMeters <= _totalMeters)
-                        (
-                          state: state,
-                          x:
-                              centerX +
-                              (state.def.thresholdMeters - _panMeters) *
-                                  pixelsPerMeter,
-                        ),
-                  ];
+                    // Each visible marker's screen x, resolved once and shared
+                    // by both the marker widget below and the painter's guide
+                    // line (this task's requirement — a faint dotted line from
+                    // each trophy down to the wavy path, quest-map parity,
+                    // §6.2) — computing it twice would risk the two drifting
+                    // apart on a future change to either loop.
+                    final visibleAchievements = [
+                      for (final state in achievementStates)
+                        if (state.def.thresholdMeters <= _totalMeters)
+                          (
+                            state: state,
+                            x:
+                                centerX +
+                                (state.def.thresholdMeters - _panMeters) *
+                                    pixelsPerMeter,
+                          ),
+                    ];
 
-                  return Stack(
-                    children: [
-                      CustomPaint(
-                        key: const Key('journeyPathScene'),
-                        size: size,
-                        painter: _WavyPathPainter(
-                          midY: midY,
-                          totalMeters: _totalMeters,
-                          panMeters: _panMeters,
-                          pixelsPerMeter: pixelsPerMeter,
-                          centerX: centerX,
-                          markerGuides: [
-                            for (final m in visibleAchievements)
-                              (
-                                x: m.x,
-                                thresholdMeters: m.state.def.thresholdMeters,
-                              ),
-                          ],
-                        ),
-                      ),
-                      for (final m in visibleAchievements)
-                        _AchievementMarker(
-                          key: Key('achievementMarker-${m.state.def.id}'),
-                          state: m.state,
-                          l10n: l10n,
-                          x: m.x,
-                        ),
-                      if (showGhost)
-                        _TravelerMarker(
-                          key: const Key('travelerGhost'),
-                          x: centerX,
-                          y: ghostY,
-                          solid: false,
-                        ),
-                      _TravelerMarker(
-                        key: const Key('travelerSolid'),
-                        x: solidX,
-                        y: solidY,
-                        solid: true,
-                      ),
-                      // Only while rewound away from You — once the ghost
-                      // is gone there is nowhere left to jump back to
-                      // (this task's requirement).
-                      if (showGhost)
-                        Positioned(
-                          right: AppSpacing.sm,
-                          bottom: AppSpacing.sm,
-                          child: _ReturnToYouButton(
-                            key: const Key('returnToYouButton'),
-                            label: l10n.journeyReturnToYouButton,
-                            onTap: _returnToYou,
+                    return Stack(
+                      children: [
+                        CustomPaint(
+                          key: const Key('journeyPathScene'),
+                          size: size,
+                          painter: _WavyPathPainter(
+                            midY: midY,
+                            totalMeters: _totalMeters,
+                            panMeters: _panMeters,
+                            pixelsPerMeter: pixelsPerMeter,
+                            centerX: centerX,
+                            markerGuides: [
+                              for (final m in visibleAchievements)
+                                (
+                                  x: m.x,
+                                  thresholdMeters: m.state.def.thresholdMeters,
+                                ),
+                            ],
                           ),
                         ),
-                    ],
-                  );
-                },
+                        for (final m in visibleAchievements)
+                          _AchievementMarker(
+                            key: Key('achievementMarker-${m.state.def.id}'),
+                            state: m.state,
+                            l10n: l10n,
+                            x: m.x,
+                          ),
+                        if (showGhost)
+                          _TravelerMarker(
+                            key: const Key('travelerGhost'),
+                            x: centerX,
+                            y: ghostY,
+                            solid: false,
+                          ),
+                        _TravelerMarker(
+                          key: const Key('travelerSolid'),
+                          x: solidX,
+                          y: solidY,
+                          solid: true,
+                        ),
+                        // Only while rewound away from You — once the ghost
+                        // is gone there is nowhere left to jump back to
+                        // (this task's requirement).
+                        if (showGhost)
+                          Positioned(
+                            right: AppSpacing.sm,
+                            bottom: AppSpacing.sm,
+                            child: _ReturnToYouButton(
+                              key: const Key('returnToYouButton'),
+                              label: l10n.journeyReturnToYouButton,
+                              onTap: _returnToYou,
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md,
-              vertical: AppSpacing.lg,
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.lg,
+              ),
+              child: Column(
+                children: [
+                  Text(l10n.journeyDayCounter(day), style: AppTypography.label),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(distance.value, style: AppTypography.distanceHero),
+                  Text(
+                    localizedUnitLabel(l10n, distance),
+                    style: AppTypography.distanceUnit,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  // Point A/B are journey data, not translatable copy — see
+                  // the same note in quest_picker_view.dart (§11).
+                  Text(
+                    '${journey.pointA} → ${journey.pointB}',
+                    style: AppTypography.bodySecondary,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    l10n.journeyNarrativeComingSoon,
+                    style: AppTypography.narrative,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
-            child: Column(
-              children: [
-                Text(l10n.journeyDayCounter(day), style: AppTypography.label),
-                const SizedBox(height: AppSpacing.md),
-                Text(distance.value, style: AppTypography.distanceHero),
-                Text(
-                  localizedUnitLabel(l10n, distance),
-                  style: AppTypography.distanceUnit,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                // Point A/B are journey data, not translatable copy — see
-                // the same note in quest_picker_view.dart (§11).
-                Text(
-                  '${journey.pointA} → ${journey.pointB}',
-                  style: AppTypography.bodySecondary,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  l10n.journeyNarrativeComingSoon,
-                  style: AppTypography.narrative,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 }

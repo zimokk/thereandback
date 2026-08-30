@@ -322,6 +322,22 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsLanguageEnglish => 'English';
 
   @override
+  String get settingsThemeSectionTitle => 'Тема';
+
+  @override
+  String get settingsThemeSectionSubtitle =>
+      'По умолчанию — тема текущего похода.';
+
+  @override
+  String get settingsThemeFollowQuest => 'Тема похода';
+
+  @override
+  String get settingsThemeClassic => 'Классическая';
+
+  @override
+  String get settingsThemeOdyssey => 'Одиссея';
+
+  @override
   String get settingsLockScreenSectionTitle => 'Экран блокировки';
 
   @override
@@ -455,6 +471,13 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get friendsEmptyBody =>
       'Добавьте друга по нику, чтобы сравнить прогресс в квесте.';
+
+  @override
+  String get friendsEmptyOdysseyTitle => 'Путь интереснее вместе';
+
+  @override
+  String get friendsEmptyOdysseyBody =>
+      'Добавьте друзей по нику и сравнивайте, кто продвинулся дальше в своей Одиссее.';
 
   @override
   String get friendsLockedTitle => 'Друзья пока недоступны';

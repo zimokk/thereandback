@@ -7,6 +7,7 @@ import '../../../design/components/distance_text.dart';
 import '../../../design/spacing.dart';
 import '../../../design/typography.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../journey/domain/progress_fraction.dart';
 import '../../journey/presentation/journey_providers.dart';
 import '../data/achievement_catalog.dart';
 import '../domain/achievement.dart';
@@ -158,13 +159,7 @@ class _AchievementTile extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          border: unlocked
-              ? Border.all(color: AppColors.gold, width: AppStroke.icon)
-              : null,
-        ),
+        decoration: _trophyTileDecoration(unlocked: unlocked),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -191,6 +186,61 @@ class _AchievementTile extends StatelessWidget {
                     ),
               style: AppTypography.bodySecondary,
               textAlign: TextAlign.center,
+            ),
+            if (!unlocked) ...[
+              const SizedBox(height: AppSpacing.sm),
+              _TrophyProgressThread(
+                fraction: progressFraction(
+                  progressMeters:
+                      state.def.thresholdMeters - state.remainingMeters,
+                  totalMeters: state.def.thresholdMeters,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Styling fix: a plain grey rounded rectangle read as generic Material
+/// design. Locked reads as a dim, bordered stone plaque; unlocked steps up
+/// to [AppColors.surfaceActive] with a full-strength gold edge — "становится
+/// золотой при разблокировке" — rather than only the icon/text changing
+/// color.
+BoxDecoration _trophyTileDecoration({required bool unlocked}) {
+  return BoxDecoration(
+    color: unlocked ? AppColors.surfaceActive : AppColors.surface,
+    borderRadius: BorderRadius.circular(AppRadius.card),
+    border: Border.all(
+      color: unlocked ? AppColors.gold : AppColors.cardBorder,
+      width: unlocked ? AppStroke.icon : AppStroke.cardBorder,
+    ),
+  );
+}
+
+/// A thin gold "thread" showing how far a locked trophy's progress is
+/// toward its own threshold (styling fix: "микро-прогрессбар... тонкую
+/// золотую нить"). [fraction] is `progress_fraction.dart`'s pure `0..1`
+/// value — this widget only draws it, no math of its own.
+class _TrophyProgressThread extends StatelessWidget {
+  const _TrophyProgressThread({required this.fraction});
+
+  final double fraction;
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: SizedBox(
+        height: 3,
+        child: Stack(
+          children: [
+            const ColoredBox(color: AppColors.cardBorder),
+            FractionallySizedBox(
+              widthFactor: fraction,
+              child: const ColoredBox(color: AppColors.gold),
             ),
           ],
         ),
@@ -294,13 +344,7 @@ class _DailyAchievementTile extends StatelessWidget {
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.md),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.card),
-          border: unlocked
-              ? Border.all(color: AppColors.gold, width: AppStroke.icon)
-              : null,
-        ),
+        decoration: _trophyTileDecoration(unlocked: unlocked),
         child: Stack(
           children: [
             Column(

@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 
 import '../design/colors.dart';
 import '../design/components/app_snackbar.dart';
+import '../design/spacing.dart';
+import '../design/typography.dart';
 import '../features/friends/presentation/friends_providers.dart';
 import '../features/journey/presentation/lock_screen_controller.dart';
 import '../l10n/app_localizations.dart';
@@ -13,8 +15,22 @@ import '../l10n/app_localizations.dart';
 /// gates on [friendsUnlockedProvider].
 const int _friendsTabIndex = 3;
 
-/// The bottom nav shell wrapping all five tab branches (§6). One
-/// `BottomNavigationBar` index per `StatefulShellBranch` in `router.dart`.
+/// Compact bottom-nav height (styling fix — the stock `BottomNavigationBar`
+/// read as visually heavy). Includes the row itself, not the `SafeArea`
+/// inset below it.
+const double _navBarHeight = 56;
+
+/// Icon size for every nav item — smaller than `BottomNavigationBar`'s
+/// default 24, part of the same "more compact" styling fix.
+const double _navIconSize = 22;
+
+/// The bottom nav shell wrapping all five tab branches (§6). One nav item
+/// per `StatefulShellBranch` in `router.dart`.
+///
+/// A hand-rolled row rather than `BottomNavigationBar` (styling fix): stock
+/// Material gave no way to both shrink the bar *and* paint a capsule behind
+/// the active icon, and its label sizing had no fallback for a locale whose
+/// longest label ("Настройки") clipped at the default font size.
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.navigationShell});
 
@@ -36,6 +52,22 @@ class AppShell extends ConsumerWidget {
     // `friendsUnlockedProvider`'s own doc comment has the exact condition.
     final friendsUnlocked = ref.watch(friendsUnlockedProvider);
 
+    final items = [
+      _NavItemData(icon: Icons.route_outlined, label: l10n.navJourney),
+      _NavItemData(icon: Icons.map_outlined, label: l10n.navQuestStats),
+      _NavItemData(
+        icon: Icons.emoji_events_outlined,
+        label: l10n.navAchievements,
+      ),
+      _NavItemData(
+        icon: Icons.people_outline,
+        label: l10n.navFriends,
+        enabled: friendsUnlocked,
+        disabledTooltip: friendsUnlocked ? null : l10n.navFriendsLockedTooltip,
+      ),
+      _NavItemData(icon: Icons.settings_outlined, label: l10n.navSettings),
+    ];
+
     return Scaffold(
       body: navigationShell,
       bottomNavigationBar: DecoratedBox(
@@ -45,64 +77,132 @@ class AppShell extends ConsumerWidget {
         ),
         child: SafeArea(
           top: false,
-          child: BottomNavigationBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            type: BottomNavigationBarType.fixed,
-            currentIndex: navigationShell.currentIndex,
-            selectedItemColor: AppColors.gold,
-            unselectedItemColor: AppColors.textSecondary,
-            onTap: (index) {
-              // Blocks navigation into the locked tab entirely — a tap is
-              // never a silent no-op (§7), it explains why with a snackbar
-              // instead. `ChallengersTab` itself also guards its own
-              // content the same way, in case this tab is ever reached by
-              // another path (e.g. a restored navigation stack) — this is
-              // the primary gate the task asked for ("кнопка... должна
-              // оставаться неактивной").
-              if (index == _friendsTabIndex && !friendsUnlocked) {
-                showAppSnackBar(context, l10n.friendsLockedBody);
-                return;
-              }
-              navigationShell.goBranch(
-                index,
-                initialLocation: index == navigationShell.currentIndex,
-              );
-            },
-            items: [
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.route_outlined),
-                label: l10n.navJourney,
-              ),
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.map_outlined),
-                label: l10n.navQuestStats,
-              ),
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.emoji_events_outlined),
-                label: l10n.navAchievements,
-              ),
-              BottomNavigationBarItem(
-                // Dimmed below the normal unselected color while locked —
-                // visibly different from every other (merely unselected)
-                // item, not just unresponsive silently.
-                icon: Icon(
-                  Icons.people_outline,
-                  color: friendsUnlocked
-                      ? null
-                      : AppColors.textSecondary.withValues(alpha: 0.35),
-                ),
-                label: l10n.navFriends,
-                tooltip: friendsUnlocked ? null : l10n.navFriendsLockedTooltip,
-              ),
-              BottomNavigationBarItem(
-                icon: const Icon(Icons.settings_outlined),
-                label: l10n.navSettings,
-              ),
-            ],
+          child: SizedBox(
+            height: _navBarHeight,
+            child: Row(
+              children: [
+                for (var index = 0; index < items.length; index++)
+                  Expanded(
+                    child: _NavItem(
+                      data: items[index],
+                      selected: navigationShell.currentIndex == index,
+                      onTap: () {
+                        // Blocks navigation into the locked tab entirely — a
+                        // tap is never a silent no-op (§7), it explains why
+                        // with a snackbar instead. `ChallengersTab` itself
+                        // also guards its own content the same way, in case
+                        // this tab is ever reached by another path (e.g. a
+                        // restored navigation stack) — this is the primary
+                        // gate the task asked for ("кнопка... должна
+                        // оставаться неактивной").
+                        if (index == _friendsTabIndex && !friendsUnlocked) {
+                          showAppSnackBar(context, l10n.friendsLockedBody);
+                          return;
+                        }
+                        navigationShell.goBranch(
+                          index,
+                          initialLocation:
+                              index == navigationShell.currentIndex,
+                        );
+                      },
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+}
+
+/// Static content for one nav item — kept separate from [_NavItem] so
+/// [AppShell] can build the whole `items` list up front, the same shape the
+/// old `BottomNavigationBarItem` list had.
+class _NavItemData {
+  const _NavItemData({
+    required this.icon,
+    required this.label,
+    this.enabled = true,
+    this.disabledTooltip,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool enabled;
+  final String? disabledTooltip;
+}
+
+/// One tab: an icon (in a gold capsule behind it while [selected]) above an
+/// adaptively-sized label. `FittedBox` + `maxLines: 1` is the "адаптация
+/// размера текста" the styling fix asked for — "Настройки"/"Settings" (this
+/// tab set's longest label) shrinks to fit rather than clipping, instead of
+/// swapping in a shorter, less specific word.
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.data,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final _NavItemData data;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = data.enabled;
+    final color = !enabled
+        ? AppColors.textSecondary.withValues(alpha: 0.35)
+        : selected
+        ? AppColors.gold
+        : AppColors.textSecondary;
+
+    final content = Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            // The capsule behind the active icon (styling fix — "капсула
+            // за иконкой"), not just a color swap on the icon itself.
+            color: selected ? AppColors.surfaceActive : Colors.transparent,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.xs,
+            ),
+            child: Icon(data.icon, size: _navIconSize, color: color),
+          ),
+        ),
+        const SizedBox(height: 2),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              data.label,
+              maxLines: 1,
+              style: AppTypography.bodySecondary.copyWith(
+                fontSize: 11,
+                color: color,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+
+    final tappable = GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: content,
+    );
+
+    return data.disabledTooltip == null
+        ? tappable
+        : Tooltip(message: data.disabledTooltip!, child: tappable);
   }
 }

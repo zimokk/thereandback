@@ -95,6 +95,12 @@
   "settingsLanguageRussian": "Русский",
   "settingsLanguageEnglish": "English",
 
+  "settingsThemeSectionTitle": "Тема",
+  "settingsThemeSectionSubtitle": "По умолчанию — тема текущего похода.",
+  "settingsThemeFollowQuest": "Тема похода",
+  "settingsThemeClassic": "Классическая",
+  "settingsThemeOdyssey": "Одиссея",
+
   "settingsLockScreenSectionTitle": "Экран блокировки",
   "settingsLockScreenToggleTitle": "Показывать прогресс на экране блокировки",
   "settingsLockScreenToggleSubtitle": "Тихое постоянное уведомление с прогрессом похода — видно в шторке уведомлений и на экране блокировки.",
@@ -136,6 +142,8 @@
   "friendsRemoveButton": "Удалить",
   "friendsEmptyTitle": "Пока нет друзей",
   "friendsEmptyBody": "Добавьте друга по нику, чтобы сравнить прогресс в квесте.",
+  "friendsEmptyOdysseyTitle": "Путь интереснее вместе",
+  "friendsEmptyOdysseyBody": "Добавьте друзей по нику и сравнивайте, кто продвинулся дальше в своей Одиссее.",
   "friendsLockedTitle": "Друзья пока недоступны",
   "friendsLockedBody": "Войдите и задайте ник в Настройках, чтобы видеть и добавлять друзей.",
   "friendsOutcomeSent": "Заявка в друзья отправлена.",
