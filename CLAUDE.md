@@ -821,8 +821,50 @@ firebase emulators:start                                    # Firestore + Functi
   перетаскивания `AnimationController` — драг в процессе прыжка его
   останавливает, а не борется за `_panMeters`.
 
+Решено 2026-08-30 (§8, "повторный вход" — уточняет апгрейд аккаунта из
+«Решено 2026-08-23»):
+
+- **Повторный вход тем же Google-аккаунтом на новом устройстве/после
+  переустановки больше не тупик.** Раньше `AuthController.upgradeWithGoogle()`
+  при `credential-already-in-use` (Google-аккаунт уже привязан к другому
+  Firebase-аккаунту) просто возвращал `alreadyLinked` — апгрейд не
+  происходил, прогресс и друзья с другого устройства оставались недоступны.
+  Теперь вместо ошибки сессия **переключается** на уже существующий аккаунт
+  (`AuthRepository.signInWithGoogleCredential`, `_auth.signInWithCredential`
+  вместо `linkWithCredential`) — `GoogleUpgradeOutcome.existingAccountRestored`.
+  Друзья и профиль подхватываются сами (уже завязаны на
+  `currentUidProvider`); прогресс квеста — нет (drift ключуется на
+  константный `localOwnerId`, не на uid, §5.2) — понадобилась отдельная
+  сверка: `AuthController._reconcileProgressWithCloud` сравнивает локальный
+  прогресс устройства с `users/{uid}/progress`-документом аккаунта
+  (`ProgressSyncRepository.fetchCurrentProgress`, `isCurrent == true`) и
+  **оставляет больший** — явный запрос при пересмотре плана, не мердж и не
+  слепая победа облака. Если больше локальный — облачный документ
+  дописывается локальным значением (`pushProgress`), чтобы третье
+  устройство не увидело устаревшую меньшую цифру. Если больше облачный —
+  `ProgressRepository.restoreFromCloud` перезаписывает локальные
+  `StepIntervalRecords` этого `(ownerId, journeyId)` одной seed-записью,
+  `SelectedJourney.reload()` подхватывает. Firestore Security Rules не
+  менялись — `isSelf(uid)`-чтение своей же `progress`-подколлекции уже
+  разрешено. Пейс/ETA (§5.3) после переключения на облачный тотал первые
+  несколько дней считаются по фолбэку "меньше 3 дней данных" — полной
+  истории интервалов Firestore не хранит (только running total), это
+  принятый компромисс, не баг.
+
 Остаётся нерешённым:
 
+- [ ] **Чистка осиротевших анонимных Firebase Auth аккаунтов.** При
+      переключении на существующий аккаунт (см. «Решено 2026-08-30» выше)
+      прежняя анонимная сессия устройства не удаляется и не выходит явно —
+      просто перестаёт быть текущей. Её uid и всё, что она успела записать в
+      Firestore (`users/{uid}`, `users/{uid}/progress`, её `friendships/...`,
+      её `usernames/{...}`-заявка на ник) остаются висеть без владельца и
+      без пути очистки. TODO лежит прямо в
+      `AuthRepository.signInWithGoogleCredential`
+      (`data/firebase/auth_repository.dart`). Нужен отдельный план (§13) —
+      вероятно, scheduled Cloud Function, которая по возрасту/признаку
+      "анонимный, без прогресса, без принятых дружб" вычищает такие
+      аккаунты; не блокирует MVP.
 - [x] Первый квест каталога — «The Odyssey: Troy to Ithaca» на основе
       общественного достояния (§1.1). Черновик 120 локаций и сегментов —
       `journeys/odyssey-ithaca/locations.json`. Полилиния маршрута и

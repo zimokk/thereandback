@@ -39,6 +39,27 @@ abstract class AuthRepository {
   /// email (`null` if Google didn't hand one back) — `AuthController` uses
   /// it to default the nickname to the account's local part (§6.5, §14).
   Future<String?> linkWithGoogleCredential({required String idToken});
+
+  /// Switches the current Firebase Auth session to the existing permanent
+  /// account owned by the given Google identity, abandoning whatever
+  /// session (anonymous or otherwise) was active before. Used by
+  /// `AuthController` when [linkWithGoogleCredential] fails with
+  /// [GoogleAccountAlreadyLinkedException] — the same Google account was
+  /// already used to upgrade a session on a different device or a previous
+  /// install, and the user is signing back into it rather than upgrading a
+  /// fresh one (§8, §14 — "repeat login").
+  ///
+  /// TODO(§14): the anonymous Firebase Auth user this device was on before
+  /// this call is never signed out of explicitly — `signInWithCredential`
+  /// simply replaces `_auth.currentUser` — nor is it deleted. Its uid, and
+  /// whatever `users/{uid}` / `users/{uid}/progress` / `friendships/{...}`
+  /// documents it already wrote to Firestore, are left behind as orphaned
+  /// data with no cleanup path. Needs a plan before implementing (§13) —
+  /// likely a scheduled Cloud Function that reaps anonymous accounts with
+  /// no linked identity past some age.
+  ///
+  /// Returns the switched-to account's uid.
+  Future<String> signInWithGoogleCredential({required String idToken});
 }
 
 class FirebaseAuthRepository implements AuthRepository {
@@ -81,5 +102,12 @@ class FirebaseAuthRepository implements AuthRepository {
       }
       rethrow;
     }
+  }
+
+  @override
+  Future<String> signInWithGoogleCredential({required String idToken}) async {
+    final credential = GoogleAuthProvider.credential(idToken: idToken);
+    final userCredential = await _auth.signInWithCredential(credential);
+    return userCredential.user!.uid;
   }
 }

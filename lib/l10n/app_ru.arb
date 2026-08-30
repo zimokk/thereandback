@@ -67,6 +67,7 @@
   "settingsSignedInTitle": "Вы вошли",
   "settingsSignedInSubtitle": "Аккаунт Google привязан — друзья могут найти вас по нику.",
   "settingsSignInSuccessMessage": "Вход через Google выполнен.",
+  "settingsSignInRestoredMessage": "Вход выполнен — синхронизировано с вашим существующим аккаунтом.",
   "settingsSignInErrorMessage": "Не удалось войти — попробуйте ещё раз.",
   "settingsNicknameSectionTitle": "Ник",
   "settingsNicknameLoading": "—",
@@ -129,6 +130,5 @@
   "friendsOutcomeCannotAddSelf": "Это ваш собственный ник.",
   "friendsOutcomeAlreadyExists": "Вы уже связаны с этим пользователем.",
   "friendsOutcomeNotSignedIn": "Не удалось войти — попробуйте ещё раз через момент.",
-  "friendsOutcomeUpgradeCancelled": "Чтобы добавлять друзей, нужен аккаунт Google — вход отменён.",
-  "friendsOutcomeUpgradeAlreadyLinked": "Этот аккаунт Google уже привязан к другому профилю."
+  "friendsOutcomeUpgradeCancelled": "Чтобы добавлять друзей, нужен аккаунт Google — вход отменён."
 }

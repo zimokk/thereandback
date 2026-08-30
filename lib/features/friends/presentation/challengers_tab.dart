@@ -180,8 +180,6 @@ String _outcomeMessage(AddFriendOutcome outcome, AppLocalizations l10n) {
     AddFriendOutcome.notSignedIn => l10n.friendsOutcomeNotSignedIn,
     AddFriendOutcome.googleUpgradeCancelled =>
       l10n.friendsOutcomeUpgradeCancelled,
-    AddFriendOutcome.googleUpgradeAlreadyLinked =>
-      l10n.friendsOutcomeUpgradeAlreadyLinked,
   };
 }
 

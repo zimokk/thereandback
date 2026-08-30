@@ -152,6 +152,8 @@
   "@settingsSignedInSubtitle": {"description": "Row subtitle once the Google upgrade has linked the session"},
   "settingsSignInSuccessMessage": "Signed in with Google.",
   "@settingsSignInSuccessMessage": {"description": "Snackbar shown after GoogleUpgradeOutcome.success from the settings row"},
+  "settingsSignInRestoredMessage": "Signed in — synced with your existing account.",
+  "@settingsSignInRestoredMessage": {"description": "Snackbar shown after GoogleUpgradeOutcome.existingAccountRestored — the Google identity already owned a different account, so this session switched to it and reconciled progress/friends from it (repeat login on a new device or reinstall)"},
   "settingsSignInErrorMessage": "Couldn't sign in — please try again.",
   "@settingsSignInErrorMessage": {"description": "Snackbar shown when upgradeWithGoogle() throws (e.g. no network, misconfigured Google sign-in) rather than returning a known GoogleUpgradeOutcome"},
   "settingsNicknameSectionTitle": "Nickname",
@@ -283,7 +285,5 @@
   "friendsOutcomeNotSignedIn": "Couldn't sign you in — try again in a moment.",
   "@friendsOutcomeNotSignedIn": {"description": "Shown for AddFriendOutcome.notSignedIn — an unexpected, likely transient state"},
   "friendsOutcomeUpgradeCancelled": "Adding friends needs a Google account — sign-in was cancelled.",
-  "@friendsOutcomeUpgradeCancelled": {"description": "Shown for AddFriendOutcome.googleUpgradeCancelled — the user closed the Google account picker"},
-  "friendsOutcomeUpgradeAlreadyLinked": "That Google account is already linked to a different profile.",
-  "@friendsOutcomeUpgradeAlreadyLinked": {"description": "Shown for AddFriendOutcome.googleUpgradeAlreadyLinked"}
+  "@friendsOutcomeUpgradeCancelled": {"description": "Shown for AddFriendOutcome.googleUpgradeCancelled — the user closed the Google account picker"}
 }

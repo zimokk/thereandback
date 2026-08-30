@@ -171,8 +171,8 @@ Future<void> _signInWithGoogle(
       GoogleUpgradeOutcome.success => l10n.settingsSignInSuccessMessage,
       // The user just closed the account picker — not worth a toast.
       GoogleUpgradeOutcome.cancelled => null,
-      GoogleUpgradeOutcome.alreadyLinked =>
-        l10n.friendsOutcomeUpgradeAlreadyLinked,
+      GoogleUpgradeOutcome.existingAccountRestored =>
+        l10n.settingsSignInRestoredMessage,
     };
   } catch (error) {
     // Anything beyond the known GoogleUpgradeOutcome cases — no network,

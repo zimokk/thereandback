@@ -46,9 +46,14 @@ progress carry over, nothing is re-created under a new identity.
 The three `GoogleUpgradeOutcome` cases are rendered explicitly, same as on
 the friends tab: `success` shows a confirmation snackbar and flips the row
 to **Signed in**; `cancelled` (the user closed the picker) shows nothing;
-`alreadyLinked` (`GoogleAccountAlreadyLinkedException` — this Google
-identity already owns a different Firebase account, typically a reinstall)
-shows that specific message rather than a raw exception.
+`existingAccountRestored` (`GoogleAccountAlreadyLinkedException` — this
+Google identity already owns a different, existing Firebase account, a
+"repeat login" on a reinstall or a second device) no longer fails: the
+session switches to that existing account instead
+(`AuthRepository.signInWithGoogleCredential`), progress is reconciled by
+keeping whichever total is larger — this device's local one or the
+account's cloud one (`AuthController._reconcileProgressWithCloud`) — and a
+distinct snackbar confirms the switch rather than reporting an error.
 
 ## State — providers
 
@@ -61,10 +66,13 @@ shows that specific message rather than a raw exception.
 `settingsTitle`, `settingsAccountSectionTitle`, `settingsSignInButton`,
 `settingsSignInSubtitle`, `settingsSignedInTitle`,
 `settingsSignedInSubtitle`, `settingsSignInSuccessMessage`,
-`settingsLanguageSectionTitle`, `settingsLanguageRussian`,
-`settingsLanguageEnglish`. The `alreadyLinked` snackbar reuses
-`friendsOutcomeUpgradeAlreadyLinked` — one message for one outcome,
-regardless of which tab triggered the upgrade.
+`settingsSignInRestoredMessage`, `settingsLanguageSectionTitle`,
+`settingsLanguageRussian`, `settingsLanguageEnglish`. Unlike `success`,
+the `existingAccountRestored` snackbar (`settingsSignInRestoredMessage`)
+is Settings' own key, not shared with the friends tab's outcome
+messages — the friends tab never surfaces this case as a distinct
+snackbar of its own (`addFriendByNickname` just treats it as "proceed",
+same as `success`).
 
 `settingsLanguageRussian`/`settingsLanguageEnglish` are deliberately the
 **same string in both ARB files** — a language names itself, it doesn't

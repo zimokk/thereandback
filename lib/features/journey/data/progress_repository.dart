@@ -40,6 +40,34 @@ abstract class ProgressRepository {
     required String journeyId,
     required DateTime since,
   });
+
+  /// Replaces [ownerId]'s local progress on [journeyId] with a cloud total
+  /// (§8, §14 — "repeat login": `AuthController` calls this only when the
+  /// account being switched to has *more* progress than this device's own
+  /// local drift, never as a blind overwrite).
+  ///
+  /// Deletes this owner+journey's existing [StepIntervalRecords] first —
+  /// otherwise their `resolvedMeters` would keep summing alongside the
+  /// seeded total below and double-count. Then seeds a single interval
+  /// (`[startedAt, asOf]` → [meters]) so `loadSelectedQuest`'s derived sum
+  /// equals [meters] and `lastSyncedAt` becomes [asOf] — the next real sync
+  /// continues forward from there without colliding with this seed row's
+  /// idempotency key `(ownerId, journeyId, intervalStart)` (§5.2).
+  ///
+  /// Skips the seed row entirely when [meters] is `0`: seeding `[startedAt,
+  /// asOf]` for a zero total would still set `lastSyncedAt = asOf`, and the
+  /// very next real sync's interval always starts at `lastSyncedAt` — so a
+  /// seeded [asOf] would collide with that first real interval's own
+  /// `intervalStart` and get silently dropped by `insertOrIgnore`.
+  /// `loadSelectedQuest`'s own fallback (`lastSyncedAt ?? startedAtLocal`)
+  /// already handles "no interval yet" correctly with no seed at all.
+  Future<void> restoreFromCloud(
+    String ownerId, {
+    required String journeyId,
+    required DateTime startedAt,
+    required int meters,
+    required DateTime asOf,
+  });
 }
 
 class DriftProgressRepository implements ProgressRepository {
@@ -128,5 +156,50 @@ class DriftProgressRepository implements ProgressRepository {
           meters: row.resolvedMeters,
         ),
     ];
+  }
+
+  @override
+  Future<void> restoreFromCloud(
+    String ownerId, {
+    required String journeyId,
+    required DateTime startedAt,
+    required int meters,
+    required DateTime asOf,
+  }) {
+    final startedAtUtc = startedAt.toUtc();
+    final asOfUtc = asOf.toUtc();
+
+    return _db.transaction(() async {
+      await (_db.delete(_db.stepIntervalRecords)..where(
+            (t) => t.ownerId.equals(ownerId) & t.journeyId.equals(journeyId),
+          ))
+          .go();
+
+      await _db
+          .into(_db.selectedQuestRows)
+          .insertOnConflictUpdate(
+            SelectedQuestRowsCompanion.insert(
+              ownerId: ownerId,
+              journeyId: journeyId,
+              startedAt: startedAtUtc,
+            ),
+          );
+
+      if (meters > 0) {
+        await _db
+            .into(_db.stepIntervalRecords)
+            .insert(
+              StepIntervalRecordsCompanion.insert(
+                ownerId: ownerId,
+                journeyId: journeyId,
+                intervalStart: startedAtUtc,
+                intervalEnd: asOfUtc,
+                steps: 0,
+                resolvedMeters: meters,
+                syncedAt: asOfUtc,
+              ),
+            );
+      }
+    });
   }
 }

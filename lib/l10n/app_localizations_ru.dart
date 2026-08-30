@@ -233,6 +233,10 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsSignInSuccessMessage => 'Вход через Google выполнен.';
 
   @override
+  String get settingsSignInRestoredMessage =>
+      'Вход выполнен — синхронизировано с вашим существующим аккаунтом.';
+
+  @override
   String get settingsSignInErrorMessage =>
       'Не удалось войти — попробуйте ещё раз.';
 
@@ -437,8 +441,4 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get friendsOutcomeUpgradeCancelled =>
       'Чтобы добавлять друзей, нужен аккаунт Google — вход отменён.';
-
-  @override
-  String get friendsOutcomeUpgradeAlreadyLinked =>
-      'Этот аккаунт Google уже привязан к другому профилю.';
 }

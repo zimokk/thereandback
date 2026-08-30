@@ -229,6 +229,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSignInSuccessMessage => 'Signed in with Google.';
 
   @override
+  String get settingsSignInRestoredMessage =>
+      'Signed in — synced with your existing account.';
+
+  @override
   String get settingsSignInErrorMessage =>
       'Couldn\'t sign in — please try again.';
 
@@ -432,8 +436,4 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get friendsOutcomeUpgradeCancelled =>
       'Adding friends needs a Google account — sign-in was cancelled.';
-
-  @override
-  String get friendsOutcomeUpgradeAlreadyLinked =>
-      'That Google account is already linked to a different profile.';
 }

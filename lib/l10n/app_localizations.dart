@@ -458,6 +458,12 @@ abstract class AppLocalizations {
   /// **'Signed in with Google.'**
   String get settingsSignInSuccessMessage;
 
+  /// Snackbar shown after GoogleUpgradeOutcome.existingAccountRestored — the Google identity already owned a different account, so this session switched to it and reconciled progress/friends from it (repeat login on a new device or reinstall)
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in — synced with your existing account.'**
+  String get settingsSignInRestoredMessage;
+
   /// Snackbar shown when upgradeWithGoogle() throws (e.g. no network, misconfigured Google sign-in) rather than returning a known GoogleUpgradeOutcome
   ///
   /// In en, this message translates to:
@@ -817,12 +823,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Adding friends needs a Google account — sign-in was cancelled.'**
   String get friendsOutcomeUpgradeCancelled;
-
-  /// Shown for AddFriendOutcome.googleUpgradeAlreadyLinked
-  ///
-  /// In en, this message translates to:
-  /// **'That Google account is already linked to a different profile.'**
-  String get friendsOutcomeUpgradeAlreadyLinked;
 }
 
 class _AppLocalizationsDelegate

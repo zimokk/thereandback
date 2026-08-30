@@ -5,10 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:thereandback/app/auth_provider.dart';
+import 'package:thereandback/app/database_provider.dart';
 import 'package:thereandback/app/theme.dart';
+import 'package:thereandback/data/drift/database.dart';
 import 'package:thereandback/data/firebase/auth_repository.dart';
 import 'package:thereandback/data/firebase/google_sign_in_service.dart';
 import 'package:thereandback/data/firestore/firestore_providers.dart';
+import 'package:thereandback/data/firestore/progress_sync_repository.dart';
 import 'package:thereandback/data/firestore/user_profile_repository.dart';
 import 'package:thereandback/features/friends/domain/friend_profile.dart';
 import 'package:thereandback/features/journey/data/android_lock_screen_channel.dart';
@@ -31,6 +34,9 @@ class _MockGoogleAuthService extends Mock implements GoogleAuthService {}
 
 class _MockUserProfileRepository extends Mock
     implements UserProfileRepository {}
+
+class _MockProgressSyncRepository extends Mock
+    implements ProgressSyncRepository {}
 
 /// An [AuthController] that starts from a fixed state and skips the real
 /// `build()`'s Firebase bootstrap — same trick `auth_provider_test.dart`'s
@@ -79,6 +85,7 @@ Widget _wrap(
   GoogleAuthService? googleAuthService,
   AuthRepository? authRepository,
   UserProfileRepository? userProfileRepository,
+  ProgressSyncRepository? progressSyncRepository,
 }) {
   final channel = _MockChannel();
   final stepCountingService = _MockStepCountingService();
@@ -114,6 +121,15 @@ Widget _wrap(
         authRepositoryProvider.overrideWithValue(authRepository),
       if (userProfileRepository != null)
         userProfileRepositoryProvider.overrideWithValue(userProfileRepository),
+      if (progressSyncRepository != null)
+        progressSyncRepositoryProvider.overrideWithValue(
+          progressSyncRepository,
+        ),
+      // `testing` skill: never a real (file-backed) drift database in a
+      // test — only reached if a test's flow gets far enough to touch
+      // `AuthController._reconcileProgressWithCloud` (§8, §14), but always
+      // safe to provide.
+      appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
     ],
     child: Consumer(
       builder: (context, ref, _) {
@@ -180,35 +196,55 @@ void main() {
     },
   );
 
-  testWidgets('a Google identity already linked to another profile shows that '
-      'specific message rather than crashing', (tester) async {
-    final googleAuthService = _MockGoogleAuthService();
-    final authRepository = _MockAuthRepository();
-    when(() => googleAuthService.signIn())
-        .thenAnswer((_) async => const GoogleAuthTokens(idToken: 'id-token'));
-    when(() => authRepository.ensureSignedIn())
-        .thenAnswer((_) async => 'anon-1');
-    when(
-      () => authRepository.linkWithGoogleCredential(
-        idToken: any(named: 'idToken'),
-      ),
-    ).thenThrow(const GoogleAccountAlreadyLinkedException());
+  testWidgets(
+    'a Google identity already owned by an existing account switches into '
+    'it ("repeat login", §8, §14) and shows that specific message rather '
+    'than crashing',
+    (tester) async {
+      final googleAuthService = _MockGoogleAuthService();
+      final authRepository = _MockAuthRepository();
+      final progressSyncRepository = _MockProgressSyncRepository();
+      when(() => googleAuthService.signIn()).thenAnswer(
+        (_) async => const GoogleAuthTokens(idToken: 'id-token'),
+      );
+      when(() => authRepository.ensureSignedIn())
+          .thenAnswer((_) async => 'anon-1');
+      when(
+        () => authRepository.linkWithGoogleCredential(
+          idToken: any(named: 'idToken'),
+        ),
+      ).thenThrow(const GoogleAccountAlreadyLinkedException());
+      when(
+        () => authRepository.signInWithGoogleCredential(
+          idToken: any(named: 'idToken'),
+        ),
+      ).thenAnswer((_) async => 'existing-uid');
+      when(
+        () => progressSyncRepository.fetchCurrentProgress('existing-uid'),
+      ).thenAnswer((_) async => null);
 
-    await tester.pumpWidget(
-      _wrap(
-        const SettingsTab(),
-        googleAuthService: googleAuthService,
-        authRepository: authRepository,
-      ),
-    );
-    await tester.tap(find.text('Войти'));
-    await tester.pumpAndSettle();
+      await tester.pumpWidget(
+        _wrap(
+          const SettingsTab(),
+          googleAuthService: googleAuthService,
+          authRepository: authRepository,
+          progressSyncRepository: progressSyncRepository,
+        ),
+      );
+      await tester.tap(find.text('Войти'));
+      await tester.pumpAndSettle();
 
-    expect(
-      find.text('Этот аккаунт Google уже привязан к другому профилю.'),
-      findsOneWidget,
-    );
-  });
+      verify(
+        () => authRepository.signInWithGoogleCredential(idToken: 'id-token'),
+      ).called(1);
+      expect(
+        find.text(
+          'Вход выполнен — синхронизировано с вашим существующим аккаунтом.',
+        ),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets(
     'once signed in, the row shows the signed-in state instead of the '

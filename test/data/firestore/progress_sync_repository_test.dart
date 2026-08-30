@@ -77,4 +77,42 @@ void main() {
         .first;
     expect(meters, 340000);
   });
+
+  group('fetchCurrentProgress (§8, §14 — "repeat login")', () {
+    test('null before this uid has ever pushed anything', () async {
+      final remote = await repository.fetchCurrentProgress('nobody-yet');
+      expect(remote, isNull);
+    });
+
+    test('returns the isCurrent doc\'s journeyId/meters/startedAt', () async {
+      final startedAt = DateTime.utc(2026, 3, 1, 9);
+      await repository.pushProgress(
+        uid: 'uid-1',
+        journeyId: 'odyssey-ithaca',
+        meters: 5230,
+        startedAt: startedAt,
+        isCurrent: true,
+      );
+
+      final remote = await repository.fetchCurrentProgress('uid-1');
+
+      expect(remote, isNotNull);
+      expect(remote!.journeyId, 'odyssey-ithaca');
+      expect(remote.meters, 5230);
+      expect(remote.startedAt, startedAt);
+    });
+
+    test('ignores a doc pushed with isCurrent: false', () async {
+      await repository.pushProgress(
+        uid: 'uid-1',
+        journeyId: 'finished-quest',
+        meters: 999999,
+        startedAt: DateTime.utc(2026, 1, 1),
+        isCurrent: false,
+      );
+
+      final remote = await repository.fetchCurrentProgress('uid-1');
+      expect(remote, isNull);
+    });
+  });
 }

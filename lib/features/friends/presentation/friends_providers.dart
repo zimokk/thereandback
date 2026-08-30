@@ -195,7 +195,6 @@ enum AddFriendOutcome {
   alreadyExists,
   notSignedIn,
   googleUpgradeCancelled,
-  googleUpgradeAlreadyLinked,
 }
 
 /// The outcome of [FriendsController.updateNickname] — the UI renders each
@@ -220,9 +219,12 @@ class FriendsController extends _$FriendsController {
       switch (upgrade) {
         case GoogleUpgradeOutcome.cancelled:
           return AddFriendOutcome.googleUpgradeCancelled;
-        case GoogleUpgradeOutcome.alreadyLinked:
-          return AddFriendOutcome.googleUpgradeAlreadyLinked;
+        // Either a fresh link, or a switch to an existing account that
+        // already owned this Google identity (§8, §14 — "repeat login") —
+        // both leave a signed-in, non-anonymous [currentUidProvider] behind,
+        // which is all this method needs to continue.
         case GoogleUpgradeOutcome.success:
+        case GoogleUpgradeOutcome.existingAccountRestored:
           break;
       }
     }

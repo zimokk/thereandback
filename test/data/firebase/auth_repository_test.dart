@@ -147,4 +147,31 @@ void main() {
       );
     });
   });
+
+  group(
+    'signInWithGoogleCredential (§8, §14 — "repeat login": switching to an '
+    'existing account instead of failing on credential-already-in-use)',
+    () {
+      test(
+        'switches the session to the account owning the Google identity',
+        () async {
+          final existingUser = MockUser(
+            isAnonymous: false,
+            uid: 'existing-uid',
+            email: 'existing@gmail.com',
+          );
+          final auth = MockFirebaseAuth(mockUser: existingUser);
+          final repository = FirebaseAuthRepository(auth);
+
+          final uid = await repository.signInWithGoogleCredential(
+            idToken: 'fake-id-token',
+          );
+
+          expect(uid, 'existing-uid');
+          expect(auth.currentUser?.uid, 'existing-uid');
+          expect(auth.currentUser?.isAnonymous, isFalse);
+        },
+      );
+    },
+  );
 }
