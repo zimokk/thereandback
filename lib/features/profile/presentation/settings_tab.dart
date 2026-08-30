@@ -134,12 +134,19 @@ Future<void> _signInWithGoogle(
       GoogleUpgradeOutcome.alreadyLinked =>
         l10n.friendsOutcomeUpgradeAlreadyLinked,
     };
-  } catch (_) {
+  } catch (error) {
     // Anything beyond the known GoogleUpgradeOutcome cases — no network,
     // Google sign-in misconfigured on this build, a plugin/platform
     // exception. Without this the row used to fail silently: the Future
     // rejected with nothing awaiting it, so the tap visibly did nothing
     // (§7 — never a dead end, not even a silent one).
+    //
+    // Logged (debug builds only, per `debugPrint`'s own contract) so a
+    // report of "sign-in failed" is diagnosable — the caught types here
+    // (FirebaseAuthException, GoogleSignInException, PlatformException)
+    // carry only an error code/message, never the idToken or account
+    // email, so this doesn't violate §13's no-PII-in-logs rule.
+    debugPrint('Google sign-in failed: $error');
     message = context.mounted ? l10n.settingsSignInErrorMessage : null;
   }
 
