@@ -2,7 +2,7 @@ name: thereandback
 description: "There and Back — a walking-journey app. Real steps move a traveler along a quest route."
 publish_to: 'none'
 
-version: 0.1.4+1
+version: 0.1.5+1
 
 environment:
   sdk: ^3.13.1
