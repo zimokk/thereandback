@@ -34,6 +34,12 @@ void main() {
     setUp(() {
       authRepository = _MockAuthRepository();
       googleAuthService = _MockGoogleAuthService();
+      // Stubbed by default for every test in this group: upgradeWithGoogle()
+      // calls this itself now (guarding the race where build()'s own
+      // unawaited _bootstrap() hasn't finished yet), regardless of what it
+      // does with the Google picker result.
+      when(() => authRepository.ensureSignedIn())
+          .thenAnswer((_) async => 'anon-1');
       container = ProviderContainer(
         overrides: [
           authRepositoryProvider.overrideWithValue(authRepository),
@@ -79,6 +85,22 @@ void main() {
 
       expect(outcome, GoogleUpgradeOutcome.success);
       expect(container.read(authControllerProvider).isAnonymous, isFalse);
+    });
+
+    test('ensures a signed-in session before linking, even though build()\'s '
+        'own bootstrap already tried — that unawaited call can still be in '
+        'flight (or have silently failed) when this runs', () async {
+      when(() => googleAuthService.signIn())
+          .thenAnswer((_) async => const GoogleAuthTokens(idToken: 'id-token'));
+      when(
+        () => authRepository.linkWithGoogleCredential(
+          idToken: any(named: 'idToken'),
+        ),
+      ).thenAnswer((_) async {});
+
+      await container.read(authControllerProvider.notifier).upgradeWithGoogle();
+
+      verify(() => authRepository.ensureSignedIn()).called(1);
     });
 
     test('an already-linked Google identity returns alreadyLinked, not a '

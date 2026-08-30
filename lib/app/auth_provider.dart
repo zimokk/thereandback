@@ -88,10 +88,19 @@ class AuthController extends _$AuthController {
     final tokens = await ref.read(googleAuthServiceProvider).signIn();
     if (tokens == null) return GoogleUpgradeOutcome.cancelled;
 
+    final repository = ref.read(authRepositoryProvider);
+    // build()'s own _bootstrap() call already does this, but it's
+    // unawaited and can still be in flight (or have silently failed and
+    // be retrying) when the user reaches this point — the Google account
+    // picker alone can take longer than the anonymous sign-in round trip,
+    // but nothing guarantees it always will. linkWithGoogleCredential
+    // requires a signed-in user; ensureSignedIn() is a no-op once one
+    // already exists, so this is never wasted work, only ever a safety
+    // net for that race.
+    await repository.ensureSignedIn();
+
     try {
-      await ref
-          .read(authRepositoryProvider)
-          .linkWithGoogleCredential(idToken: tokens.idToken);
+      await repository.linkWithGoogleCredential(idToken: tokens.idToken);
     } on GoogleAccountAlreadyLinkedException {
       return GoogleUpgradeOutcome.alreadyLinked;
     }
