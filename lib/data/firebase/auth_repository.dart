@@ -35,8 +35,10 @@ abstract class AuthRepository {
   bool get isAnonymous;
 
   /// Upgrades the current anonymous session to a permanent one backed by
-  /// the given Google identity (§8, §14).
-  Future<void> linkWithGoogleCredential({required String idToken});
+  /// the given Google identity (§8, §14). Returns the linked account's
+  /// email (`null` if Google didn't hand one back) — `AuthController` uses
+  /// it to default the nickname to the account's local part (§6.5, §14).
+  Future<String?> linkWithGoogleCredential({required String idToken});
 }
 
 class FirebaseAuthRepository implements AuthRepository {
@@ -60,7 +62,7 @@ class FirebaseAuthRepository implements AuthRepository {
   bool get isAnonymous => _auth.currentUser?.isAnonymous ?? true;
 
   @override
-  Future<void> linkWithGoogleCredential({required String idToken}) async {
+  Future<String?> linkWithGoogleCredential({required String idToken}) async {
     final user = _auth.currentUser;
     if (user == null) {
       throw StateError(
@@ -71,7 +73,8 @@ class FirebaseAuthRepository implements AuthRepository {
 
     final credential = GoogleAuthProvider.credential(idToken: idToken);
     try {
-      await user.linkWithCredential(credential);
+      final userCredential = await user.linkWithCredential(credential);
+      return userCredential.user?.email;
     } on FirebaseAuthException catch (e) {
       if (e.code == 'credential-already-in-use') {
         throw const GoogleAccountAlreadyLinkedException();

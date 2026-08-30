@@ -38,17 +38,12 @@ Future<void> ensureFriendProfile(Ref ref) async {
         .watch(userProfileRepositoryProvider)
         .createInitialProfileIfAbsent(
           uid,
-          nickname: _defaultNicknameFor(uid),
+          nickname: defaultStarterNickname(uid),
           avatarPresetIndex: pinColorIndexForUid(uid),
         );
   } on NicknameTakenException {
     // See doc comment above.
   }
-}
-
-String _defaultNicknameFor(String uid) {
-  final suffix = uid.length <= 6 ? uid : uid.substring(uid.length - 6);
-  return 'Traveler-$suffix';
 }
 
 /// Every friendship (pending or accepted, either direction) involving the

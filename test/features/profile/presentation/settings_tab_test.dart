@@ -162,7 +162,7 @@ void main() {
         () => authRepository.linkWithGoogleCredential(
           idToken: any(named: 'idToken'),
         ),
-      ).thenAnswer((_) async {});
+      ).thenAnswer((_) async => null);
 
       await tester.pumpWidget(
         _wrap(

@@ -6,10 +6,16 @@ import 'package:mocktail/mocktail.dart';
 import 'package:thereandback/app/auth_provider.dart';
 import 'package:thereandback/data/firebase/auth_repository.dart';
 import 'package:thereandback/data/firebase/google_sign_in_service.dart';
+import 'package:thereandback/data/firestore/firestore_providers.dart';
+import 'package:thereandback/data/firestore/user_profile_repository.dart';
+import 'package:thereandback/features/friends/domain/friend_profile.dart';
 
 class _MockAuthRepository extends Mock implements AuthRepository {}
 
 class _MockGoogleAuthService extends Mock implements GoogleAuthService {}
+
+class _MockUserProfileRepository extends Mock
+    implements UserProfileRepository {}
 
 /// An [AuthController] that starts from a fixed state and skips the real
 /// `build()`'s `ensureSignedIn()`/`uidChanges()` bootstrap — same
@@ -77,7 +83,7 @@ void main() {
         () => authRepository.linkWithGoogleCredential(
           idToken: any(named: 'idToken'),
         ),
-      ).thenAnswer((_) async {});
+      ).thenAnswer((_) async => null);
 
       final outcome = await container
           .read(authControllerProvider.notifier)
@@ -96,7 +102,7 @@ void main() {
         () => authRepository.linkWithGoogleCredential(
           idToken: any(named: 'idToken'),
         ),
-      ).thenAnswer((_) async {});
+      ).thenAnswer((_) async => null);
 
       await container.read(authControllerProvider.notifier).upgradeWithGoogle();
 
@@ -121,6 +127,207 @@ void main() {
       // A failed upgrade must not silently flip isAnonymous.
       expect(container.read(authControllerProvider).isAnonymous, isTrue);
     });
+  });
+
+  group('upgradeWithGoogle — default nickname from the Google email (§14)', () {
+    ProviderContainer buildContainer({
+      required _MockAuthRepository authRepository,
+      required _MockGoogleAuthService googleAuthService,
+      required _MockUserProfileRepository userProfileRepository,
+      String uid = 'uid-1',
+    }) {
+      when(
+        () => authRepository.ensureSignedIn(),
+      ).thenAnswer((_) async => uid);
+      final container = ProviderContainer(
+        overrides: [
+          authRepositoryProvider.overrideWithValue(authRepository),
+          googleAuthServiceProvider.overrideWithValue(googleAuthService),
+          userProfileRepositoryProvider.overrideWithValue(
+            userProfileRepository,
+          ),
+          authControllerProvider.overrideWith(
+            () => _FixedAuthController(
+              AuthState(uid: uid, isAnonymous: true),
+            ),
+          ),
+        ],
+      );
+      return container;
+    }
+
+    test(
+      'defaults the nickname to the email\'s local part when the profile '
+      'still has the generated placeholder',
+      () async {
+        final authRepository = _MockAuthRepository();
+        final googleAuthService = _MockGoogleAuthService();
+        final userProfileRepository = _MockUserProfileRepository();
+        when(() => googleAuthService.signIn()).thenAnswer(
+          (_) async => const GoogleAuthTokens(idToken: 'id-token'),
+        );
+        when(
+          () => authRepository.linkWithGoogleCredential(
+            idToken: any(named: 'idToken'),
+          ),
+        ).thenAnswer((_) async => 'pupa@gmail.com');
+        when(() => userProfileRepository.watchProfile('uid-1')).thenAnswer(
+          (_) => Stream.value(
+            FriendProfile(
+              uid: 'uid-1',
+              nickname: defaultStarterNickname('uid-1'),
+              avatarPresetIndex: 0,
+            ),
+          ),
+        );
+        when(
+          () => userProfileRepository.updateNickname('uid-1', 'pupa'),
+        ).thenAnswer((_) async {});
+
+        final container = buildContainer(
+          authRepository: authRepository,
+          googleAuthService: googleAuthService,
+          userProfileRepository: userProfileRepository,
+        );
+        addTearDown(container.dispose);
+
+        final outcome = await container
+            .read(authControllerProvider.notifier)
+            .upgradeWithGoogle();
+
+        expect(outcome, GoogleUpgradeOutcome.success);
+        verify(
+          () => userProfileRepository.updateNickname('uid-1', 'pupa'),
+        ).called(1);
+      },
+    );
+
+    test(
+      'strips a Gmail "+tag" suffix from the default — it\'s an address '
+      'filter, not part of the account',
+      () async {
+        final authRepository = _MockAuthRepository();
+        final googleAuthService = _MockGoogleAuthService();
+        final userProfileRepository = _MockUserProfileRepository();
+        when(() => googleAuthService.signIn()).thenAnswer(
+          (_) async => const GoogleAuthTokens(idToken: 'id-token'),
+        );
+        when(
+          () => authRepository.linkWithGoogleCredential(
+            idToken: any(named: 'idToken'),
+          ),
+        ).thenAnswer((_) async => 'pupa+journey@gmail.com');
+        when(() => userProfileRepository.watchProfile('uid-1')).thenAnswer(
+          (_) => Stream.value(
+            FriendProfile(
+              uid: 'uid-1',
+              nickname: defaultStarterNickname('uid-1'),
+              avatarPresetIndex: 0,
+            ),
+          ),
+        );
+        when(
+          () => userProfileRepository.updateNickname('uid-1', 'pupa'),
+        ).thenAnswer((_) async {});
+
+        final container = buildContainer(
+          authRepository: authRepository,
+          googleAuthService: googleAuthService,
+          userProfileRepository: userProfileRepository,
+        );
+        addTearDown(container.dispose);
+
+        await container.read(authControllerProvider.notifier).upgradeWithGoogle();
+
+        verify(
+          () => userProfileRepository.updateNickname('uid-1', 'pupa'),
+        ).called(1);
+      },
+    );
+
+    test(
+      'never overwrites a nickname the user already customized',
+      () async {
+        final authRepository = _MockAuthRepository();
+        final googleAuthService = _MockGoogleAuthService();
+        final userProfileRepository = _MockUserProfileRepository();
+        when(() => googleAuthService.signIn()).thenAnswer(
+          (_) async => const GoogleAuthTokens(idToken: 'id-token'),
+        );
+        when(
+          () => authRepository.linkWithGoogleCredential(
+            idToken: any(named: 'idToken'),
+          ),
+        ).thenAnswer((_) async => 'pupa@gmail.com');
+        when(() => userProfileRepository.watchProfile('uid-1')).thenAnswer(
+          (_) => Stream.value(
+            const FriendProfile(
+              uid: 'uid-1',
+              nickname: 'Odysseus',
+              avatarPresetIndex: 0,
+            ),
+          ),
+        );
+
+        final container = buildContainer(
+          authRepository: authRepository,
+          googleAuthService: googleAuthService,
+          userProfileRepository: userProfileRepository,
+        );
+        addTearDown(container.dispose);
+
+        final outcome = await container
+            .read(authControllerProvider.notifier)
+            .upgradeWithGoogle();
+
+        expect(outcome, GoogleUpgradeOutcome.success);
+        verifyNever(
+          () => userProfileRepository.updateNickname(any(), any()),
+        );
+      },
+    );
+
+    test(
+      'the derived nickname already being taken does not fail the upgrade',
+      () async {
+        final authRepository = _MockAuthRepository();
+        final googleAuthService = _MockGoogleAuthService();
+        final userProfileRepository = _MockUserProfileRepository();
+        when(() => googleAuthService.signIn()).thenAnswer(
+          (_) async => const GoogleAuthTokens(idToken: 'id-token'),
+        );
+        when(
+          () => authRepository.linkWithGoogleCredential(
+            idToken: any(named: 'idToken'),
+          ),
+        ).thenAnswer((_) async => 'pupa@gmail.com');
+        when(() => userProfileRepository.watchProfile('uid-1')).thenAnswer(
+          (_) => Stream.value(
+            FriendProfile(
+              uid: 'uid-1',
+              nickname: defaultStarterNickname('uid-1'),
+              avatarPresetIndex: 0,
+            ),
+          ),
+        );
+        when(
+          () => userProfileRepository.updateNickname('uid-1', 'pupa'),
+        ).thenThrow(const NicknameTakenException('pupa'));
+
+        final container = buildContainer(
+          authRepository: authRepository,
+          googleAuthService: googleAuthService,
+          userProfileRepository: userProfileRepository,
+        );
+        addTearDown(container.dispose);
+
+        final outcome = await container
+            .read(authControllerProvider.notifier)
+            .upgradeWithGoogle();
+
+        expect(outcome, GoogleUpgradeOutcome.success);
+      },
+    );
   });
 
   group('currentUidProvider', () {
