@@ -116,7 +116,7 @@ final class EnsureFriendProfileProvider
 }
 
 String _$ensureFriendProfileHash() =>
-    r'2049b340fbd3c61ad639a187d43ee08bc09a2508';
+    r'2b01d20e99031f42a25101f5e9ac8917159d43f9';
 
 /// Every friendship (pending or accepted, either direction) involving the
 /// signed-in user — a live Firestore stream, so an incoming accept or a
@@ -239,21 +239,27 @@ final class FriendsViewProvider
 
 String _$friendsViewHash() => r'41a1882b2251013508d179c8ee7416e305ebd9fa';
 
-/// Imperative actions for the Challengers tab (§6.4): sending a request by
-/// nickname (triggering the Google upgrade first if still anonymous),
-/// accepting, removing/declining, and the per-friend hide toggle (§7).
+/// Imperative actions for the Challengers tab (§6.4) and the Settings
+/// nickname editor (§6.5): sending a request by nickname (triggering the
+/// Google upgrade first if still anonymous), accepting, removing/declining,
+/// the per-friend hide toggle (§7), and renaming the signed-in user's own
+/// nickname.
 
 @ProviderFor(FriendsController)
 final friendsControllerProvider = FriendsControllerProvider._();
 
-/// Imperative actions for the Challengers tab (§6.4): sending a request by
-/// nickname (triggering the Google upgrade first if still anonymous),
-/// accepting, removing/declining, and the per-friend hide toggle (§7).
+/// Imperative actions for the Challengers tab (§6.4) and the Settings
+/// nickname editor (§6.5): sending a request by nickname (triggering the
+/// Google upgrade first if still anonymous), accepting, removing/declining,
+/// the per-friend hide toggle (§7), and renaming the signed-in user's own
+/// nickname.
 final class FriendsControllerProvider
     extends $NotifierProvider<FriendsController, void> {
-  /// Imperative actions for the Challengers tab (§6.4): sending a request by
-  /// nickname (triggering the Google upgrade first if still anonymous),
-  /// accepting, removing/declining, and the per-friend hide toggle (§7).
+  /// Imperative actions for the Challengers tab (§6.4) and the Settings
+  /// nickname editor (§6.5): sending a request by nickname (triggering the
+  /// Google upgrade first if still anonymous), accepting, removing/declining,
+  /// the per-friend hide toggle (§7), and renaming the signed-in user's own
+  /// nickname.
   FriendsControllerProvider._()
     : super(
         from: null,
@@ -281,11 +287,13 @@ final class FriendsControllerProvider
   }
 }
 
-String _$friendsControllerHash() => r'69e37cabe15659a844dcf43a197d6cc4211fc0a9';
+String _$friendsControllerHash() => r'13c3457a5b35e1e7184ce94c5f5ee1f5b9ef7dea';
 
-/// Imperative actions for the Challengers tab (§6.4): sending a request by
-/// nickname (triggering the Google upgrade first if still anonymous),
-/// accepting, removing/declining, and the per-friend hide toggle (§7).
+/// Imperative actions for the Challengers tab (§6.4) and the Settings
+/// nickname editor (§6.5): sending a request by nickname (triggering the
+/// Google upgrade first if still anonymous), accepting, removing/declining,
+/// the per-friend hide toggle (§7), and renaming the signed-in user's own
+/// nickname.
 
 abstract class _$FriendsController extends $Notifier<void> {
   void build();

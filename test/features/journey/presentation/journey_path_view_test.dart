@@ -379,7 +379,10 @@ void main() {
       // Only a few frames in — the animation is still mid-flight.
       await tester.pump(const Duration(milliseconds: 200));
       expect(_travelerGhost, findsOneWidget);
-      final midJumpX = tester.getCenter(_travelerGhost).dx;
+      // The ghost's x is always centerX by design (class doc comment — it
+      // stands for "whatever's currently centred"); its y tracks _panMeters
+      // via _wavyPathY, so that's what moving further actually changes.
+      final midJumpY = tester.getCenter(_travelerGhost).dy;
 
       // A fresh drag interrupts the jump — it should not throw, and the
       // view should end up wherever the drag left it, not snap back to
@@ -393,8 +396,8 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(_travelerGhost, findsOneWidget);
       expect(
-        tester.getCenter(_travelerGhost).dx,
-        isNot(moreOrLessEquals(midJumpX, epsilon: 0.5)),
+        tester.getCenter(_travelerGhost).dy,
+        isNot(moreOrLessEquals(midJumpY, epsilon: 0.5)),
       );
     });
   });
