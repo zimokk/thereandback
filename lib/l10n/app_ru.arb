@@ -66,6 +66,7 @@
   "settingsSignedInTitle": "Вы вошли",
   "settingsSignedInSubtitle": "Аккаунт Google привязан — друзья могут найти вас по нику.",
   "settingsSignInSuccessMessage": "Вход через Google выполнен.",
+  "settingsSignInErrorMessage": "Не удалось войти — попробуйте ещё раз.",
   "settingsLanguageSectionTitle": "Язык",
   "settingsLanguageRussian": "Русский",
   "settingsLanguageEnglish": "English",

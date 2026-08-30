@@ -452,6 +452,12 @@ abstract class AppLocalizations {
   /// **'Signed in with Google.'**
   String get settingsSignInSuccessMessage;
 
+  /// Snackbar shown when upgradeWithGoogle() throws (e.g. no network, misconfigured Google sign-in) rather than returning a known GoogleUpgradeOutcome
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t sign in — please try again.'**
+  String get settingsSignInErrorMessage;
+
   /// Settings section heading for the language switch
   ///
   /// In en, this message translates to:
