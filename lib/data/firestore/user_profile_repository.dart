@@ -14,6 +14,18 @@ class NicknameTakenException implements Exception {
   String toString() => 'NicknameTakenException($nickname)';
 }
 
+/// The starter nickname every fresh `users/{uid}` profile gets before
+/// anyone customizes it (`ensureFriendProfile`,
+/// `features/friends/presentation/friends_providers.dart`). Shared here —
+/// rather than kept private to that provider — so another caller can tell
+/// a still-default nickname apart from one the user chose: the Google
+/// sign-in upgrade (`app/auth_provider.dart`, §6.5, §14) only overwrites
+/// this exact placeholder, never a customized nickname.
+String defaultStarterNickname(String uid) {
+  final suffix = uid.length <= 6 ? uid : uid.substring(uid.length - 6);
+  return 'Traveler-$suffix';
+}
+
 /// Firestore-backed `users/{uid}` (nickname, avatar preset — §8) plus the
 /// `usernames/{nicknameLower}` reverse-lookup collection that "add friend by
 /// nickname" needs (a fifth collection beyond CLAUDE.md §8's own

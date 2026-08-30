@@ -1,11 +1,14 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../data/firebase/auth_repository.dart';
 import '../data/firebase/firebase_providers.dart';
 import '../data/firebase/google_sign_in_service.dart';
+import '../data/firestore/firestore_providers.dart';
+import '../data/firestore/user_profile_repository.dart';
 
 part 'auth_provider.freezed.dart';
 part 'auth_provider.g.dart';
@@ -97,16 +100,61 @@ class AuthController extends _$AuthController {
     // requires a signed-in user; ensureSignedIn() is a no-op once one
     // already exists, so this is never wasted work, only ever a safety
     // net for that race.
-    await repository.ensureSignedIn();
+    final uid = await repository.ensureSignedIn();
 
+    final String? email;
     try {
-      await repository.linkWithGoogleCredential(idToken: tokens.idToken);
+      email = await repository.linkWithGoogleCredential(
+        idToken: tokens.idToken,
+      );
     } on GoogleAccountAlreadyLinkedException {
       return GoogleUpgradeOutcome.alreadyLinked;
     }
 
     state = state.copyWith(isAnonymous: false);
+    await _applyDefaultNicknameFromGoogleEmail(uid, email);
     return GoogleUpgradeOutcome.success;
+  }
+
+  /// Defaults the nickname to the local part of the linked Gmail address
+  /// (`pupa@gmail.com` → `pupa`) the first time a session upgrades to a
+  /// Google identity — otherwise the anonymous-session placeholder
+  /// (`defaultStarterNickname`, `data/firestore/user_profile_repository
+  /// .dart`) sticks around forever unless the user edits it by hand (§14).
+  /// A `+tag` suffix is stripped too — Gmail's own filtering convention,
+  /// not part of the person's identity.
+  ///
+  /// Only ever replaces that exact generated placeholder, never a
+  /// nickname the user already chose (§6.5's editor) — comparing the live
+  /// profile against the same generator the starter profile was created
+  /// with is what tells the two apart.
+  ///
+  /// Best-effort and never lets a problem here undo the upgrade that
+  /// already succeeded: no email, a not-yet-existing profile, the derived
+  /// nickname already being taken by someone else, or any other failure
+  /// (e.g. this device being offline) all just leave the placeholder in
+  /// place silently — the user can still rename themselves by hand
+  /// (§6.5), so this is a convenience, not a guarantee.
+  Future<void> _applyDefaultNicknameFromGoogleEmail(
+    String uid,
+    String? email,
+  ) async {
+    if (email == null) return;
+    final local = email.split('@').first.split('+').first;
+    if (local.isEmpty) return;
+
+    try {
+      final profileRepository = ref.read(userProfileRepositoryProvider);
+      final profile = await profileRepository.watchProfile(uid).first;
+      final isStillDefault =
+          profile != null && profile.nickname == defaultStarterNickname(uid);
+      if (!isStillDefault) return;
+      await profileRepository.updateNickname(uid, local);
+    } catch (error) {
+      // Logged (debug builds only) for diagnosability — never the email
+      // itself (§13: no PII in logs), only the caught error's own message.
+      debugPrint('Google-email nickname default failed: $error');
+    }
   }
 }
 

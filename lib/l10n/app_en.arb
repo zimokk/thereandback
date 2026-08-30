@@ -36,6 +36,10 @@
   "@journeyNarrativeComingSoon": {
     "description": "Empty-state line shown where a NarrativeBeat will render once quest content exists (Phase 11) — this is a UI empty state, not quest narrative itself (§11)"
   },
+  "journeyReturnToYouButton": "You",
+  "@journeyReturnToYouButton": {
+    "description": "Small button shown on the Путь scene only while the view is rewound away from the traveler's real position — jumps back to it (§6.1's 'You >' anchor). Also its accessibility label."
+  },
 
   "stepsPermissionExplainTitle": "Let your steps move you",
   "@stepsPermissionExplainTitle": {"description": "Title of the card explaining why step access is requested, shown before the OS prompt (§7)"},
@@ -170,6 +174,8 @@
   "@settingsNicknameTakenMessage": {"description": "Snackbar shown after UpdateNicknameOutcome.nicknameTaken"},
   "settingsNicknameErrorMessage": "Couldn't update nickname — please try again.",
   "@settingsNicknameErrorMessage": {"description": "Snackbar shown when updateNickname() throws rather than returning a known UpdateNicknameOutcome, or for UpdateNicknameOutcome.notSignedIn (shouldn't be reachable from the UI, since the row needs a loaded profile to be tappable, but rendered explicitly rather than silently doing nothing)"},
+  "settingsNicknameNotReadyMessage": "Still loading your profile — try again in a moment.",
+  "@settingsNicknameNotReadyMessage": {"description": "Snackbar shown when the nickname row is tapped before the profile has loaded — retries the bootstrap write instead of leaving the tap a silent no-op"},
   "settingsLanguageSectionTitle": "Language",
   "@settingsLanguageSectionTitle": {"description": "Settings section heading for the language switch"},
   "settingsLanguageRussian": "Русский",

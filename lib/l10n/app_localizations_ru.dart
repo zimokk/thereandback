@@ -66,6 +66,9 @@ class AppLocalizationsRu extends AppLocalizations {
       'Рассказ об этом участке пути ещё пишется.';
 
   @override
+  String get journeyReturnToYouButton => 'Вы';
+
+  @override
   String get stepsPermissionExplainTitle => 'Пусть шаги двигают вас';
 
   @override
@@ -264,6 +267,10 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get settingsNicknameErrorMessage =>
       'Не удалось изменить ник — попробуйте ещё раз.';
+
+  @override
+  String get settingsNicknameNotReadyMessage =>
+      'Профиль ещё загружается — попробуйте через секунду.';
 
   @override
   String get settingsLanguageSectionTitle => 'Язык';

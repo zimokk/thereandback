@@ -67,14 +67,25 @@ void main() {
       // even though a real upgrade starts from an anonymous session; that
       // mismatch is a quirk of the mock, not of `FirebaseAuthRepository`
       // itself (covered directly by `isAnonymous` above).
-      final mockUser = MockUser(isAnonymous: false, uid: 'anon-success');
+      final mockUser = MockUser(
+        isAnonymous: false,
+        uid: 'anon-success',
+        email: 'someone@gmail.com',
+      );
       final auth = MockFirebaseAuth(signedIn: true, mockUser: mockUser);
       final repository = FirebaseAuthRepository(auth);
 
-      // Just confirms this doesn't throw for the happy path — MockUser's
-      // own linkWithCredential() always "succeeds" unless an exception was
-      // registered against it (see the throwing case below).
-      await repository.linkWithGoogleCredential(idToken: 'fake-id-token');
+      // Confirms this doesn't throw for the happy path — MockUser's own
+      // linkWithCredential() always "succeeds" unless an exception was
+      // registered against it (see the throwing case below) — and that it
+      // hands back the linked account's email, which
+      // `AuthController._applyDefaultNicknameFromGoogleEmail` needs
+      // (`app/auth_provider.dart`, §14).
+      final email = await repository.linkWithGoogleCredential(
+        idToken: 'fake-id-token',
+      );
+
+      expect(email, 'someone@gmail.com');
     });
 
     test(

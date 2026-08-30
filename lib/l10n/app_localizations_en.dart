@@ -62,6 +62,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Narrative for this stretch of the road is still being written.';
 
   @override
+  String get journeyReturnToYouButton => 'You';
+
+  @override
   String get stepsPermissionExplainTitle => 'Let your steps move you';
 
   @override
@@ -260,6 +263,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsNicknameErrorMessage =>
       'Couldn\'t update nickname — please try again.';
+
+  @override
+  String get settingsNicknameNotReadyMessage =>
+      'Still loading your profile — try again in a moment.';
 
   @override
   String get settingsLanguageSectionTitle => 'Language';

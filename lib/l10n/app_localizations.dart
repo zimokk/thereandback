@@ -164,6 +164,12 @@ abstract class AppLocalizations {
   /// **'Narrative for this stretch of the road is still being written.'**
   String get journeyNarrativeComingSoon;
 
+  /// Small button shown on the Путь scene only while the view is rewound away from the traveler's real position — jumps back to it (§6.1's 'You >' anchor). Also its accessibility label.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get journeyReturnToYouButton;
+
   /// Title of the card explaining why step access is requested, shown before the OS prompt (§7)
   ///
   /// In en, this message translates to:
@@ -517,6 +523,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t update nickname — please try again.'**
   String get settingsNicknameErrorMessage;
+
+  /// Snackbar shown when the nickname row is tapped before the profile has loaded — retries the bootstrap write instead of leaving the tap a silent no-op
+  ///
+  /// In en, this message translates to:
+  /// **'Still loading your profile — try again in a moment.'**
+  String get settingsNicknameNotReadyMessage;
 
   /// Settings section heading for the language switch
   ///

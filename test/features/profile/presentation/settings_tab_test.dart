@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -160,7 +162,7 @@ void main() {
         () => authRepository.linkWithGoogleCredential(
           idToken: any(named: 'idToken'),
         ),
-      ).thenAnswer((_) async {});
+      ).thenAnswer((_) async => null);
 
       await tester.pumpWidget(
         _wrap(
@@ -309,6 +311,56 @@ void main() {
       verify(() => userProfileRepository.updateNickname('uid-1', 'Nobody'))
           .called(1);
       expect(find.text('Ник изменён.'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'tapping the nickname row before the profile has loaded retries the '
+    'bootstrap write and explains why, instead of doing nothing — the row '
+    "used to just go dead (`onTap: null`) here, indistinguishable from a "
+    'working one',
+    (tester) async {
+      final userProfileRepository = _MockUserProfileRepository();
+      final profileController = StreamController<FriendProfile?>();
+      addTearDown(profileController.close);
+      when(
+        () => userProfileRepository.createInitialProfileIfAbsent(
+          'uid-1',
+          nickname: any(named: 'nickname'),
+          avatarPresetIndex: any(named: 'avatarPresetIndex'),
+        ),
+      ).thenAnswer((_) async {});
+      when(() => userProfileRepository.watchProfile('uid-1'))
+          .thenAnswer((_) => profileController.stream);
+
+      await tester.pumpWidget(
+        _wrap(
+          const SettingsTab(),
+          authState: const AuthState(uid: 'uid-1', isAnonymous: false),
+          userProfileRepository: userProfileRepository,
+        ),
+      );
+      await tester.pump();
+
+      // The stream never emitted (simulating a bootstrap write that failed
+      // or is still stuck) — the row still shows the loading placeholder.
+      expect(find.text('—'), findsOneWidget);
+
+      await tester.tap(find.text('—'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Профиль ещё загружается — попробуйте через секунду.'),
+        findsOneWidget,
+      );
+      // Retried rather than left stuck — the bootstrap write ran again.
+      verify(
+        () => userProfileRepository.createInitialProfileIfAbsent(
+          'uid-1',
+          nickname: any(named: 'nickname'),
+          avatarPresetIndex: any(named: 'avatarPresetIndex'),
+        ),
+      ).called(greaterThanOrEqualTo(2));
     },
   );
 
