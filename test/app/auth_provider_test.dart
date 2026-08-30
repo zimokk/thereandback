@@ -471,7 +471,9 @@ void main() {
     });
 
     test(
-      'the derived nickname already being taken does not fail the upgrade',
+      'the derived nickname already being taken retries with a numeric '
+      'suffix (this task\'s requirement) rather than giving up on the '
+      'first collision',
       () async {
         final authRepository = _MockAuthRepository();
         final googleAuthService = _MockGoogleAuthService();
@@ -493,8 +495,17 @@ void main() {
             ),
           ),
         );
-        when(() => userProfileRepository.updateNickname('uid-1', 'pupa'))
-            .thenThrow(const NicknameTakenException('pupa'));
+        // 'pupa' and 'pupa-1' are both already claimed by someone else;
+        // 'pupa-2' is free.
+        when(
+          () => userProfileRepository.updateNickname('uid-1', 'pupa'),
+        ).thenThrow(const NicknameTakenException('pupa'));
+        when(
+          () => userProfileRepository.updateNickname('uid-1', 'pupa-1'),
+        ).thenThrow(const NicknameTakenException('pupa-1'));
+        when(
+          () => userProfileRepository.updateNickname('uid-1', 'pupa-2'),
+        ).thenAnswer((_) async {});
 
         final container = buildContainer(
           authRepository: authRepository,
@@ -507,6 +518,57 @@ void main() {
             .read(authControllerProvider.notifier)
             .upgradeWithGoogle();
 
+        expect(outcome, GoogleUpgradeOutcome.success);
+        verify(
+          () => userProfileRepository.updateNickname('uid-1', 'pupa-2'),
+        ).called(1);
+      },
+    );
+
+    test(
+      'every numbered variant up to the cap also being taken still does '
+      'not fail the upgrade — the placeholder is left in place rather than '
+      'retrying forever',
+      () async {
+        final authRepository = _MockAuthRepository();
+        final googleAuthService = _MockGoogleAuthService();
+        final userProfileRepository = _MockUserProfileRepository();
+        when(
+          () => googleAuthService.signIn(),
+        ).thenAnswer((_) async => const GoogleAuthTokens(idToken: 'id-token'));
+        when(
+          () => authRepository.linkWithGoogleCredential(
+            idToken: any(named: 'idToken'),
+          ),
+        ).thenAnswer((_) async => 'pupa@gmail.com');
+        when(() => userProfileRepository.watchProfile('uid-1')).thenAnswer(
+          (_) => Stream.value(
+            FriendProfile(
+              uid: 'uid-1',
+              nickname: defaultStarterNickname('uid-1'),
+              avatarPresetIndex: 0,
+            ),
+          ),
+        );
+        // Every candidate this loop could ever try is taken.
+        when(
+          () => userProfileRepository.updateNickname('uid-1', any()),
+        ).thenThrow(const NicknameTakenException('taken'));
+
+        final container = buildContainer(
+          authRepository: authRepository,
+          googleAuthService: googleAuthService,
+          userProfileRepository: userProfileRepository,
+        );
+        addTearDown(container.dispose);
+
+        final outcome = await container
+            .read(authControllerProvider.notifier)
+            .upgradeWithGoogle();
+
+        // The best-effort nickname default failed entirely, but that alone
+        // must never fail the upgrade itself (§8's own outcome is about
+        // the account switch, not the nickname convenience on top of it).
         expect(outcome, GoogleUpgradeOutcome.success);
       },
     );

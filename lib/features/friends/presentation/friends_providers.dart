@@ -20,6 +20,28 @@ Stream<FriendProfile?> myProfile(Ref ref) {
   return ref.watch(userProfileRepositoryProvider).watchProfile(uid);
 }
 
+/// Whether the Друзья tab (§6.4) is unlocked yet — this task's requirement:
+/// the tab stays inactive until the user has (1) logged in via Настройки
+/// (§8's Google upgrade — a permanent, non-anonymous identity, not just the
+/// silent anonymous session every install starts with) and (2) has a
+/// nickname to actually be found by (§6.5) — which, since login itself
+/// resolves one automatically (`AuthController
+/// ._applyDefaultNicknameFromGoogleEmail`, retried past a taken name with a
+/// numeric suffix), in practice becomes true moments after login rather
+/// than needing its own separate manual step.
+///
+/// A `myProfile` still loading (or in an error state) reads as locked too
+/// — `.value` is `null` for both `AsyncLoading`/`AsyncError`, so there is
+/// nothing to distinguish here: either way, there is not yet a nickname to
+/// unlock with.
+@riverpod
+bool friendsUnlocked(Ref ref) {
+  final authState = ref.watch(authControllerProvider);
+  if (authState.isAnonymous) return false;
+  final profile = ref.watch(myProfileProvider).value;
+  return profile != null && profile.nickname.isNotEmpty;
+}
+
 /// Creates a starter `users/{uid}` profile (default nickname + a fixed
 /// preset avatar) the first time a uid is available — every user needs one
 /// before "add friend by nickname" can find or be found by them. A no-op

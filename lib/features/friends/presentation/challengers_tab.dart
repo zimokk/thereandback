@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/formatters.dart';
 import '../../../design/colors.dart';
+import '../../../design/components/app_snackbar.dart';
 import '../../../design/components/distance_text.dart';
 import '../../../design/spacing.dart';
 import '../../../design/typography.dart';
@@ -19,11 +20,22 @@ class ChallengersTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+
+    // This task's requirement: the tab stays inactive until login + a
+    // nickname exist (§6.4/§6.5/§8) — `AppShell`'s bottom-nav tap already
+    // blocks getting here in the first place; this is the belt-and-
+    // suspenders guard for any other path that might still land on this
+    // route (e.g. a restored navigation stack from before the account was
+    // signed out, or a future deep link).
+    if (!ref.watch(friendsUnlockedProvider)) {
+      return _LockedPlaceholder(l10n: l10n);
+    }
+
     // Bootstraps the signed-in user's own profile the first time a uid
     // exists — fire-and-forget, this screen doesn't block on it.
     ref.watch(ensureFriendProfileProvider);
 
-    final l10n = AppLocalizations.of(context)!;
     final myNickname = ref.watch(myProfileProvider).value?.nickname;
     final view = ref.watch(friendsViewProvider).value ?? FriendsViewData.empty;
     final myMeters = view.rows
@@ -121,6 +133,57 @@ class ChallengersTab extends ConsumerWidget {
   }
 }
 
+/// Shown by [ChallengersTab] instead of its real content while
+/// [friendsUnlockedProvider] is `false` — same AppBar/background shape as
+/// the real tab (so the bottom-nav switch doesn't visibly jolt), just
+/// without the add-friend button or any table to show yet.
+class _LockedPlaceholder extends StatelessWidget {
+  const _LockedPlaceholder({required this.l10n});
+
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        title: Text(l10n.friendsTitle, style: AppTypography.heading),
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.lock_outline,
+                  color: AppColors.textSecondary,
+                  size: 40,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  l10n.friendsLockedTitle,
+                  style: AppTypography.heading,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  l10n.friendsLockedBody,
+                  style: AppTypography.bodySecondary,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 void _showAddFriendDialog(
   BuildContext context,
   WidgetRef ref,
@@ -157,9 +220,7 @@ void _showAddFriendDialog(
                 .addFriendByNickname(nickname);
 
             if (!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(_outcomeMessage(outcome, l10n))),
-            );
+            showAppSnackBar(context, _outcomeMessage(outcome, l10n));
           },
           child: Text(
             l10n.friendsAddSubmit,
@@ -243,8 +304,7 @@ Future<void> _copyNickname(
 ) async {
   await Clipboard.setData(ClipboardData(text: nickname));
   if (!context.mounted) return;
-  ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(l10n.friendsMyNicknameCopied)));
+  showAppSnackBar(context, l10n.friendsMyNicknameCopied);
 }
 
 class _PendingRequestTile extends StatelessWidget {

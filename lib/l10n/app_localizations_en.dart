@@ -22,6 +22,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navFriends => 'Friends';
 
   @override
+  String get navFriendsLockedTooltip =>
+      'Sign in and set a nickname in Settings first';
+
+  @override
   String get navSettings => 'Settings';
 
   @override
@@ -415,6 +419,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get friendsEmptyBody =>
       'Add a friend by their nickname to see how your quests compare.';
+
+  @override
+  String get friendsLockedTitle => 'Friends isn\'t available yet';
+
+  @override
+  String get friendsLockedBody =>
+      'Sign in and set a nickname in Settings to see and add friends.';
 
   @override
   String get friendsOutcomeSent => 'Friend request sent.';

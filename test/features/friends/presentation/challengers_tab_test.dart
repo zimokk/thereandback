@@ -269,14 +269,11 @@ void main() {
   );
 
   testWidgets(
-    'adding a friend while anonymous triggers the Google upgrade prompt, '
-    'and a cancelled picker shows the cancelled message without resolving '
-    'any nickname',
+    'an anonymous session sees the locked placeholder instead of the real '
+    'tab — this task\'s requirement: the Друзья tab stays inactive until '
+    'login (§6.4/§6.5/§8), so there is no add-friend button to even tap '
+    'anonymously anymore',
     (tester) async {
-      when(() => friendshipRepository.watchMyFriendships('me'))
-          .thenAnswer((_) => Stream.value(const []));
-      when(() => googleAuthService.signIn()).thenAnswer((_) async => null);
-
       await tester.pumpWidget(
         _wrap(
           friendshipRepository: friendshipRepository,
@@ -288,20 +285,43 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.person_add_alt_1));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField), 'bob');
-      await tester.tap(find.text('Send request'));
-      await tester.pumpAndSettle();
-
-      verify(() => googleAuthService.signIn()).called(1);
-      verifyNever(() => userProfileRepository.resolveUidForNickname(any()));
+      expect(find.text('Friends isn\'t available yet'), findsOneWidget);
       expect(
         find.text(
-          'Adding friends needs a Google account — sign-in was cancelled.',
+          'Sign in and set a nickname in Settings to see and add friends.',
         ),
         findsOneWidget,
       );
+      expect(find.byIcon(Icons.person_add_alt_1), findsNothing);
+      expect(find.text('No friends yet'), findsNothing);
+      // Never even reaches the point of watching friendships or bootstrapping
+      // a profile — the whole real tab, including its own data fetching, is
+      // skipped while locked.
+      verifyNever(() => friendshipRepository.watchMyFriendships(any()));
+    },
+  );
+
+  testWidgets(
+    'a logged-in session whose nickname has not resolved yet also sees the '
+    'locked placeholder — login alone is not enough',
+    (tester) async {
+      // Overrides the shared setUp() stub with one that never emits, so the
+      // profile genuinely never resolves for the life of this test.
+      when(
+        () => userProfileRepository.watchProfile('me'),
+      ).thenAnswer((_) => const Stream.empty());
+
+      await tester.pumpWidget(
+        _wrap(
+          friendshipRepository: friendshipRepository,
+          userProfileRepository: userProfileRepository,
+          progressSyncRepository: progressSyncRepository,
+          googleAuthService: googleAuthService,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Friends isn\'t available yet'), findsOneWidget);
     },
   );
 }

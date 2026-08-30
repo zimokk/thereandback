@@ -214,9 +214,17 @@ class AuthController extends _$AuthController {
   /// profile against the same generator the starter profile was created
   /// with is what tells the two apart.
   ///
+  /// If the email-derived nickname is already claimed by someone else,
+  /// this does **not** give up and leave the anonymous placeholder in
+  /// place — it retries with a numeric suffix (`pupa-1`, `pupa-2`, …)
+  /// until one is free (this task's requirement: the Друзья tab unlocks
+  /// once a real nickname exists, §6.4/§6.5, so first login must actually
+  /// land on one rather than a `Traveler-xxxxxx` placeholder just because
+  /// the exact email-derived name happened to be taken).
+  ///
   /// Best-effort and never lets a problem here undo the upgrade that
-  /// already succeeded: no email, a not-yet-existing profile, the derived
-  /// nickname already being taken by someone else, or any other failure
+  /// already succeeded: no email, a not-yet-existing profile, every
+  /// numbered variant up to the cap also being taken, or any other failure
   /// (e.g. this device being offline) all just leave the placeholder in
   /// place silently — the user can still rename themselves by hand
   /// (§6.5), so this is a convenience, not a guarantee.
@@ -234,11 +242,36 @@ class AuthController extends _$AuthController {
       final isStillDefault =
           profile != null && profile.nickname == defaultStarterNickname(uid);
       if (!isStillDefault) return;
-      await profileRepository.updateNickname(uid, local);
+      await _updateNicknameResolvingCollisions(profileRepository, uid, local);
     } catch (error) {
       // Logged (debug builds only) for diagnosability — never the email
       // itself (§13: no PII in logs), only the caught error's own message.
       debugPrint('Google-email nickname default failed: $error');
+    }
+  }
+
+  /// Tries [base], then `base-1`, `base-2`, … up to [maxSuffix] numbered
+  /// variants, until [UserProfileRepository.updateNickname] accepts one —
+  /// the default-nickname collision resolution this task asks for. Stops
+  /// (rethrowing, so the caller's own catch-all leaves the placeholder in
+  /// place) once every variant up to the cap is taken too — a bound is
+  /// needed somewhere, and this many collisions on one email's exact local
+  /// part is itself vanishingly unlikely.
+  Future<void> _updateNicknameResolvingCollisions(
+    UserProfileRepository profileRepository,
+    String uid,
+    String base, {
+    int maxSuffix = 20,
+  }) async {
+    for (var suffix = 0; suffix <= maxSuffix; suffix++) {
+      final candidate = suffix == 0 ? base : '$base-$suffix';
+      try {
+        await profileRepository.updateNickname(uid, candidate);
+        return;
+      } on NicknameTakenException {
+        if (suffix == maxSuffix) rethrow;
+        // else: try the next numbered variant.
+      }
     }
   }
 }

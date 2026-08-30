@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../app/auth_provider.dart';
 import '../../../design/colors.dart';
+import '../../../design/components/app_snackbar.dart';
 import '../../../design/spacing.dart';
 import '../../../design/typography.dart';
 import '../../../l10n/app_localizations.dart';
@@ -191,7 +192,7 @@ Future<void> _signInWithGoogle(
   }
 
   if (!context.mounted || message == null) return;
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  showAppSnackBar(context, message);
 }
 
 /// Handles a tap on the nickname row while [SettingsTab] hasn't resolved a
@@ -205,9 +206,7 @@ void _retryProfileLoad(
   AppLocalizations l10n,
 ) {
   ref.invalidate(ensureFriendProfileProvider);
-  ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(SnackBar(content: Text(l10n.settingsNicknameNotReadyMessage)));
+  showAppSnackBar(context, l10n.settingsNicknameNotReadyMessage);
 }
 
 /// Prompts for a new nickname, pre-filled with the current one — same
@@ -293,7 +292,7 @@ Future<void> _updateNickname(
   }
 
   if (!context.mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  showAppSnackBar(context, message);
 }
 
 /// The §7 "persistent lock screen / notification shade" toggle. Off by

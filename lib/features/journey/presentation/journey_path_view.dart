@@ -255,6 +255,24 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView>
                   // own meters-per-pixel scale.
                   final showGhost = (solidX - centerX).abs() > 1.0;
 
+                  // Each visible marker's screen x, resolved once and shared
+                  // by both the marker widget below and the painter's guide
+                  // line (this task's requirement — a faint dotted line from
+                  // each trophy down to the wavy path, quest-map parity,
+                  // §6.2) — computing it twice would risk the two drifting
+                  // apart on a future change to either loop.
+                  final visibleAchievements = [
+                    for (final state in achievementStates)
+                      if (state.def.thresholdMeters <= _totalMeters)
+                        (
+                          state: state,
+                          x:
+                              centerX +
+                              (state.def.thresholdMeters - _panMeters) *
+                                  pixelsPerMeter,
+                        ),
+                  ];
+
                   return Stack(
                     children: [
                       CustomPaint(
@@ -266,19 +284,19 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView>
                           panMeters: _panMeters,
                           pixelsPerMeter: pixelsPerMeter,
                           centerX: centerX,
+                          markerGuides: [
+                            for (final m in visibleAchievements)
+                              (x: m.x, thresholdMeters: m.state.def.thresholdMeters),
+                          ],
                         ),
                       ),
-                      for (final state in achievementStates)
-                        if (state.def.thresholdMeters <= _totalMeters)
-                          _AchievementMarker(
-                            key: Key('achievementMarker-${state.def.id}'),
-                            state: state,
-                            l10n: l10n,
-                            x:
-                                centerX +
-                                (state.def.thresholdMeters - _panMeters) *
-                                    pixelsPerMeter,
-                          ),
+                      for (final m in visibleAchievements)
+                        _AchievementMarker(
+                          key: Key('achievementMarker-${m.state.def.id}'),
+                          state: m.state,
+                          l10n: l10n,
+                          x: m.x,
+                        ),
                       if (showGhost)
                         _TravelerMarker(
                           key: const Key('travelerGhost'),
@@ -563,6 +581,22 @@ const double _markersLayerTop = AppSpacing.md;
 /// visually sits.
 const double _markerTapPadding = AppSpacing.sm;
 
+/// Where a trophy's guide line starts, in logical pixels from the top of
+/// the scene — just under the marker icon itself
+/// ([_markersLayerTop] + [_markerIconSize]), so the dotted line reads as
+/// hanging from the icon rather than starting mid-air above or clipping
+/// through it (`_WavyPathPainter._paintMarkerGuide`, this task's
+/// requirement).
+const double _markerGuideStartY = _markersLayerTop + _markerIconSize;
+
+/// Dash length of a trophy's guide line, in logical pixels — same value as
+/// `quest_map_view.dart`'s `_trophyDashLength` (§6.2 visual parity).
+const double _markerGuideDashLength = 3;
+
+/// Gap length between dashes of a trophy's guide line, in logical pixels —
+/// same value as `quest_map_view.dart`'s `_trophyDashGap`.
+const double _markerGuideDashGap = 3;
+
 /// Shows a marker's name and status (this task's requirement — "details on
 /// tap only") in a bottom sheet, following the same shape every other sheet
 /// in this app uses (see `settings_tab.dart`'s
@@ -610,6 +644,7 @@ class _WavyPathPainter extends CustomPainter {
     required this.panMeters,
     required this.pixelsPerMeter,
     required this.centerX,
+    required this.markerGuides,
   });
 
   final double midY;
@@ -624,12 +659,29 @@ class _WavyPathPainter extends CustomPainter {
   final double pixelsPerMeter;
   final double centerX;
 
+  /// Every visible achievement marker's already-resolved screen `x`
+  /// (`_JourneyPathViewState.build`'s `visibleAchievements`) paired with
+  /// its own route position — lets [_paintMarkerGuide] find where the wavy
+  /// line sits at that same route meter, independently of `x` (this task's
+  /// requirement: "линия от кубка... до линии, по которой движется
+  /// человек" — quest-map's own trophy guide, `quest_map_view.dart`'s
+  /// `_RouteOverlayPainter._paintTrophy`, drawn here too).
+  final List<({double x, int thresholdMeters})> markerGuides;
+
   @override
   void paint(Canvas canvas, Size size) {
     canvas.drawRect(
       Offset.zero & size,
       Paint()..color = AppColors.backgroundElevated,
     );
+
+    // Painted before the early-return below (unreachable in practice — see
+    // that check's own math — but guides shouldn't depend on it holding):
+    // a marker's guide is independent of whether the wavy path itself has
+    // any on-screen extent this frame.
+    for (final guide in markerGuides) {
+      _paintMarkerGuide(canvas, size, guide);
+    }
 
     // The line only exists between point A (0 m) and point B (totalMeters);
     // convert those two route bounds to screen x once, then clip drawing to
@@ -685,11 +737,62 @@ class _WavyPathPainter extends CustomPainter {
     );
   }
 
+  /// A faint dotted line from just under a trophy's icon
+  /// ([_markerGuideStartY]) down to the exact point on the wavy path
+  /// belonging to [guide]'s own route meters — mirrors
+  /// `quest_map_view.dart`'s `_RouteOverlayPainter._paintTrophy`/
+  /// `_paintDottedLine` (§6.2's "неяркая приглушённая пунктирная
+  /// линия-указатель"), applied here for the first time (this task's
+  /// requirement). Skipped once [guide]'s `x` is off-screen — cheap to
+  /// check, and avoids painting dashes nobody can see while a drag has
+  /// carried a marker far past either edge.
+  void _paintMarkerGuide(
+    Canvas canvas,
+    Size size,
+    ({double x, int thresholdMeters}) guide,
+  ) {
+    if (guide.x < 0 || guide.x > size.width) return;
+
+    final lineY = _wavyPathY(
+      meters: guide.thresholdMeters.toDouble(),
+      pixelsPerMeter: pixelsPerMeter,
+      midY: midY,
+    );
+    final from = Offset(guide.x, _markerGuideStartY);
+    final to = Offset(guide.x, lineY);
+
+    final paint = Paint()
+      ..color = AppColors.textSecondary.withValues(alpha: 0.35)
+      ..strokeWidth = 1;
+    final total = (to - from).distance;
+    if (total <= 0) return;
+    final direction = (to - from) / total;
+
+    var traveled = 0.0;
+    while (traveled < total) {
+      final segmentEnd = math.min(
+        traveled + _markerGuideDashLength,
+        total,
+      );
+      canvas.drawLine(
+        from + direction * traveled,
+        from + direction * segmentEnd,
+        paint,
+      );
+      traveled += _markerGuideDashLength + _markerGuideDashGap;
+    }
+  }
+
   @override
   bool shouldRepaint(covariant _WavyPathPainter oldDelegate) =>
       oldDelegate.midY != midY ||
       oldDelegate.totalMeters != totalMeters ||
       oldDelegate.panMeters != panMeters ||
       oldDelegate.pixelsPerMeter != pixelsPerMeter ||
-      oldDelegate.centerX != centerX;
+      oldDelegate.centerX != centerX ||
+      // markerGuides is rebuilt fresh every `build()` (same idiom
+      // quest_map_view.dart's `trophyStates` check uses) — the values
+      // above already cover every input it's derived from, this just
+      // guards a future change that adds one that isn't.
+      !identical(oldDelegate.markerGuides, markerGuides);
 }

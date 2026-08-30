@@ -122,6 +122,12 @@ abstract class AppLocalizations {
   /// **'Friends'**
   String get navFriends;
 
+  /// BottomNavigationBarItem.tooltip for the Friends tab while friendsUnlockedProvider is false
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in and set a nickname in Settings first'**
+  String get navFriendsLockedTooltip;
+
   /// Bottom nav label for the settings tab
   ///
   /// In en, this message translates to:
@@ -787,6 +793,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add a friend by their nickname to see how your quests compare.'**
   String get friendsEmptyBody;
+
+  /// Title shown by ChallengersTab in place of its real content while friendsUnlockedProvider is false
+  ///
+  /// In en, this message translates to:
+  /// **'Friends isn\'t available yet'**
+  String get friendsLockedTitle;
+
+  /// Body text under friendsLockedTitle — also reused as the snackbar shown when the locked Friends nav item is tapped
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in and set a nickname in Settings to see and add friends.'**
+  String get friendsLockedBody;
 
   /// Confirmation after AddFriendOutcome.sent
   ///

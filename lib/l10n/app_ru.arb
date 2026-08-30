@@ -5,6 +5,7 @@
   "navQuestStats": "Карта",
   "navAchievements": "Трофеи",
   "navFriends": "Друзья",
+  "navFriendsLockedTooltip": "Сначала войдите и задайте ник в Настройках",
   "navSettings": "Настройки",
 
   "unitMeters": "{count, plural, one{метр} few{метра} many{метров} other{метра}}",
@@ -125,6 +126,8 @@
   "friendsRemoveButton": "Удалить",
   "friendsEmptyTitle": "Пока нет друзей",
   "friendsEmptyBody": "Добавьте друга по нику, чтобы сравнить прогресс в квесте.",
+  "friendsLockedTitle": "Друзья пока недоступны",
+  "friendsLockedBody": "Войдите и задайте ник в Настройках, чтобы видеть и добавлять друзей.",
   "friendsOutcomeSent": "Заявка в друзья отправлена.",
   "friendsOutcomeNicknameNotFound": "Пользователь с таким ником не найден.",
   "friendsOutcomeCannotAddSelf": "Это ваш собственный ник.",
