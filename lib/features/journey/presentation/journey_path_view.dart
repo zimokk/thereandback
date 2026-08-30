@@ -17,11 +17,10 @@ import '../domain/route_scale.dart';
 import 'journey_providers.dart';
 
 /// The Путь tab's scene (§6.1) — today, a deliberate placeholder: a wavy
-/// line standing in for real terrain, panned by a horizontal drag, with the
-/// traveler icon resting on it near the screen's horizontal centre.
-/// Dragging left-to-right (positive `dx`) moves the visible line right —
-/// direct manipulation, content follows the finger — and dragging
-/// right-to-left reveals what's further down the route, toward B (see
+/// line standing in for real terrain, panned by a horizontal drag. Dragging
+/// left-to-right (positive `dx`) moves the visible line right — direct
+/// manipulation, content follows the finger — and dragging right-to-left
+/// reveals what's further down the route, toward B (see
 /// [_onHorizontalDragUpdate]). The line's height at any given route meter
 /// is fixed (see [_wavyPathY]'s doc comment) — panning changes which part
 /// of that fixed profile is on screen, never the profile itself, which is
@@ -29,32 +28,48 @@ import 'journey_providers.dart';
 /// visibly climbs and descends fixed hills the camera pans across, instead
 /// of a pattern that warps as you drag.
 ///
-/// The icon is the foreground layer, the line is the background one (§6.1 —
-/// "слои двигаются с разной скоростью"): a drag moves both, but the icon
-/// sways only a small, bounded distance opposite the screen direction the
-/// line itself pans in (see [_travelerOffsetX]), which is what makes the
-/// two read as different depths instead of one rigid picture. At rest
-/// (`_panMeters == 0`, a freshly started quest) the icon still sits exactly
-/// at centre — the sway only appears once panned.
+/// Panning is a **rewind, not a peek**: it is clamped to `[0,
+/// progressMeters]`, so it can rewind to any already-walked position but
+/// never past the traveler's real, current one — there is nothing to look
+/// at beyond it yet (revises the earlier "и заглянуть вперёд" allowance,
+/// CLAUDE.md §6.1/§14). Two markers make what's being shown legible:
+///
+/// - The solid [_TravelerMarker] sits at the traveler's *real* position
+///   ([progressMeters]) in the same world-space every achievement marker
+///   uses — it does not follow the pan, so as the view rewinds away from
+///   it, it visibly slides toward (and eventually off) the opposite edge
+///   rather than the pan pulling it along ("на актуальном месте останется
+///   сам человек", this task's requirement).
+/// - The ghost [_TravelerMarker] is a dim, smaller echo of the same figure,
+///   pinned to screen centre — wherever the view is currently centred is,
+///   by definition, the position it stands for ("контур фигурки человека,
+///   как будто тень, показывая где он был"). Hidden once it would coincide
+///   with the solid marker (`_panMeters == progressMeters`, i.e. currently
+///   looking at `You`) — one figure there, not two overlapping ones.
+///
+/// Whenever the view is at `You` (`_panMeters == progressMeters`) when new
+/// progress lands, the pan follows it forward automatically — "riding
+/// along", per the `flame-scene` skill's contract — rather than being left
+/// behind at a now-stale position; a deliberately rewound view is left
+/// alone (never yanked forward) until the user returns to `You` themselves.
 ///
 /// The line's *length* is not a placeholder, though: it always spans
 /// exactly `[0, journey.totalMeters]` at this quest's fixed
 /// [metersPerScreenWidthFor] scale (this task's requirement — "a line with
-/// a start and an end, proportional to the route"), so panning is clamped
-/// and cannot scroll past point A or point B. Achievement/landmark markers
-/// (`achievementCatalog`) sit in their own layer pinned to the top of the
-/// scene, at their real meter position along the x axis; ones not reached
-/// yet render muted, the same way `achievements_tab.dart` mutes a locked
-/// trophy — panning ahead previews them without unlocking them.
+/// a start and an end, proportional to the route"). Achievement/landmark
+/// markers (`achievementCatalog`) sit in their own layer pinned to the top
+/// of the scene, at their real meter position along the x axis; ones not
+/// reached yet render muted, the same way `achievements_tab.dart` mutes a
+/// locked trophy — a marker just ahead of `You` can still be glimpsed
+/// approaching from the edge without being reachable by rewinding to it.
 ///
 /// Phase 5 (`flame-scene` skill) replaces this `CustomPaint` with a real
 /// Flame `ParallaxComponent` scene — layered biome art, a sky gradient tied
-/// to time of day, and the `< Start`/`You >` anchors that tie the pan
-/// position back to an actual point on the route. None of that exists yet:
-/// the wave shape here is purely decorative, it does not change the
-/// day/distance/narrative labels below or credit a different position on
-/// the route — those still only move with real progress, exactly as
-/// before.
+/// to time of day, and the `< Start`/`You >` anchor buttons. None of that
+/// exists yet: the wave shape here is purely decorative, and the
+/// day/distance/narrative labels below always reflect real progress, never
+/// the rewound position — those still only move with real progress, exactly
+/// as before.
 class JourneyPathView extends ConsumerStatefulWidget {
   const JourneyPathView({super.key});
 
@@ -64,18 +79,27 @@ class JourneyPathView extends ConsumerStatefulWidget {
 
 class _JourneyPathViewState extends ConsumerState<JourneyPathView> {
   /// The route position, in meters from point A, currently centered under
-  /// the traveler icon — ephemeral view state, not progress: it resets on
+  /// screen centre — ephemeral view state, not progress: it resets on
   /// rebuild and is never persisted or read by any provider (see the class
-  /// doc comment on scope). Always kept inside `[0, _totalMeters]` (set by
-  /// [_onHorizontalDragUpdate]) so the line can never be panned past either
-  /// end.
+  /// doc comment on scope). Always kept inside `[0, _progressMeters]` (set
+  /// by [_onHorizontalDragUpdate] and [build]'s own follow-at-You logic) —
+  /// a rewind, never a peek past the traveler's real position (class doc
+  /// comment).
   double _panMeters = 0;
 
-  /// The active journey's length, cached from the latest [build] so
-  /// [_onHorizontalDragUpdate] (which fires outside the widget tree, from a
-  /// raw gesture callback) knows where to clamp [_panMeters] without
-  /// reaching back into Riverpod.
+  /// The active journey's length, cached from the latest [build] — used
+  /// only for the line's own drawn extent ([_WavyPathPainter]) and for
+  /// filtering which achievement markers exist on this route at all
+  /// ([build]'s `state.def.thresholdMeters <= _totalMeters` check); no
+  /// longer [_panMeters]'s own clamp bound (see [_progressMeters]).
   int _totalMeters = 0;
+
+  /// The traveler's real, current position, cached from the latest [build]
+  /// so [_onHorizontalDragUpdate] (which fires outside the widget tree,
+  /// from a raw gesture callback) knows where to clamp [_panMeters]
+  /// without reaching back into Riverpod. This is the forward bound a
+  /// rewind can never cross — there is nothing to look at past it yet.
+  int _progressMeters = 0;
 
   /// The active journey's id, cached the same way as [_totalMeters] — looks
   /// up this quest's own scale via [metersPerScreenWidthFor] rather than a
@@ -94,10 +118,12 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView> {
     setState(() {
       // Dragging left (negative dx) reveals what's further down the route
       // (toward B), matching the usual "swipe left to advance" convention —
-      // so it increases _panMeters.
+      // so it increases _panMeters. Clamped at _progressMeters, not the
+      // route's full length: this is a rewind of the ground already
+      // covered, not a peek past it (class doc comment).
       _panMeters = (_panMeters - details.delta.dx / pixelsPerMeter).clamp(
         0.0,
-        _totalMeters.toDouble(),
+        _progressMeters.toDouble(),
       );
     });
   }
@@ -115,12 +141,24 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView> {
       return const SizedBox.shrink();
     }
 
+    // Was the view sitting exactly at `You` before this rebuild? Checked
+    // against the *previous* _progressMeters, before it's overwritten below
+    // — this is what tells "the user was following along" apart from "the
+    // user deliberately rewound", the two cases the class doc comment's
+    // follow-at-You paragraph distinguishes. A fresh quest starts with both
+    // at 0, so this is also true (and a no-op) on the very first build.
+    final wasAtYou = _panMeters >= _progressMeters;
+
     _totalMeters = journey.totalMeters;
     _journeyId = journey.id;
-    // A quest whose length shrank underneath an in-flight pan (never
-    // happens today — the catalog is static — but cheap to guard) snaps the
-    // view back inside bounds rather than leaving it stranded past B.
-    _panMeters = _panMeters.clamp(0.0, _totalMeters.toDouble());
+    _progressMeters = selected.progressMeters;
+    _panMeters = wasAtYou
+        ? _progressMeters.toDouble()
+        // A deliberately rewound view stays put unless new progress has
+        // shrunk *behind* it (never happens today — progress is monotonic,
+        // §5.2 — but cheap to guard against a rewind stranded past the new
+        // bound).
+        : _panMeters.clamp(0.0, _progressMeters.toDouble());
 
     final day = questTimeService.questDay(
       startedAt: selected.startedAt,
@@ -147,29 +185,31 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView> {
                   final midY = size.height / 2;
                   final pixelsPerMeter =
                       size.width / metersPerScreenWidthFor(_journeyId);
-                  // Feeds the traveler icon's sway only — the height itself
-                  // now comes from [_wavyPathY], which the painter and the
-                  // icon both call with a *route meter*, not a screen
-                  // offset (see that function's doc comment). Achievement
-                  // markers below use `pixelsPerMeter` directly instead,
-                  // since their layer is pinned to the top and doesn't
-                  // follow the line's height.
-                  final panOffsetPixels = _panMeters * pixelsPerMeter;
-                  // Foreground (icon) vs. background (line) parallax: see
-                  // the class doc comment and [_travelerOffsetX]. The icon
-                  // reads its height off the line at its *own* x, not at
-                  // centerX, so it still visually sits on the terrain once
-                  // it has swayed off centre — converted back to the route
-                  // meter under that x so the lookup uses the same
-                  // pan-invariant height as the line beneath it.
-                  final travelerX = centerX + _travelerOffsetX(panOffsetPixels);
-                  final travelerMeters =
-                      _panMeters + (travelerX - centerX) / pixelsPerMeter;
-                  final travelerY = _wavyPathY(
-                    meters: travelerMeters,
+
+                  // The real traveler, in the same world-space every
+                  // achievement marker uses (class doc comment) — it does
+                  // not read _panMeters at all, so rewinding the view never
+                  // moves it, only changes where on screen it lands.
+                  final solidX =
+                      centerX + (_progressMeters - _panMeters) * pixelsPerMeter;
+                  final solidY = _wavyPathY(
+                    meters: _progressMeters.toDouble(),
                     pixelsPerMeter: pixelsPerMeter,
                     midY: midY,
                   );
+
+                  // The rewind ghost — always screen-centred, since "what's
+                  // currently centred" is exactly what it stands for.
+                  final ghostY = _wavyPathY(
+                    meters: _panMeters,
+                    pixelsPerMeter: pixelsPerMeter,
+                    midY: midY,
+                  );
+                  // Hidden once it would coincide with the solid marker
+                  // (currently looking at `You`) — a pixel threshold, not
+                  // a meters one, so it holds regardless of this quest's
+                  // own meters-per-pixel scale.
+                  final showGhost = (solidX - centerX).abs() > 1.0;
 
                   return Stack(
                     children: [
@@ -195,16 +235,18 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView> {
                                 (state.def.thresholdMeters - _panMeters) *
                                     pixelsPerMeter,
                           ),
-                      Positioned(
-                        left: travelerX - _travelerIconSize / 2,
-                        top: travelerY - _travelerIconSize / 2,
-                        child: const IgnorePointer(
-                          child: Icon(
-                            Icons.directions_walk,
-                            color: AppColors.gold,
-                            size: _travelerIconSize,
-                          ),
+                      if (showGhost)
+                        _TravelerMarker(
+                          key: const Key('travelerGhost'),
+                          x: centerX,
+                          y: ghostY,
+                          solid: false,
                         ),
+                      _TravelerMarker(
+                        key: const Key('travelerSolid'),
+                        x: solidX,
+                        y: solidY,
+                        solid: true,
                       ),
                     ],
                   );
@@ -260,38 +302,6 @@ const double _waveAmplitude = 36;
 /// placeholder wave completes one full up-down cycle.
 const double _waveWavelength = 260;
 
-/// Fraction of the pan's screen-space offset the traveler icon sways by,
-/// opposite the direction the line's own pattern moves in — see
-/// [_travelerOffsetX]. Kept well under 1 so the icon (foreground) reads as
-/// closer/faster than the line (background) the way §6.1's parallax layers
-/// do, not as a second copy of the same motion.
-const double _travelerParallaxFactor = 0.15;
-
-/// Maximum horizontal sway of the traveler icon from screen centre, in
-/// logical pixels. Without a bound, [_travelerParallaxFactor] applied to
-/// the raw pan offset would carry the icon off-screen over a long drag —
-/// this keeps it inside a narrow band around `You` instead, which is also
-/// why it saturates quickly rather than tracking the pan 1:1.
-const double _travelerSwayRange = 40.0;
-
-/// Horizontal offset of the traveler icon from screen centre, given the
-/// current pan's screen-space offset ([panOffsetPixels] — `_panMeters *
-/// pixelsPerMeter`, the same quantity the painter derives `panMeters` from).
-///
-/// The sign is deliberately opposite the line: advancing the pan (dragging
-/// toward B, a positive [panOffsetPixels]) shifts the whole line left on
-/// screen (see [_JourneyPathViewState.build] and [_onHorizontalDragUpdate]),
-/// so this returns a *negative* offset for a positive [panOffsetPixels],
-/// moving the icon the other way. That is the parallax cue this function
-/// exists for: foreground (icon) and background (line) visibly moving in
-/// different screen directions under the same drag, not just at different
-/// speeds.
-double _travelerOffsetX(double panOffsetPixels) =>
-    (-panOffsetPixels * _travelerParallaxFactor).clamp(
-      -_travelerSwayRange,
-      _travelerSwayRange,
-    );
-
 /// Height of the placeholder wavy path at route position [meters] (from
 /// point A), given the quest's current pixels-per-meter scale
 /// ([pixelsPerMeter]) and the scene's vertical centre ([midY]).
@@ -306,11 +316,12 @@ double _travelerOffsetX(double panOffsetPixels) =>
 /// `panMeters`, so the same route point rendered at a different height
 /// after every pan — a bug this signature makes impossible to reintroduce).
 ///
-/// Shared by the painter (draws the line) and the traveler icon (sits on
-/// it, via its own screen x converted back to meters — see the icon's call
-/// site) — there is exactly one function that knows the shape of this
-/// curve, so the two can never drift apart. Achievement markers
-/// deliberately do *not* read this — they live in their own layer pinned to
+/// Shared by the painter (draws the line) and both traveler markers (each
+/// passes its own route meters directly — [_progressMeters] for the solid
+/// one, [_panMeters] for the ghost — see [_JourneyPathViewState.build]) —
+/// there is exactly one function that knows the shape of this curve, so
+/// the three can never drift apart. Achievement markers deliberately do
+/// *not* read this — they live in their own layer pinned to
 /// [_markersLayerTop] instead (this task's requirement).
 double _wavyPathY({
   required double meters,
@@ -320,6 +331,57 @@ double _wavyPathY({
   final worldX = meters * pixelsPerMeter;
   final phase = worldX / _waveWavelength * 2 * math.pi;
   return midY + _waveAmplitude * math.sin(phase);
+}
+
+/// Size of the rewind ghost, relative to [_travelerIconSize] — smaller and
+/// visibly behind the solid marker, not a same-size twin.
+const double _travelerGhostScale = 0.85;
+
+/// Opacity of the rewind ghost's outline — faint enough to read as "a
+/// memory of a position", not a second real traveler.
+const double _travelerGhostOpacity = 0.45;
+
+/// One traveler figure on the scene — either the real, current position
+/// ([solid] `true`, opaque gold, [_travelerIconSize]) or the rewind ghost
+/// ([solid] `false`, a smaller, dim, hollow echo showing an earlier
+/// position the view has rewound to; class doc comment on
+/// [_JourneyPathViewState]). Both use the same glyph — it is the same
+/// figure either way, just "real" versus "a shadow of where he was".
+class _TravelerMarker extends StatelessWidget {
+  const _TravelerMarker({
+    super.key,
+    required this.x,
+    required this.y,
+    required this.solid,
+  });
+
+  final double x;
+  final double y;
+  final bool solid;
+
+  @override
+  Widget build(BuildContext context) {
+    final size = solid
+        ? _travelerIconSize
+        : _travelerIconSize * _travelerGhostScale;
+    return Positioned(
+      left: x - size / 2,
+      top: y - size / 2,
+      child: IgnorePointer(
+        // Same glyph either way (class doc comment) — only color, opacity
+        // and size tell the real traveler and the rewind ghost apart.
+        child: Icon(
+          Icons.directions_walk,
+          color: solid
+              ? AppColors.gold
+              : AppColors.textSecondary.withValues(
+                  alpha: _travelerGhostOpacity,
+                ),
+          size: size,
+        ),
+      ),
+    );
+  }
 }
 
 /// A single achievement/landmark marker, in its own layer pinned to the top

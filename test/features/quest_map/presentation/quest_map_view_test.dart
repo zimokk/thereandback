@@ -345,6 +345,51 @@ void main() {
     });
   });
 
+  group('trophy markers (§6.2, §6.3 — a dotted guide line down to the '
+      'route, gold + bigger once unlocked)', () {
+    // Every real achievement in `achievementCatalog` fits this fixture's
+    // 2 850 000 m route (the same length as the real Odyssey quest, which
+    // is what the catalog's own thresholds are picked against) — so both
+    // ends of this range exercise every achievement's marker, locked and
+    // unlocked, including the one sitting exactly on the route's last
+    // vertex ('journeys-end', 2 850 000 m).
+    testWidgets(
+      'renders without error with every trophy locked (no progress yet)',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            QuestMapView(progressMeters: 0, startedAt: DateTime.now()),
+            bundle: _FakeBundle({
+              'assets/journeys/odyssey-ithaca/map.json': _mapJson,
+            }),
+          ),
+        );
+        await _startQuest(tester);
+
+        expect(find.byKey(const Key('questMapRouteOverlay')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'renders without error with every trophy unlocked (quest complete)',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            QuestMapView(progressMeters: 2850000, startedAt: DateTime.now()),
+            bundle: _FakeBundle({
+              'assets/journeys/odyssey-ithaca/map.json': _mapJson,
+            }),
+          ),
+        );
+        await _startQuest(tester);
+
+        expect(find.byKey(const Key('questMapRouteOverlay')), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
   group('emojiForLandmarkId', () {
     // Every id the shipped Odyssey map.json actually uses — see
     // assets/journeys/odyssey-ithaca/map.json.
