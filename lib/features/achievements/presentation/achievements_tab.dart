@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/app_theme_id.dart';
 import '../../../core/formatters.dart';
 import '../../../design/colors.dart';
 import '../../../design/components/distance_text.dart';
@@ -9,9 +10,12 @@ import '../../../design/typography.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../journey/domain/progress_fraction.dart';
 import '../../journey/presentation/journey_providers.dart';
+import '../../profile/presentation/theme_provider.dart';
 import '../data/achievement_catalog.dart';
 import '../domain/achievement.dart';
+import '../domain/achievement_unlocks.dart' show currentStreak, longestStreak;
 import '../domain/daily_achievement.dart';
+import 'achievement_illustrations.dart';
 import 'achievement_titles.dart';
 import 'achievements_providers.dart';
 
@@ -28,6 +32,7 @@ class AchievementsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(selectedJourneyProvider);
+    final theme = ref.watch(effectiveThemeProvider);
     final l10n = AppLocalizations.of(context)!;
     final locale = Localizations.localeOf(context).toString();
     // `.value ?? {}`, not `.when(loading: ...)`: while unlocks are still
@@ -72,11 +77,13 @@ class AchievementsTab extends ConsumerWidget {
                       unlocks: unlocks,
                       l10n: l10n,
                       localeName: locale,
+                      theme: theme,
                     ),
                     _DailyGrid(
                       states: dailyStates,
                       l10n: l10n,
                       localeName: locale,
+                      theme: theme,
                     ),
                   ],
                 ),
@@ -95,12 +102,14 @@ class _JourneyGrid extends StatelessWidget {
     required this.unlocks,
     required this.l10n,
     required this.localeName,
+    required this.theme,
   });
 
   final List<AchievementState> states;
   final Map<String, List<DateTime>> unlocks;
   final AppLocalizations l10n;
   final String localeName;
+  final AppThemeId theme;
 
   @override
   Widget build(BuildContext context) {
@@ -118,6 +127,7 @@ class _JourneyGrid extends StatelessWidget {
         return _AchievementTile(
           state: state,
           l10n: l10n,
+          theme: theme,
           onTap: () => _showAchievementDetailsSheet(
             context,
             l10n: l10n,
@@ -144,11 +154,13 @@ class _AchievementTile extends StatelessWidget {
     required this.state,
     required this.l10n,
     required this.onTap,
+    required this.theme,
   });
 
   final AchievementState state;
   final AppLocalizations l10n;
   final VoidCallback onTap;
+  final AppThemeId theme;
 
   @override
   Widget build(BuildContext context) {
@@ -165,14 +177,11 @@ class _AchievementTile extends StatelessWidget {
           children: [
             Icon(Icons.emoji_events_outlined, size: 40, color: iconColor),
             const SizedBox(height: AppSpacing.sm),
-            Text(
-              achievementTitle(l10n, state.def),
-              style: AppTypography.body.copyWith(
-                color: unlocked
-                    ? AppColors.textPrimary
-                    : AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
+            _AchievementTitleRow(
+              def: state.def,
+              theme: theme,
+              l10n: l10n,
+              color: unlocked ? AppColors.textPrimary : AppColors.textSecondary,
             ),
             const SizedBox(height: AppSpacing.xs),
             Text(
@@ -200,6 +209,42 @@ class _AchievementTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// A trophy's title, with a small themed illustration leading it (this
+/// task's requirement — "на каждое достижение добавь небольшую иллюстрацию
+/// в стиле выбранной темы") — shared by both grids so a given achievement
+/// id always renders the same illustration wherever it's shown.
+class _AchievementTitleRow extends StatelessWidget {
+  const _AchievementTitleRow({
+    required this.def,
+    required this.theme,
+    required this.l10n,
+    required this.color,
+  });
+
+  final AchievementDef def;
+  final AppThemeId theme;
+  final AppLocalizations l10n;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(achievementIllustration(def, theme), size: 14, color: color),
+        const SizedBox(width: AppSpacing.xs),
+        Flexible(
+          child: Text(
+            achievementTitle(l10n, def),
+            style: AppTypography.body.copyWith(color: color),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -254,11 +299,13 @@ class _DailyGrid extends StatelessWidget {
     required this.states,
     required this.l10n,
     required this.localeName,
+    required this.theme,
   });
 
   final List<DailyAchievementState> states;
   final AppLocalizations l10n;
   final String localeName;
+  final AppThemeId theme;
 
   @override
   Widget build(BuildContext context) {
@@ -276,6 +323,7 @@ class _DailyGrid extends StatelessWidget {
         return _DailyAchievementTile(
           state: state,
           l10n: l10n,
+          theme: theme,
           onTap: () => _showAchievementDetailsSheet(
             context,
             l10n: l10n,
@@ -287,6 +335,7 @@ class _DailyGrid extends StatelessWidget {
                 : l10n.achievementNeverUnlockedLabel,
             unlockedDates: state.unlockedDates,
             localeName: localeName,
+            showStreak: true,
           ),
         );
       },
@@ -329,16 +378,19 @@ class _DailyAchievementTile extends StatelessWidget {
     required this.state,
     required this.l10n,
     required this.onTap,
+    required this.theme,
   });
 
   final DailyAchievementState state;
   final AppLocalizations l10n;
   final VoidCallback onTap;
+  final AppThemeId theme;
 
   @override
   Widget build(BuildContext context) {
     final unlocked = state.unlocked;
     final iconColor = unlocked ? AppColors.gold : AppColors.textSecondary;
+    final streak = currentStreak(state.unlockedDates);
 
     return GestureDetector(
       onTap: onTap,
@@ -352,14 +404,13 @@ class _DailyAchievementTile extends StatelessWidget {
               children: [
                 Icon(Icons.emoji_events_outlined, size: 40, color: iconColor),
                 const SizedBox(height: AppSpacing.sm),
-                Text(
-                  achievementTitle(l10n, state.def),
-                  style: AppTypography.body.copyWith(
-                    color: unlocked
-                        ? AppColors.textPrimary
-                        : AppColors.textSecondary,
-                  ),
-                  textAlign: TextAlign.center,
+                _AchievementTitleRow(
+                  def: state.def,
+                  theme: theme,
+                  l10n: l10n,
+                  color: unlocked
+                      ? AppColors.textPrimary
+                      : AppColors.textSecondary,
                 ),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
@@ -377,8 +428,61 @@ class _DailyAchievementTile extends StatelessWidget {
                 right: 0,
                 child: _CountBadge(count: state.unlockedCount),
               ),
+            if (streak > 1)
+              Positioned(top: 0, left: 0, child: _StreakBadge(streak: streak)),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The current unlock streak (this task's requirement — "стрик... добавь
+/// стильный огонёк"), top-left so it never collides with [_CountBadge]'s
+/// top-right corner — the two answer different questions ("how many times
+/// total" vs "how many days in a row right now") and can both apply to the
+/// same tile at once. Only rendered while the streak is more than one day,
+/// same threshold `_CountBadge` already uses for its own count.
+///
+/// Gold rather than a separate "fire" hue — §9 keeps gold as the app's one
+/// accent color; a flame icon reads as festive on its own without also
+/// introducing a second accent color the rest of the design system doesn't
+/// have.
+class _StreakBadge extends StatelessWidget {
+  const _StreakBadge({required this.streak});
+
+  final int streak;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceActive,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
+        border: Border.all(color: AppColors.gold, width: AppStroke.cardBorder),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.local_fire_department,
+            size: 12,
+            color: AppColors.gold,
+          ),
+          const SizedBox(width: 2),
+          Text(
+            '$streak',
+            style: AppTypography.bodySecondary.copyWith(
+              color: AppColors.gold,
+              fontWeight: FontWeight.w600,
+              fontSize: 11,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -391,6 +495,13 @@ class _DailyAchievementTile extends StatelessWidget {
 /// following the same bottom-sheet shape every other sheet in this app uses
 /// (`settings_tab.dart`'s `_showLockScreenTroubleshootSheet`,
 /// `journey_path_view.dart`'s own achievement-details sheet).
+///
+/// [showStreak] gates the longest-streak line (this task's requirement —
+/// "в попапе... показывать так же самый долгий стрик"): only the Daily
+/// grid passes `true`. A journey achievement unlocks at most once, so
+/// [longestStreak] on its single-or-empty `unlockedDates` would only ever
+/// read 0 or 1 — a line worth showing for a repeatable daily trophy, not
+/// noise to add to a one-shot journey milestone.
 void _showAchievementDetailsSheet(
   BuildContext context, {
   required AppLocalizations l10n,
@@ -398,6 +509,7 @@ void _showAchievementDetailsSheet(
   required String statusLine,
   required List<DateTime> unlockedDates,
   required String localeName,
+  bool showStreak = false,
 }) {
   showModalBottomSheet<void>(
     context: context,
@@ -411,6 +523,15 @@ void _showAchievementDetailsSheet(
           Text(title, style: AppTypography.heading),
           const SizedBox(height: AppSpacing.sm),
           Text(statusLine, style: AppTypography.bodySecondary),
+          if (showStreak && unlockedDates.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              l10n.achievementLongestStreakLabel(longestStreak(unlockedDates)),
+              style: AppTypography.bodySecondary.copyWith(
+                color: AppColors.gold,
+              ),
+            ),
+          ],
           if (unlockedDates.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),
             Text(

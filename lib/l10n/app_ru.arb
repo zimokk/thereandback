@@ -70,6 +70,7 @@
   "achievementNeverUnlockedLabel": "Ещё не получено",
   "achievementUnlockedCountLabel": "Получено: {count}",
   "achievementUnlockDatesSheetTitle": "Даты получения",
+  "achievementLongestStreakLabel": "Самый долгий стрик: {days} дней",
 
   "settingsTitle": "Настройки",
   "settingsAccountSectionTitle": "Аккаунт",

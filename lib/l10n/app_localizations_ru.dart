@@ -246,6 +246,11 @@ class AppLocalizationsRu extends AppLocalizations {
   String get achievementUnlockDatesSheetTitle => 'Даты получения';
 
   @override
+  String achievementLongestStreakLabel(int days) {
+    return 'Самый долгий стрик: $days дней';
+  }
+
+  @override
   String get settingsTitle => 'Настройки';
 
   @override

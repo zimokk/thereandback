@@ -242,6 +242,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get achievementUnlockDatesSheetTitle => 'Dates reached';
 
   @override
+  String achievementLongestStreakLabel(int days) {
+    return 'Longest streak: $days days';
+  }
+
+  @override
   String get settingsTitle => 'Settings';
 
   @override

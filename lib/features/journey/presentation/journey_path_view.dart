@@ -611,6 +611,16 @@ const double _markerGuideDashGap = 3;
 /// then status line, dismissible by the sheet's own default swipe-down/
 /// tap-outside gesture — no bespoke close button, since adding one needs a
 /// new l10n key and this change didn't add one.
+///
+/// `useRootNavigator: true` (styling fix — regression): the Путь tab is one
+/// `StatefulShellBranch` of `router.dart`'s `StatefulShellRoute.indexedStack`,
+/// each with its own nested `Navigator`. The default `useRootNavigator:
+/// false` attaches the sheet to *that* nested Navigator, whose branch stays
+/// mounted (just not painted) when another tab is selected — so the sheet
+/// never got told to close on a tab switch and stayed up over whatever tab
+/// the user switched to. Pinning it to the single shared root Navigator
+/// instead lets `AppShell`'s bottom-nav tap handler close it explicitly by
+/// popping that same Navigator (`app_shell.dart`).
 void _showAchievementDetails(
   BuildContext context,
   AppLocalizations l10n,
@@ -618,6 +628,7 @@ void _showAchievementDetails(
 ) {
   showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     backgroundColor: AppColors.surface,
     builder: (context) => Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),

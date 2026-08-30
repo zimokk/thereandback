@@ -482,6 +482,12 @@ abstract class AppLocalizations {
   /// **'Dates reached'**
   String get achievementUnlockDatesSheetTitle;
 
+  /// Line in a daily achievement's details sheet showing its all-time longest run of consecutive unlocked days (domain: achievement_unlocks.dart's longestStreak)
+  ///
+  /// In en, this message translates to:
+  /// **'Longest streak: {days} days'**
+  String achievementLongestStreakLabel(int days);
+
   /// Settings tab app bar title
   ///
   /// In en, this message translates to:

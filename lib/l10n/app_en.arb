@@ -162,6 +162,11 @@
   },
   "achievementUnlockDatesSheetTitle": "Dates reached",
   "@achievementUnlockDatesSheetTitle": {"description": "Title of the bottom sheet listing the day(s) a trophy was earned"},
+  "achievementLongestStreakLabel": "Longest streak: {days} days",
+  "@achievementLongestStreakLabel": {
+    "description": "Line in a daily achievement's details sheet showing its all-time longest run of consecutive unlocked days (domain: achievement_unlocks.dart's longestStreak)",
+    "placeholders": {"days": {"type": "int"}}
+  },
 
   "settingsTitle": "Settings",
   "@settingsTitle": {"description": "Settings tab app bar title"},
