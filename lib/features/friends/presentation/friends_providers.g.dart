@@ -58,6 +58,91 @@ final class MyProfileProvider
 
 String _$myProfileHash() => r'e8fd9f30186e79ad20248a9fdb20b374e5542c92';
 
+/// Whether the Друзья tab (§6.4) is unlocked yet — this task's requirement:
+/// the tab stays inactive until the user has (1) logged in via Настройки
+/// (§8's Google upgrade — a permanent, non-anonymous identity, not just the
+/// silent anonymous session every install starts with) and (2) has a
+/// nickname to actually be found by (§6.5) — which, since login itself
+/// resolves one automatically (`AuthController
+/// ._applyDefaultNicknameFromGoogleEmail`, retried past a taken name with a
+/// numeric suffix), in practice becomes true moments after login rather
+/// than needing its own separate manual step.
+///
+/// A `myProfile` still loading (or in an error state) reads as locked too
+/// — `.value` is `null` for both `AsyncLoading`/`AsyncError`, so there is
+/// nothing to distinguish here: either way, there is not yet a nickname to
+/// unlock with.
+
+@ProviderFor(friendsUnlocked)
+final friendsUnlockedProvider = FriendsUnlockedProvider._();
+
+/// Whether the Друзья tab (§6.4) is unlocked yet — this task's requirement:
+/// the tab stays inactive until the user has (1) logged in via Настройки
+/// (§8's Google upgrade — a permanent, non-anonymous identity, not just the
+/// silent anonymous session every install starts with) and (2) has a
+/// nickname to actually be found by (§6.5) — which, since login itself
+/// resolves one automatically (`AuthController
+/// ._applyDefaultNicknameFromGoogleEmail`, retried past a taken name with a
+/// numeric suffix), in practice becomes true moments after login rather
+/// than needing its own separate manual step.
+///
+/// A `myProfile` still loading (or in an error state) reads as locked too
+/// — `.value` is `null` for both `AsyncLoading`/`AsyncError`, so there is
+/// nothing to distinguish here: either way, there is not yet a nickname to
+/// unlock with.
+
+final class FriendsUnlockedProvider
+    extends $FunctionalProvider<bool, bool, bool>
+    with $Provider<bool> {
+  /// Whether the Друзья tab (§6.4) is unlocked yet — this task's requirement:
+  /// the tab stays inactive until the user has (1) logged in via Настройки
+  /// (§8's Google upgrade — a permanent, non-anonymous identity, not just the
+  /// silent anonymous session every install starts with) and (2) has a
+  /// nickname to actually be found by (§6.5) — which, since login itself
+  /// resolves one automatically (`AuthController
+  /// ._applyDefaultNicknameFromGoogleEmail`, retried past a taken name with a
+  /// numeric suffix), in practice becomes true moments after login rather
+  /// than needing its own separate manual step.
+  ///
+  /// A `myProfile` still loading (or in an error state) reads as locked too
+  /// — `.value` is `null` for both `AsyncLoading`/`AsyncError`, so there is
+  /// nothing to distinguish here: either way, there is not yet a nickname to
+  /// unlock with.
+  FriendsUnlockedProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'friendsUnlockedProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$friendsUnlockedHash();
+
+  @$internal
+  @override
+  $ProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  bool create(Ref ref) {
+    return friendsUnlocked(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$friendsUnlockedHash() => r'ad3f04cb111c1198c629860c7c2d9b874f5f0358';
+
 /// Creates a starter `users/{uid}` profile (default nickname + a fixed
 /// preset avatar) the first time a uid is available — every user needs one
 /// before "add friend by nickname" can find or be found by them. A no-op
@@ -287,7 +372,7 @@ final class FriendsControllerProvider
   }
 }
 
-String _$friendsControllerHash() => r'13c3457a5b35e1e7184ce94c5f5ee1f5b9ef7dea';
+String _$friendsControllerHash() => r'ea4f6f842e61140b4e09068985e4c9b1e7a135ce';
 
 /// Imperative actions for the Challengers tab (§6.4) and the Settings
 /// nickname editor (§6.5): sending a request by nickname (triggering the

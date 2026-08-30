@@ -307,9 +307,8 @@ void main() {
     (tester) async {
       // Overrides the shared setUp() stub with one that never emits, so the
       // profile genuinely never resolves for the life of this test.
-      when(
-        () => userProfileRepository.watchProfile('me'),
-      ).thenAnswer((_) => const Stream.empty());
+      when(() => userProfileRepository.watchProfile('me'))
+          .thenAnswer((_) => const Stream.empty());
 
       await tester.pumpWidget(
         _wrap(

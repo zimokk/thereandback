@@ -709,10 +709,7 @@ void main() {
         // painter ever draws with `canvas.drawLine` — so any line() call at
         // all is evidence a guide was painted, without needing to pin down
         // every dash segment's exact endpoints.
-        expect(
-          find.byKey(const Key('journeyPathScene')),
-          paints..line(),
-        );
+        expect(find.byKey(const Key('journeyPathScene')), paints..line());
       },
     );
   });

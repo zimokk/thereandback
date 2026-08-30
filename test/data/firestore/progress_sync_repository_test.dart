@@ -99,7 +99,12 @@ void main() {
       expect(remote, isNotNull);
       expect(remote!.journeyId, 'odyssey-ithaca');
       expect(remote.meters, 5230);
-      expect(remote.startedAt, startedAt);
+      // Not a plain `==` — `Timestamp.toDate()` returns local time by its
+      // own contract (not UTC-flagged), and Dart's `DateTime.==` considers
+      // two DateTimes unequal whenever their `isUtc` flags differ, even at
+      // the exact same instant. `isAtSameMomentAs` is the instant-only
+      // comparison this test actually wants.
+      expect(remote.startedAt.isAtSameMomentAs(startedAt), isTrue);
     });
 
     test('ignores a doc pushed with isCurrent: false', () async {

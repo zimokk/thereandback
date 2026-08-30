@@ -178,63 +178,63 @@ void main() {
   });
 
   group('restoreFromCloud (§8, §14 — "repeat login")', () {
-    test('a fresh owner with no prior quest loads the cloud total back', () async {
-      final startedAt = DateTime.utc(2026, 3, 1);
-      final asOf = DateTime.utc(2026, 3, 10);
-
-      await repository.restoreFromCloud(
-        'owner-1',
-        journeyId: 'odyssey-ithaca',
-        startedAt: startedAt,
-        meters: 5230,
-        asOf: asOf,
-      );
-
-      final quest = await repository.loadSelectedQuest('owner-1');
-      expect(quest, isNotNull);
-      expect(quest!.journeyId, 'odyssey-ithaca');
-      expect(quest.startedAt, startedAt.toLocal());
-      expect(quest.progressMeters, 5230);
-      expect(quest.lastSyncedAt, asOf.toLocal());
-    });
-
     test(
-      'clears this owner+journey\'s existing intervals first — the old '
-      'local total never keeps summing alongside the restored one',
+      'a fresh owner with no prior quest loads the cloud total back',
       () async {
-        await repository.startQuest(
-          'owner-1',
-          journeyId: 'odyssey-ithaca',
-          startedAt: DateTime.utc(2026, 3, 1),
-        );
-        await db
-            .into(db.stepIntervalRecords)
-            .insert(
-              StepIntervalRecordsCompanion.insert(
-                ownerId: 'owner-1',
-                journeyId: 'odyssey-ithaca',
-                intervalStart: DateTime.utc(2026, 3, 1),
-                intervalEnd: DateTime.utc(2026, 3, 1, 0, 10),
-                steps: 100,
-                resolvedMeters: 75,
-                syncedAt: DateTime.utc(2026, 3, 1, 0, 10),
-              ),
-            );
+        final startedAt = DateTime.utc(2026, 3, 1);
+        final asOf = DateTime.utc(2026, 3, 10);
 
         await repository.restoreFromCloud(
           'owner-1',
           journeyId: 'odyssey-ithaca',
-          startedAt: DateTime.utc(2026, 3, 5),
-          meters: 400000,
-          asOf: DateTime.utc(2026, 3, 20),
+          startedAt: startedAt,
+          meters: 5230,
+          asOf: asOf,
         );
 
         final quest = await repository.loadSelectedQuest('owner-1');
-        // Not 400075 — the pre-restore 75 m local interval must be gone,
-        // not summed alongside the cloud total.
-        expect(quest!.progressMeters, 400000);
+        expect(quest, isNotNull);
+        expect(quest!.journeyId, 'odyssey-ithaca');
+        expect(quest.startedAt, startedAt.toLocal());
+        expect(quest.progressMeters, 5230);
+        expect(quest.lastSyncedAt, asOf.toLocal());
       },
     );
+
+    test('clears this owner+journey\'s existing intervals first — the old '
+        'local total never keeps summing alongside the restored one', () async {
+      await repository.startQuest(
+        'owner-1',
+        journeyId: 'odyssey-ithaca',
+        startedAt: DateTime.utc(2026, 3, 1),
+      );
+      await db
+          .into(db.stepIntervalRecords)
+          .insert(
+            StepIntervalRecordsCompanion.insert(
+              ownerId: 'owner-1',
+              journeyId: 'odyssey-ithaca',
+              intervalStart: DateTime.utc(2026, 3, 1),
+              intervalEnd: DateTime.utc(2026, 3, 1, 0, 10),
+              steps: 100,
+              resolvedMeters: 75,
+              syncedAt: DateTime.utc(2026, 3, 1, 0, 10),
+            ),
+          );
+
+      await repository.restoreFromCloud(
+        'owner-1',
+        journeyId: 'odyssey-ithaca',
+        startedAt: DateTime.utc(2026, 3, 5),
+        meters: 400000,
+        asOf: DateTime.utc(2026, 3, 20),
+      );
+
+      final quest = await repository.loadSelectedQuest('owner-1');
+      // Not 400075 — the pre-restore 75 m local interval must be gone,
+      // not summed alongside the cloud total.
+      expect(quest!.progressMeters, 400000);
+    });
 
     test(
       'a zero cloud total seeds no interval row, so the next real sync\'s '

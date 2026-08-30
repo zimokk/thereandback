@@ -61,7 +61,5 @@ final _debouncer = SnackBarDebouncer();
 /// producing identical copy still collapse into one shown `SnackBar`.
 void showAppSnackBar(BuildContext context, String message) {
   if (!_debouncer.shouldShow(message, DateTime.now())) return;
-  ScaffoldMessenger.of(
-    context,
-  ).showSnackBar(SnackBar(content: Text(message)));
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }

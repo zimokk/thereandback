@@ -204,9 +204,8 @@ void main() {
       final googleAuthService = _MockGoogleAuthService();
       final authRepository = _MockAuthRepository();
       final progressSyncRepository = _MockProgressSyncRepository();
-      when(() => googleAuthService.signIn()).thenAnswer(
-        (_) async => const GoogleAuthTokens(idToken: 'id-token'),
-      );
+      when(() => googleAuthService.signIn())
+          .thenAnswer((_) async => const GoogleAuthTokens(idToken: 'id-token'));
       when(() => authRepository.ensureSignedIn())
           .thenAnswer((_) async => 'anon-1');
       when(
@@ -219,9 +218,8 @@ void main() {
           idToken: any(named: 'idToken'),
         ),
       ).thenAnswer((_) async => 'existing-uid');
-      when(
-        () => progressSyncRepository.fetchCurrentProgress('existing-uid'),
-      ).thenAnswer((_) async => null);
+      when(() => progressSyncRepository.fetchCurrentProgress('existing-uid'))
+          .thenAnswer((_) async => null);
 
       await tester.pumpWidget(
         _wrap(

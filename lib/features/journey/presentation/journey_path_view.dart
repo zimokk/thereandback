@@ -286,7 +286,10 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView>
                           centerX: centerX,
                           markerGuides: [
                             for (final m in visibleAchievements)
-                              (x: m.x, thresholdMeters: m.state.def.thresholdMeters),
+                              (
+                                x: m.x,
+                                thresholdMeters: m.state.def.thresholdMeters,
+                              ),
                           ],
                         ),
                       ),
@@ -770,10 +773,7 @@ class _WavyPathPainter extends CustomPainter {
 
     var traveled = 0.0;
     while (traveled < total) {
-      final segmentEnd = math.min(
-        traveled + _markerGuideDashLength,
-        total,
-      );
+      final segmentEnd = math.min(traveled + _markerGuideDashLength, total);
       canvas.drawLine(
         from + direction * traveled,
         from + direction * segmentEnd,

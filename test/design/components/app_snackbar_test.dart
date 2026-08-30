@@ -11,29 +11,24 @@ void main() {
         expect(debouncer.shouldShow('hello', DateTime(2026)), isTrue);
       });
 
-      test(
-        'an exact repeat within the window is suppressed — a burst of '
-        'identical calls (a double-tap, a retry loop) collapses to one',
-        () {
-          final debouncer = SnackBarDebouncer(
-            window: const Duration(seconds: 3),
-          );
-          final now = DateTime(2026, 1, 1, 12);
+      test('an exact repeat within the window is suppressed — a burst of '
+          'identical calls (a double-tap, a retry loop) collapses to one', () {
+        final debouncer = SnackBarDebouncer(window: const Duration(seconds: 3));
+        final now = DateTime(2026, 1, 1, 12);
 
-          expect(debouncer.shouldShow('hello', now), isTrue);
-          // 20 more identical calls, one right after another — every one
-          // of them must be suppressed, not just the second.
-          for (var i = 0; i < 20; i++) {
-            expect(
-              debouncer.shouldShow(
-                'hello',
-                now.add(Duration(milliseconds: i + 1)),
-              ),
-              isFalse,
-            );
-          }
-        },
-      );
+        expect(debouncer.shouldShow('hello', now), isTrue);
+        // 20 more identical calls, one right after another — every one
+        // of them must be suppressed, not just the second.
+        for (var i = 0; i < 20; i++) {
+          expect(
+            debouncer.shouldShow(
+              'hello',
+              now.add(Duration(milliseconds: i + 1)),
+            ),
+            isFalse,
+          );
+        }
+      });
 
       test('a different message is never suppressed by an unrelated one', () {
         final debouncer = SnackBarDebouncer();
@@ -44,17 +39,12 @@ void main() {
       });
 
       test('the same message shows again once the window has elapsed', () {
-        final debouncer = SnackBarDebouncer(
-          window: const Duration(seconds: 3),
-        );
+        final debouncer = SnackBarDebouncer(window: const Duration(seconds: 3));
         final now = DateTime(2026, 1, 1, 12);
 
         expect(debouncer.shouldShow('hello', now), isTrue);
         expect(
-          debouncer.shouldShow(
-            'hello',
-            now.add(const Duration(seconds: 3)),
-          ),
+          debouncer.shouldShow('hello', now.add(const Duration(seconds: 3))),
           isTrue,
         );
       });
