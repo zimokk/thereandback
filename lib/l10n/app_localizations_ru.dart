@@ -512,4 +512,8 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get friendsOutcomeUpgradeCancelled =>
       'Чтобы добавлять друзей, нужен аккаунт Google — вход отменён.';
+
+  @override
+  String get friendsOutcomeError =>
+      'Не удалось выполнить действие — попробуйте ещё раз.';
 }

@@ -152,5 +152,6 @@
   "friendsOutcomeCannotAddSelf": "Это ваш собственный ник.",
   "friendsOutcomeAlreadyExists": "Вы уже связаны с этим пользователем.",
   "friendsOutcomeNotSignedIn": "Не удалось войти — попробуйте ещё раз через момент.",
-  "friendsOutcomeUpgradeCancelled": "Чтобы добавлять друзей, нужен аккаунт Google — вход отменён."
+  "friendsOutcomeUpgradeCancelled": "Чтобы добавлять друзей, нужен аккаунт Google — вход отменён.",
+  "friendsOutcomeError": "Не удалось выполнить действие — попробуйте ещё раз."
 }

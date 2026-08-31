@@ -336,5 +336,7 @@
   "friendsOutcomeNotSignedIn": "Couldn't sign you in — try again in a moment.",
   "@friendsOutcomeNotSignedIn": {"description": "Shown for AddFriendOutcome.notSignedIn — an unexpected, likely transient state"},
   "friendsOutcomeUpgradeCancelled": "Adding friends needs a Google account — sign-in was cancelled.",
-  "@friendsOutcomeUpgradeCancelled": {"description": "Shown for AddFriendOutcome.googleUpgradeCancelled — the user closed the Google account picker"}
+  "@friendsOutcomeUpgradeCancelled": {"description": "Shown for AddFriendOutcome.googleUpgradeCancelled — the user closed the Google account picker"},
+  "friendsOutcomeError": "Couldn't complete that — please try again.",
+  "@friendsOutcomeError": {"description": "Generic fallback shown when a friend action (add/accept/decline/cancel/remove) throws something other than its own known outcome enum — firestore.rules denying the write, no network, etc."}
 }

@@ -507,4 +507,7 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get friendsOutcomeUpgradeCancelled =>
       'Adding friends needs a Google account — sign-in was cancelled.';
+
+  @override
+  String get friendsOutcomeError => 'Couldn\'t complete that — please try again.';
 }

@@ -287,6 +287,102 @@ void main() {
   });
 
   testWidgets(
+    'an incoming request action that throws shows a generic error message '
+    'instead of failing silently — regression: the Future these buttons '
+    'kick off used to be discarded unawaited (VoidCallback), so a '
+    'rejection had nothing on screen to show for it',
+    (tester) async {
+      when(() => friendshipRepository.watchMyFriendships('me')).thenAnswer(
+        (_) => Stream.value([
+          _friendship(
+            a: 'me',
+            b: 'bob',
+            status: FriendshipStatus.pending,
+            initiatorUid: 'bob',
+          ),
+        ]),
+      );
+      when(() => userProfileRepository.watchProfile('bob')).thenAnswer(
+        (_) => Stream.value(
+          const FriendProfile(
+            uid: 'bob',
+            nickname: 'Bob',
+            avatarPresetIndex: 1,
+          ),
+        ),
+      );
+      // `.thenAnswer((_) async => throw ...)`, not `.thenThrow` — this
+      // must reject the returned Future asynchronously (what a real
+      // Firestore write denied by firestore.rules does), not throw
+      // synchronously from the call itself, or it would escape
+      // `_runFriendAction`'s `.catchError` entirely and this test would
+      // pass for the wrong reason.
+      when(
+        () => friendshipRepository.acceptRequest(pairIdFor('me', 'bob')),
+      ).thenAnswer((_) async => throw Exception('permission-denied'));
+
+      await tester.pumpWidget(
+        _wrap(
+          friendshipRepository: friendshipRepository,
+          userProfileRepository: userProfileRepository,
+          progressSyncRepository: progressSyncRepository,
+          googleAuthService: googleAuthService,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Accept'));
+      // A single pump, not pumpAndSettle: the SnackBar's own auto-dismiss
+      // timer means settling would pump straight through its whole visible
+      // duration and find it already gone by the time this returns.
+      await tester.pump();
+
+      expect(
+        find.text("Couldn't complete that — please try again."),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'sending a friend request that throws shows a generic error message '
+    'instead of failing silently — regression: the dialog had already '
+    'closed before the write landed, so an unhandled exception previously '
+    'had nothing on screen to show for it, and no friendships/{pairId} '
+    'doc was created',
+    (tester) async {
+      when(() => friendshipRepository.watchMyFriendships('me'))
+          .thenAnswer((_) => Stream.value(const []));
+      when(() => userProfileRepository.resolveUidForNickname('Bob'))
+          .thenAnswer((_) async => 'bob');
+      when(
+        () => friendshipRepository.sendRequest(fromUid: 'me', toUid: 'bob'),
+      ).thenAnswer((_) async => throw Exception('permission-denied'));
+
+      await tester.pumpWidget(
+        _wrap(
+          friendshipRepository: friendshipRepository,
+          userProfileRepository: userProfileRepository,
+          progressSyncRepository: progressSyncRepository,
+          googleAuthService: googleAuthService,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.person_add_alt_1));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Bob');
+      await tester.tap(find.text('Send request'));
+      await tester.pump();
+
+      expect(
+        find.text("Couldn't complete that — please try again."),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
     'tapping the copy icon on the own-nickname card copies it and shows a '
     'confirmation',
     (tester) async {

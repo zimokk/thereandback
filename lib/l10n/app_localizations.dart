@@ -949,6 +949,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Adding friends needs a Google account — sign-in was cancelled.'**
   String get friendsOutcomeUpgradeCancelled;
+
+  /// Generic fallback shown when a friend action (add/accept/decline/cancel/remove) throws something other than its own known outcome enum — firestore.rules denying the write, no network, etc.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t complete that — please try again.'**
+  String get friendsOutcomeError;
 }
 
 class _AppLocalizationsDelegate
