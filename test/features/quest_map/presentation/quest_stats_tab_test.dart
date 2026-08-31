@@ -57,11 +57,12 @@ void main() {
     // (§5.3).
     expect(find.text('—'), findsOneWidget);
 
-    // The drawn map section follows the stats. This one reads the real
-    // bundled `assets/journeys/odyssey-ithaca/map.json` (no bundle override
-    // here on purpose), so it also proves the asset is wired into
-    // pubspec.yaml — QuestMapView's own test covers the rendering states.
-    expect(find.text('Route map'), findsOneWidget);
+    // The drawn map section follows the stats — no heading above it
+    // anymore (styling fix: "убери надпись route map"), just the map
+    // itself. This one reads the real bundled
+    // `assets/journeys/odyssey-ithaca/map.json` (no bundle override here on
+    // purpose), so it also proves the asset is wired into pubspec.yaml —
+    // QuestMapView's own test covers the rendering states.
     await tester.pumpAndSettle();
     expect(find.byKey(const Key('questMapRouteOverlay')), findsOneWidget);
     // The illustration itself is bundled too, so the overlay renders over

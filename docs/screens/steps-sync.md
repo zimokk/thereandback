@@ -114,6 +114,33 @@ Sync writes are idempotent, keyed on `(ownerId, journeyId, intervalStart)`
   `steps_providers_test.dart`, `quest_stats_tab_test.dart` and
   `achievements_tab_test.dart` that call `.start()`/`.applySyncedProgress()`.
 
+### `sync()` used to trust a stale caller-supplied total
+
+Bug report: "если при загрузке приложения в базе данных шагов больше — то
+выбираем большее значение". `StepsSyncEngine.sync()` computed its result as
+`quest.progressMeters + deltaMeters`, where `quest` is whatever the caller
+passed in — the foreground path (`StepsSync.sync()`) passes
+`ref.read(selectedJourneyProvider)`, the in-memory `SelectedJourney` state.
+That state can be genuinely stale relative to what `StepIntervalRecords`
+(the "steps database") already has — most concretely, right after the
+Android background-sync task (`android_background_sync.dart`) wrote new
+intervals directly to the database while this app process wasn't running to
+see them, before the foreground app's own state catches up. Trusting the
+caller's total as the base for `clampNonDecreasing` meant it could win even
+when it was the *smaller* of the two numbers.
+
+`sync()` now re-derives its result from `StepSampleRepository
+.totalResolvedMeters()` (new — the same `SUM(resolvedMeters)` query
+`ProgressRepository.loadSelectedQuest()` already ran, now shared by both so
+they can't quietly disagree) instead of `quest.progressMeters + deltaMeters`,
+and still runs that through `clampNonDecreasing(quest.progressMeters,
+dbTotal)` — the caller's own total is still the floor (progress genuinely
+never goes backwards), but the database's fresher total wins whenever it's
+the bigger one. Covered in `steps_sync_engine_test.dart` and
+`steps_providers_test.dart`: a duplicate-interval case and a dedicated
+"app-load" case where the database already has more than the caller's
+`quest.progressMeters` believes.
+
 ## Android permission flow is two runtime prompts, not one
 
 Health Connect's own consent screen for Steps/Distance ("Fitness and

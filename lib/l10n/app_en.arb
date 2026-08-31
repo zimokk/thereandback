@@ -42,6 +42,10 @@
   "@journeyReturnToYouButton": {
     "description": "Small button shown on the Путь scene only while the view is rewound away from the traveler's real position — jumps back to it (§6.1's 'You >' anchor). Also its accessibility label."
   },
+  "journeyBackToCatalogButton": "Choose a quest",
+  "@journeyBackToCatalogButton": {
+    "description": "Top-left button on the Путь scene, shown whenever a quest is active — returns to QuestPickerView to browse/pick another route without abandoning the active one. Also its accessibility label/tooltip."
+  },
 
   "stepsPermissionExplainTitle": "Let your steps move you",
   "@stepsPermissionExplainTitle": {"description": "Title of the card explaining why step access is requested, shown before the OS prompt (§7)"},
@@ -79,8 +83,6 @@
   "@questStatsStartedLabel": {"description": "Label for the quest start date stat row"},
   "questStatsEtaLabel": "Estimated Arrival",
   "@questStatsEtaLabel": {"description": "Label for the ETA stat row"},
-  "questMapSectionTitle": "Route map",
-  "@questMapSectionTitle": {"description": "Heading over the drawn quest map on the stats tab (§6.2)"},
   "questMapYouAreHere": "Your position on the route",
   "@questMapYouAreHere": {"description": "Accessibility label of the route overlay drawn over the map — the marker itself is painted, not a widget with text"},
   "questMapIllustrationMissing": "The drawn map isn't in this build yet — below is the route itself, with your position on it.",

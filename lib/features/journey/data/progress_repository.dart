@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../../../data/drift/database.dart';
+import '../../steps/data/step_sample_repository.dart';
 import '../domain/quest_selection.dart';
 import '../domain/quest_time_service.dart';
 
@@ -88,11 +89,11 @@ class DriftProgressRepository implements ProgressRepository {
         intervals.ownerId.equals(ownerId) &
         intervals.journeyId.equals(row.journeyId);
 
-    final sumQuery = _db.selectOnly(intervals)
-      ..addColumns([intervals.resolvedMeters.sum()])
-      ..where(matchesQuest);
-    final progressMeters =
-        (await sumQuery.getSingle()).read(intervals.resolvedMeters.sum()) ?? 0;
+    // Same sum `StepsSyncEngine.sync()` re-derives from at every sync
+    // (§5.2 "derive, don't duplicate") — one shared query so the two can
+    // never quietly disagree on what "the current total" means.
+    final progressMeters = await DriftStepSampleRepository(_db)
+        .totalResolvedMeters(ownerId: ownerId, journeyId: row.journeyId);
 
     // Deliberately *not* `intervals.intervalEnd.max()`: drift's DateTime
     // aggregate goes through a whole-second `unixepoch()` round trip and

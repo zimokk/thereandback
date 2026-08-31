@@ -230,6 +230,41 @@ needed together: keeping the provider alive doesn't make it run *earlier*
 on its own, so without the shell's eager watch this restore would still
 only happen the first time the user opened Настройки, same gap as before.
 
+## A cold restart used to restore `enabled` without ever showing anything
+
+Bug report: "есть разрешение показывать на экране блокировки, но ничего не
+показано" — permission granted, toggle on, no notification. Root cause:
+`refreshStatus()` (the method `_restoreThenRefresh` calls on every cold
+start, see above) only reconciles `LockScreenState.enabled`/permission
+flags — it never calls `_showQuest()`. The only two call sites that ever
+show the notification are `enable()` (an explicit user tap) and
+`_onQuestChanged` (the `ref.listen(selectedJourneyProvider, ...)` set up in
+`build()`, which fires once `SelectedJourney`'s own independent restore
+resolves). `_onQuestChanged` itself bails out on `if (!state.enabled)
+return` — and that restore races `_restoreThenRefresh`'s: if
+`SelectedJourney` finished restoring first, `_onQuestChanged` read
+`state.enabled` as still the pre-restore `false` and silently did nothing,
+so neither path ever displayed anything, even though a fully-restored app
+a moment later genuinely had the feature on with an active quest.
+
+`_restoreThenRefresh` now explicitly awaits
+`SelectedJourney.ensureRestored()` (the same seam
+`AuthController._reconcileProgressWithCloud`, §8/§14, already uses for the
+identical kind of cross-provider restore race) and then calls
+`_showCurrentQuestIfActive()` itself whenever `state.enabled` came back
+`true` — closing the gap regardless of which restore actually won the race.
+Gated on the just-loaded `persistedEnabled` value, not the ambient
+`state.enabled`, and `_showQuest`'s own `activeJourneyId` check/write moved
+into the same synchronous stretch (no `await` between them) — both close a
+second race this fix's first draft introduced: `_onQuestChanged` and this
+catch-up call can legitimately both fire for the same quest around a
+restore, and without those two guards that meant `channel.start()` twice.
+
+Covered by `lock_screen_controller_test.dart`'s new restart test: persisted
+`enabled: true` plus an already-active quest seeded directly via
+`DriftProgressRepository`, asserting `channel.start()` is called exactly
+once (not zero, not twice) once the simulated restart's `build()` settles.
+
 ## Platform setup done here
 
 - **Android** (`android/app/src/main/AndroidManifest.xml`):

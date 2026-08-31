@@ -168,8 +168,9 @@ existed) — Phase 3 landed, so it no longer applies.
 `questStatsEtaLabel`, `questStatsEmptyTitle`, `questStatsEmptyBody`,
 `questStatsEmptyCta`.
 
-Map: `questMapSectionTitle`, `questMapYouAreHere` (the painted marker's
-accessibility label), `questMapIllustrationMissing`, `questMapNextLandmark`
+Map: `questMapYouAreHere` (the painted marker's accessibility label —
+there's no section heading above the map itself anymore, styling fix),
+`questMapIllustrationMissing`, `questMapNextLandmark`
 (`{name}`, `{distance}` — also the tap-to-open tooltip for any landmark
 still ahead, not just the next one), `questMapLandmarkBehindCaption`
 (`{name}`, `{distance}` — the tooltip for a landmark already behind),

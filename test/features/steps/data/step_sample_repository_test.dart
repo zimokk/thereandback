@@ -111,4 +111,88 @@ void main() {
       expect(row.resolvedMeters, 7500);
     },
   );
+
+  group('totalResolvedMeters', () {
+    test('nothing recorded yet sums to 0, not null', () async {
+      expect(
+        await repository.totalResolvedMeters(
+          ownerId: 'owner-1',
+          journeyId: 'odyssey-ithaca',
+        ),
+        0,
+      );
+    });
+
+    test('sums every recorded interval for that owner+journey', () async {
+      await repository.recordInterval(
+        ownerId: 'owner-1',
+        journeyId: 'odyssey-ithaca',
+        intervalStart: DateTime(2026, 3, 10),
+        intervalEnd: DateTime(2026, 3, 10, 0, 10),
+        steps: 100,
+        resolvedMeters: 75,
+        flaggedPace: false,
+        syncedAt: DateTime(2026, 3, 10, 0, 10),
+      );
+      await repository.recordInterval(
+        ownerId: 'owner-1',
+        journeyId: 'odyssey-ithaca',
+        intervalStart: DateTime(2026, 3, 10, 0, 10),
+        intervalEnd: DateTime(2026, 3, 10, 0, 20),
+        steps: 100,
+        resolvedMeters: 80,
+        flaggedPace: false,
+        syncedAt: DateTime(2026, 3, 10, 0, 20),
+      );
+
+      expect(
+        await repository.totalResolvedMeters(
+          ownerId: 'owner-1',
+          journeyId: 'odyssey-ithaca',
+        ),
+        155,
+      );
+    });
+
+    test('never mixes another owner or journey into the sum', () async {
+      await repository.recordInterval(
+        ownerId: 'owner-1',
+        journeyId: 'odyssey-ithaca',
+        intervalStart: DateTime(2026, 3, 10),
+        intervalEnd: DateTime(2026, 3, 10, 0, 10),
+        steps: 100,
+        resolvedMeters: 75,
+        flaggedPace: false,
+        syncedAt: DateTime(2026, 3, 10, 0, 10),
+      );
+      await repository.recordInterval(
+        ownerId: 'owner-2', // different owner.
+        journeyId: 'odyssey-ithaca',
+        intervalStart: DateTime(2026, 3, 10),
+        intervalEnd: DateTime(2026, 3, 10, 0, 10),
+        steps: 500,
+        resolvedMeters: 400,
+        flaggedPace: false,
+        syncedAt: DateTime(2026, 3, 10, 0, 10),
+      );
+      await repository.recordInterval(
+        ownerId: 'owner-1',
+        journeyId: 'quest-b', // different journey.
+        intervalStart: DateTime(2026, 3, 10),
+        intervalEnd: DateTime(2026, 3, 10, 0, 10),
+        steps: 500,
+        resolvedMeters: 400,
+        flaggedPace: false,
+        syncedAt: DateTime(2026, 3, 10, 0, 10),
+      );
+
+      expect(
+        await repository.totalResolvedMeters(
+          ownerId: 'owner-1',
+          journeyId: 'odyssey-ithaca',
+        ),
+        75,
+      );
+    });
+  });
 }

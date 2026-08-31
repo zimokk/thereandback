@@ -176,6 +176,12 @@ abstract class AppLocalizations {
   /// **'You'**
   String get journeyReturnToYouButton;
 
+  /// Top-left button on the Путь scene, shown whenever a quest is active — returns to QuestPickerView to browse/pick another route without abandoning the active one. Also its accessibility label/tooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a quest'**
+  String get journeyBackToCatalogButton;
+
   /// Title of the card explaining why step access is requested, shown before the OS prompt (§7)
   ///
   /// In en, this message translates to:
@@ -271,12 +277,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Estimated Arrival'**
   String get questStatsEtaLabel;
-
-  /// Heading over the drawn quest map on the stats tab (§6.2)
-  ///
-  /// In en, this message translates to:
-  /// **'Route map'**
-  String get questMapSectionTitle;
 
   /// Accessibility label of the route overlay drawn over the map — the marker itself is painted, not a widget with text
   ///

@@ -4,9 +4,12 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../app/database_provider.dart';
 import '../../../core/local_owner.dart';
+import '../../steps/presentation/steps_providers.dart'
+    show stepSampleRepositoryProvider;
 import '../data/journey_catalog.dart';
 import '../data/progress_repository.dart';
 import '../domain/journey.dart';
+import '../domain/progress_fraction.dart';
 import '../domain/quest_selection.dart';
 import '../domain/quest_time_service.dart';
 
@@ -158,4 +161,47 @@ Future<List<MeteredInterval>> recentMeteredIntervals(Ref ref) async {
         journeyId: quest.journeyId,
         since: DateTime.now().subtract(const Duration(days: 8)),
       );
+}
+
+/// Whether the Путь tab is showing the quest catalog (`QuestPickerView`)
+/// even though a quest is already active (this task's requirement: "кнопка
+/// возврата к выбору других маршрутов") — distinct from `selectedJourneyProvider
+/// == null`, which means no quest has ever been started. Browsing never
+/// touches the active quest itself; picking a *different* journey from the
+/// catalog still goes through the ordinary `SelectedJourney.start()` (§6.4:
+/// only one quest active at a time), which itself exits browsing mode.
+///
+/// In-memory only, same placeholder-until-Phase-3 caveat as
+/// `locale_provider.dart`'s `AppLocale` — this is UI navigation state, not
+/// anything worth persisting across a restart.
+@riverpod
+class BrowsingCatalog extends _$BrowsingCatalog {
+  @override
+  bool build() => false;
+
+  void enter() => state = true;
+  void exit() => state = false;
+}
+
+/// How far along [journeyId] the local device's own step history already
+/// is, in `[0.0, 1.0]` (this task's requirement: "показывай процент
+/// пройденного пути для каждого маршрута" on the catalog cards) — derived
+/// straight from `StepIntervalRecords` via `StepSampleRepository
+/// .totalResolvedMeters()`, the same ground truth `StepsSyncEngine.sync()`
+/// itself trusts (§5.2 "derive, don't duplicate"), not from
+/// `selectedJourneyProvider` — that only ever holds the *one* currently
+/// active quest, but every catalog card needs its own answer, including
+/// ones the user isn't on right now. A journey never started reads `0.0`,
+/// same as [progressFraction]'s own `0`-meters case.
+@riverpod
+Future<double> journeyProgressFraction(Ref ref, String journeyId) async {
+  final journey = findJourney(journeyId);
+  if (journey == null) return 0;
+  final meters = await ref
+      .watch(stepSampleRepositoryProvider)
+      .totalResolvedMeters(ownerId: localOwnerId, journeyId: journeyId);
+  return progressFraction(
+    progressMeters: meters,
+    totalMeters: journey.totalMeters,
+  );
 }

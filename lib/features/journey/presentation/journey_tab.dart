@@ -15,11 +15,15 @@ class JourneyTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final selected = ref.watch(selectedJourneyProvider);
+    // Browsing the catalog (this task's requirement — the Путь scene's
+    // top-left "choose another quest" button) shows the same picker a
+    // never-started quest does, without touching the active quest itself.
+    final browsing = ref.watch(browsingCatalogProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: selected == null
+        child: (selected == null || browsing)
             ? const QuestPickerView()
             : const Column(
                 children: [

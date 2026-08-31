@@ -367,7 +367,64 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView>
             ),
           ],
         ),
+        // Always on top of the scene, top-left (this task's requirement —
+        // "кнопка возврата к выбору других маршрутов") — browsing the
+        // catalog is `browsingCatalogProvider.enter()`, not clearing the
+        // active quest, so it's safe to show unconditionally here: this
+        // whole view only ever renders while a quest *is* active
+        // (`journey_tab.dart`'s own branch).
+        Positioned(
+          top: AppSpacing.md,
+          left: AppSpacing.md,
+          child: _BackToCatalogButton(
+            label: l10n.journeyBackToCatalogButton,
+            onTap: () => ref.read(browsingCatalogProvider.notifier).enter(),
+          ),
+        ),
       ],
+    );
+  }
+}
+
+/// Size of [_BackToCatalogButton], in logical pixels — same shape as
+/// [_ReturnToYouButton] (a round gold-bordered "map control", not a text
+/// pill), so the two anchors this scene has read as one family.
+const double _backToCatalogButtonSize = 36;
+
+/// Icon size inside [_BackToCatalogButton], in logical pixels.
+const double _backToCatalogIconSize = 18;
+
+/// The top-left "browse other quests" button (this task's requirement).
+class _BackToCatalogButton extends StatelessWidget {
+  const _BackToCatalogButton({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        color: AppColors.surface.withValues(alpha: 0.9),
+        shape: const CircleBorder(
+          side: BorderSide(color: AppColors.gold, width: AppStroke.icon),
+        ),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: const SizedBox(
+            width: _backToCatalogButtonSize,
+            height: _backToCatalogButtonSize,
+            child: Icon(
+              Icons.map_outlined,
+              color: AppColors.gold,
+              size: _backToCatalogIconSize,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
