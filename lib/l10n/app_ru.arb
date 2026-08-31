@@ -105,6 +105,19 @@
   "settingsLockScreenSectionTitle": "Экран блокировки",
   "settingsLockScreenToggleTitle": "Показывать прогресс на экране блокировки",
   "settingsLockScreenToggleSubtitle": "Показывать прогресс похода в шторке уведомлений и на экране блокировки.",
+
+  "settingsMusicSectionTitle": "Фоновая музыка",
+  "settingsMusicToggleTitle": "Играть фоновую музыку",
+  "settingsMusicToggleSubtitle": "Один трек играет, пока вы в приложении. По умолчанию выключено.",
+  "settingsMusicErrorMessage": "Не удалось включить музыку. Попробуйте ещё раз.",
+
+  "settingsFriendsOnMapSectionTitle": "Друзья на карте",
+  "settingsFriendsOnMapToggleTitle": "Показывать друзей на карте",
+  "settingsFriendsOnMapToggleSubtitle": "Показывает друзей на вкладках «Путь» и «Карта»: цветной человечек с ником и цветной шлем.",
+
+  "questMapLegendShowLabel": "Показать легенду карты",
+  "questMapLegendHideLabel": "Скрыть легенду карты",
+
   "lockScreenPermissionExplainTitle": "Прогресс всегда на виду",
   "lockScreenPermissionExplainBody": "Чтобы показывать прогресс на экране блокировки, There and Back нужно разрешение показывать уведомление и читать шаги в фоне — примерно раз в 15 минут. Там показывается только прогресс похода — никогда не сырые данные о здоровье.",
   "lockScreenPermissionAllow": "Разрешить",

@@ -13,6 +13,9 @@ import '../../../l10n/app_localizations.dart';
 import '../../achievements/data/achievement_catalog.dart';
 import '../../achievements/domain/achievement.dart';
 import '../../achievements/presentation/achievement_titles.dart';
+import '../../friends/domain/friend_progress.dart';
+import '../../friends/presentation/friend_pin_color.dart';
+import '../../friends/presentation/friends_providers.dart';
 import '../domain/quest_time_service.dart';
 import '../domain/route_scale.dart';
 import 'journey_providers.dart';
@@ -68,6 +71,13 @@ import 'journey_providers.dart';
 /// reached yet render muted, the same way `achievements_tab.dart` mutes a
 /// locked trophy — a marker just ahead of `You` can still be glimpsed
 /// approaching from the edge without being reachable by rewinding to it.
+///
+/// Accepted friends (§6.5, off by default in Настройки — `showFriendsOnMap
+/// Provider`) render on this same wavy line, at their own progress meters,
+/// as a colored [_FriendMarker] figure (their stable pin color,
+/// `friendMarkerColor`) with an unconditional [_FriendNicknameLabel] above
+/// it — unlike the Карта tab's own map-local legend toggle, nothing hides
+/// the nickname here once the preference is on.
 ///
 /// Phase 5 (`flame-scene` skill) replaces this `CustomPaint` with a real
 /// Flame `ParallaxComponent` scene — layered biome art, a sky gradient tied
@@ -215,6 +225,19 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView>
       catalog: achievementCatalog,
     );
 
+    // §6.5 "friends on the map" preference (user request) — off by default,
+    // same toggle `quest_map_view.dart` reads. Resolved once here, in real
+    // meters, so the `LayoutBuilder` below only has to convert an already-
+    // filtered list to screen space, the same shape achievement markers
+    // already get.
+    final showFriends = ref.watch(showFriendsOnMapProvider);
+    final friendRows = showFriends
+        ? (ref.watch(friendsViewProvider).value?.rows ??
+                  const <FriendProgressRow>[])
+              .where((row) => !row.isSelf)
+              .toList()
+        : const <FriendProgressRow>[];
+
     return Stack(
       children: [
         const Positioned.fill(child: AppSceneBackdrop()),
@@ -276,6 +299,30 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView>
                           ),
                     ];
 
+                    // Friends (§6.5, user request) — same world-space
+                    // projection as the solid traveler above (not
+                    // _AchievementMarker's, which is pinned to a fixed
+                    // screen row regardless of the wavy line's height): a
+                    // friend is a figure standing *on* the path at their own
+                    // progress, so it has to follow the same `_wavyPathY`
+                    // curve the traveler does, at their own meters rather
+                    // than the traveler's.
+                    final visibleFriends = [
+                      for (final row in friendRows)
+                        (
+                          row: row,
+                          x:
+                              centerX +
+                              (row.progressMeters - _panMeters) *
+                                  pixelsPerMeter,
+                          y: _wavyPathY(
+                            meters: row.progressMeters.toDouble(),
+                            pixelsPerMeter: pixelsPerMeter,
+                            midY: midY,
+                          ),
+                        ),
+                    ];
+
                     return Stack(
                       children: [
                         CustomPaint(
@@ -303,6 +350,24 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView>
                             l10n: l10n,
                             x: m.x,
                           ),
+                        // Painted before the traveler markers below, so the
+                        // caller's own figure stays on top on the rare tie
+                        // (both at the same route position).
+                        for (final f in visibleFriends) ...[
+                          _FriendNicknameLabel(
+                            key: Key('friendLabel-${f.row.uid}'),
+                            x: f.x,
+                            y: f.y,
+                            color: friendMarkerColor(f.row),
+                            nickname: f.row.nickname,
+                          ),
+                          _FriendMarker(
+                            key: Key('friendMarker-${f.row.uid}'),
+                            x: f.x,
+                            y: f.y,
+                            color: friendMarkerColor(f.row),
+                          ),
+                        ],
                         if (showGhost)
                           _TravelerMarker(
                             key: const Key('travelerGhost'),
@@ -517,6 +582,102 @@ class _TravelerMarker extends StatelessWidget {
                   alpha: _travelerGhostOpacity,
                 ),
           size: size,
+        ),
+      ),
+    );
+  }
+}
+
+/// A friend's figure on the path (§6.5, user request) — same glyph and
+/// size as the solid traveler ([_travelerIconSize]), so a friend reads as a
+/// peer rather than a diminished echo the way the rewind ghost does; only
+/// the color (their stable pin color, `friendMarkerColor`) tells them apart
+/// from the caller's own gold figure. Always paired with a
+/// [_FriendNicknameLabel] at the same `(x, y)` — split into two widgets
+/// rather than one `Column` so each keeps the other's simple "centered
+/// exactly on `(x, y)`"/"anchored exactly above `(x, y)`" math, the same
+/// division `_AchievementMarker` and its guide line already have.
+class _FriendMarker extends StatelessWidget {
+  const _FriendMarker({
+    super.key,
+    required this.x,
+    required this.y,
+    required this.color,
+  });
+
+  final double x;
+  final double y;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      left: x - _travelerIconSize / 2,
+      top: y - _travelerIconSize / 2,
+      child: IgnorePointer(
+        child: Icon(
+          Icons.directions_walk,
+          color: color,
+          size: _travelerIconSize,
+        ),
+      ),
+    );
+  }
+}
+
+/// Font size of a friend's nickname label — matches
+/// `quest_map_view.dart`'s `_friendNicknameFontSize` (same information, same
+/// visual weight on both screens).
+const double _friendLabelFontSize = 10;
+
+/// Gap, in logical pixels, between a friend's figure and the bottom edge of
+/// their nickname label above it.
+const double _friendLabelGap = 2;
+
+/// A friend's nickname, unconditionally shown above their [_FriendMarker]
+/// (this task's requirement — unlike the Карта tab's own legend toggle,
+/// nothing hides this label on Путь once the §6.5 preference is on).
+/// [FractionalTranslation] anchors by the label's own bottom-center
+/// regardless of how wide the nickname renders — same trick
+/// `quest_map_view.dart`'s `_MapTooltip` already uses to float above a
+/// point of unknown content size.
+class _FriendNicknameLabel extends StatelessWidget {
+  const _FriendNicknameLabel({
+    super.key,
+    required this.x,
+    required this.y,
+    required this.color,
+    required this.nickname,
+  });
+
+  final double x;
+  final double y;
+  final Color color;
+  final String nickname;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned(
+      left: x,
+      top: y - _travelerIconSize / 2 - _friendLabelGap,
+      child: FractionalTranslation(
+        translation: const Offset(-0.5, -1),
+        child: IgnorePointer(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            decoration: BoxDecoration(
+              color: AppColors.background.withValues(alpha: 0.75),
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: Text(
+              nickname,
+              style: AppTypography.bodySecondary.copyWith(
+                fontSize: _friendLabelFontSize,
+                color: color,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ),
       ),
     );

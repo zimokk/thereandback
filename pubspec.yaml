@@ -2,7 +2,7 @@ name: thereandback
 description: "There and Back — a walking-journey app. Real steps move a traveler along a quest route."
 publish_to: 'none'
 
-version: 0.2.0+1
+version: 0.2.1+1
 
 environment:
   sdk: ^3.13.1
@@ -31,6 +31,7 @@ dependencies:
   firebase_auth: ^6.6.1
   cloud_firestore: ^6.9.0
   google_sign_in: ^7.2.0
+  audioplayers: ^6.8.1
 
 dev_dependencies:
   flutter_test:
@@ -57,3 +58,10 @@ flutter:
   # file listed by name is.
   assets:
     - assets/journeys/odyssey-ithaca/
+    # The app's one background track (§6.5) — kept separate from
+    # assets/journeys/{id}/ (§4) because it isn't quest content, it's a
+    # single app-wide asset. Listed as a directory, same reasoning as the
+    # journeys entry above: a missing file inside it is a runtime concern
+    # (BackgroundMusicPlayer.start() fails, caught by the toggle), not a
+    # build error.
+    - assets/media/

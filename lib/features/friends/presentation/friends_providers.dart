@@ -320,3 +320,40 @@ class FriendsController extends _$FriendsController {
     return UpdateNicknameOutcome.success;
   }
 }
+
+/// Settings-page preference (§6.5, user request): whether accepted friends'
+/// positions render on the Путь and Карта tabs — a colored figure with
+/// their nickname on Путь (`journey_path_view.dart`'s `_FriendMarker`/
+/// `_FriendNicknameLabel`), a colored helmet on Карта
+/// (`quest_map_view.dart`'s `_RouteOverlayPainter`; the nickname *there* is
+/// a separate map-local legend toggle, not this preference — see that
+/// file's `_legendVisible`). Off by default — nothing about rendering a
+/// friend's already-shared progress needs a permission (§7), but every
+/// display preference added since the lock-screen toggle (background
+/// music, the theme override) starts off, and this follows the same
+/// convention rather than surprising the user with friends suddenly
+/// appearing on a screen they haven't asked for.
+///
+/// In-memory only, like `AppThemeOverride`/`AppLocale` — resets to off on
+/// the next cold start, the same accepted gap every other un-persisted
+/// Настройки toggle has today.
+///
+/// `keepAlive: true` — found the hard way (a widget test caught it, real
+/// bug, not just a test artifact): plain `@riverpod`'s default autoDispose
+/// tears this element down the instant its listener count reads zero, and
+/// [setEnabled] is called via `ref.read(...).notifier` from a widget event
+/// handler — a *read*, not a *watch* — so it doesn't itself count as a
+/// listener. The window between that call finishing and the watching
+/// widget's *next* build re-establishing its own `ref.watch` subscription
+/// was long enough for the disposal check to fire, discard the just-set
+/// `true`, and hand the next build a freshly rebuilt provider back at its
+/// `false` default — the toggle would flip on then silently flip itself
+/// back off. Same shape `LockScreenController`/`FriendsController`/
+/// `BackgroundMusicController` already avoid this way, for the same reason.
+@Riverpod(keepAlive: true)
+class ShowFriendsOnMap extends _$ShowFriendsOnMap {
+  @override
+  bool build() => false;
+
+  void setEnabled(bool value) => state = value;
+}

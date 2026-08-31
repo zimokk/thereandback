@@ -14,7 +14,10 @@ import 'package:thereandback/data/firebase/google_sign_in_service.dart';
 import 'package:thereandback/data/firestore/firestore_providers.dart';
 import 'package:thereandback/data/firestore/progress_sync_repository.dart';
 import 'package:thereandback/data/firestore/user_profile_repository.dart';
+import 'package:thereandback/features/audio/data/background_music_player.dart';
+import 'package:thereandback/features/audio/presentation/background_music_provider.dart';
 import 'package:thereandback/features/friends/domain/friend_profile.dart';
+import 'package:thereandback/features/friends/presentation/friends_providers.dart';
 import 'package:thereandback/features/journey/data/android_lock_screen_channel.dart';
 import 'package:thereandback/features/journey/presentation/lock_screen_controller.dart';
 import 'package:thereandback/features/journey/presentation/lock_screen_state.dart';
@@ -42,6 +45,14 @@ class _MockUserProfileRepository extends Mock
 
 class _MockProgressSyncRepository extends Mock
     implements ProgressSyncRepository {}
+
+/// Never a real `audioplayers` `AudioPlayer` in a widget test (`testing`
+/// skill) — `_wrap` overrides `backgroundMusicPlayerProvider` with this on
+/// every test, the same "always override, whether or not the test cares"
+/// stance it already takes for `androidLockScreenChannelProvider` and
+/// `stepCountingServiceProvider`.
+class _MockBackgroundMusicPlayer extends Mock
+    implements BackgroundMusicPlayer {}
 
 /// An [AuthController] that starts from a fixed state and skips the real
 /// `build()`'s Firebase bootstrap — same trick `auth_provider_test.dart`'s
@@ -157,9 +168,16 @@ Widget _wrap(
   when(() => stepCountingService.requestBackgroundHealthPermission())
       .thenAnswer((_) async => backgroundHealthGranted);
 
+  final musicPlayer = _MockBackgroundMusicPlayer();
+  when(() => musicPlayer.start()).thenAnswer((_) async {});
+  when(() => musicPlayer.stop()).thenAnswer((_) async {});
+  when(() => musicPlayer.pause()).thenAnswer((_) async {});
+  when(() => musicPlayer.resume()).thenAnswer((_) async {});
+
   return ProviderScope(
     overrides: [
       lockScreenSupportedProvider.overrideWithValue(lockScreenSupported),
+      backgroundMusicPlayerProvider.overrideWithValue(musicPlayer),
       androidLockScreenChannelProvider.overrideWithValue(channel),
       androidBackgroundSyncProvider.overrideWithValue(backgroundSync),
       stepCountingServiceProvider.overrideWithValue(stepCountingService),
@@ -806,6 +824,11 @@ void main() {
       find.byType(ListView),
       const Offset(0, -300),
     );
+    // One more section (§6.5's "Друзья на карте") now sits above Theme
+    // than when this test was written, so `dragUntilVisible`'s own found
+    // element can land right at the viewport edge — settle once more
+    // before tapping, so the offset `tap()` derives is fully on-screen.
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Классическая'));
     await tester.pump();
 
@@ -826,5 +849,167 @@ void main() {
       ),
       findsOneWidget,
     );
+  });
+
+  testWidgets(
+    'the background-music toggle renders off by default — this task\'s own '
+    'requirement',
+    (tester) async {
+      await tester.pumpWidget(_wrap(const SettingsTab()));
+      await tester.pump();
+
+      // Last section on the screen (after Theme) — same "past the test
+      // surface's default viewport + cache extent" situation the Theme
+      // section tests above already work around.
+      await tester.dragUntilVisible(
+        find.text('Играть фоновую музыку'),
+        find.byType(ListView),
+        const Offset(0, -300),
+      );
+
+      final tile = tester.widget<SwitchListTile>(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is SwitchListTile &&
+              widget.title is Text &&
+              (widget.title! as Text).data == 'Играть фоновую музыку',
+        ),
+      );
+      expect(tile.value, isFalse);
+    },
+  );
+
+  testWidgets(
+    'tapping the background-music toggle starts playback and flips it on, '
+    'tapping again stops it',
+    (tester) async {
+      await tester.pumpWidget(_wrap(const SettingsTab()));
+      await tester.pump();
+
+      final musicToggle = find.byWidgetPredicate(
+        (widget) =>
+            widget is SwitchListTile &&
+            widget.title is Text &&
+            (widget.title! as Text).data == 'Играть фоновую музыку',
+      );
+      await tester.dragUntilVisible(
+        musicToggle,
+        find.byType(ListView),
+        const Offset(0, -300),
+      );
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(SettingsTab)),
+      );
+      final musicPlayer = container.read(
+        backgroundMusicPlayerProvider,
+      ) as _MockBackgroundMusicPlayer;
+
+      await tester.tap(musicToggle);
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<SwitchListTile>(musicToggle).value, isTrue);
+      verify(() => musicPlayer.start()).called(1);
+
+      await tester.tap(musicToggle);
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<SwitchListTile>(musicToggle).value, isFalse);
+      verify(() => musicPlayer.stop()).called(1);
+    },
+  );
+
+  testWidgets(
+    'a failure starting the music shows an error message and leaves the '
+    'toggle off (§7: never a silent dead end)',
+    (tester) async {
+      await tester.pumpWidget(_wrap(const SettingsTab()));
+      await tester.pump();
+
+      final musicToggle = find.byWidgetPredicate(
+        (widget) =>
+            widget is SwitchListTile &&
+            widget.title is Text &&
+            (widget.title! as Text).data == 'Играть фоновую музыку',
+      );
+      await tester.dragUntilVisible(
+        musicToggle,
+        find.byType(ListView),
+        const Offset(0, -300),
+      );
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(SettingsTab)),
+      );
+      final musicPlayer = container.read(
+        backgroundMusicPlayerProvider,
+      ) as _MockBackgroundMusicPlayer;
+      when(() => musicPlayer.start()).thenThrow(Exception('asset missing'));
+
+      await tester.tap(musicToggle);
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<SwitchListTile>(musicToggle).value, isFalse);
+      expect(
+        find.text('Не удалось включить музыку. Попробуйте ещё раз.'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets(
+    'the friends-on-map toggle renders off by default — this task\'s own '
+    'requirement',
+    (tester) async {
+      await tester.pumpWidget(_wrap(const SettingsTab()));
+      await tester.pump();
+
+      await tester.dragUntilVisible(
+        find.text('Показывать друзей на карте'),
+        find.byType(ListView),
+        const Offset(0, -300),
+      );
+
+      final tile = tester.widget<SwitchListTile>(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is SwitchListTile &&
+              widget.title is Text &&
+              (widget.title! as Text).data == 'Показывать друзей на карте',
+        ),
+      );
+      expect(tile.value, isFalse);
+    },
+  );
+
+  testWidgets('tapping the friends-on-map toggle flips showFriendsOnMap '
+      'Provider on, tapping again flips it back off', (tester) async {
+    await tester.pumpWidget(_wrap(const SettingsTab()));
+    await tester.pump();
+
+    final friendsToggle = find.byWidgetPredicate(
+      (widget) =>
+          widget is SwitchListTile &&
+          widget.title is Text &&
+          (widget.title! as Text).data == 'Показывать друзей на карте',
+    );
+    await tester.dragUntilVisible(
+      friendsToggle,
+      find.byType(ListView),
+      const Offset(0, -300),
+    );
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(SettingsTab)),
+    );
+    expect(container.read(showFriendsOnMapProvider), isFalse);
+
+    await tester.tap(friendsToggle);
+    await tester.pump();
+
+    expect(container.read(showFriendsOnMapProvider), isTrue);
+    expect(tester.widget<SwitchListTile>(friendsToggle).value, isTrue);
+
+    await tester.tap(friendsToggle);
+    await tester.pump();
+
+    expect(container.read(showFriendsOnMapProvider), isFalse);
   });
 }

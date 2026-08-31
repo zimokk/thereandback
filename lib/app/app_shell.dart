@@ -6,6 +6,7 @@ import '../design/colors.dart';
 import '../design/components/app_snackbar.dart';
 import '../design/spacing.dart';
 import '../design/typography.dart';
+import '../features/audio/presentation/background_music_provider.dart';
 import '../features/friends/presentation/friends_providers.dart';
 import '../features/journey/presentation/lock_screen_controller.dart';
 import '../l10n/app_localizations.dart';
@@ -50,6 +51,13 @@ class AppShell extends ConsumerWidget {
     // needs this to reconcile a permission revoked while the app was
     // closed. The value itself isn't used here.
     ref.watch(lockScreenControllerProvider);
+
+    // Same reasoning, for the background-music lifecycle guard (§6.5):
+    // built once here so the pause-on-background/resume-on-foreground rule
+    // (`BackgroundMusicController`'s `appLifecycleProvider` listener) is
+    // live for the whole session the moment the app opens, not only once
+    // the user happens to visit Настройки and flips the toggle on.
+    ref.watch(backgroundMusicControllerProvider);
 
     final l10n = AppLocalizations.of(context)!;
     // This task's requirement: the Друзья tab stays inactive until the
