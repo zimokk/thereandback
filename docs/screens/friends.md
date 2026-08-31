@@ -44,7 +44,14 @@ friend by nickname" has something to find and be found by.
   outcome (sent / nickname not found / that's your own nickname / already
   connected / upgrade cancelled / that Google account is already linked to
   someone else) surfaces as a `SnackBar`, one l10n string per
-  `AddFriendOutcome` case.
+  `AddFriendOutcome` case — plus a generic `friendsOutcomeError` fallback
+  for anything that isn't one of those (a `firestore.rules` denial, no
+  network): a bug fix (§14, 2026-08-31) after a report that adding a
+  friend silently did nothing when the write failed — the dialog had
+  already closed before the rejected `Future` had anyone awaiting it.
+  Accept/decline/cancel/remove (`_runFriendAction`) get the exact same
+  fallback, for the same reason — those were plain `VoidCallback`s with no
+  error handling of their own either.
 
 ## Firestore-enforced visibility, not just UI logic
 

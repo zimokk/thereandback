@@ -329,6 +329,17 @@ String _$friendsViewHash() => r'41a1882b2251013508d179c8ee7416e305ebd9fa';
 /// Google upgrade first if still anonymous), accepting, removing/declining,
 /// the per-friend hide toggle (§7), and renaming the signed-in user's own
 /// nickname.
+///
+/// `keepAlive: true`, not the `@riverpod` default — every call site reaches
+/// this only via `ref.read(friendsControllerProvider.notifier)`, never
+/// `ref.watch`, so nothing ever keeps a listener on it. An autoDispose
+/// provider with zero listeners can be torn down while one of its own
+/// methods is still mid-`await` (bug found running this file's own test
+/// suite: `addFriendByNickname` crashed with "Cannot use the Ref... after
+/// it has been disposed" between its `resolveUidForNickname` and
+/// `sendRequest` awaits) — same reason `lock_screen_controller.dart`'s main
+/// controller is `keepAlive: true` rather than relying on a watcher that
+/// may not exist.
 
 @ProviderFor(FriendsController)
 final friendsControllerProvider = FriendsControllerProvider._();
@@ -338,6 +349,17 @@ final friendsControllerProvider = FriendsControllerProvider._();
 /// Google upgrade first if still anonymous), accepting, removing/declining,
 /// the per-friend hide toggle (§7), and renaming the signed-in user's own
 /// nickname.
+///
+/// `keepAlive: true`, not the `@riverpod` default — every call site reaches
+/// this only via `ref.read(friendsControllerProvider.notifier)`, never
+/// `ref.watch`, so nothing ever keeps a listener on it. An autoDispose
+/// provider with zero listeners can be torn down while one of its own
+/// methods is still mid-`await` (bug found running this file's own test
+/// suite: `addFriendByNickname` crashed with "Cannot use the Ref... after
+/// it has been disposed" between its `resolveUidForNickname` and
+/// `sendRequest` awaits) — same reason `lock_screen_controller.dart`'s main
+/// controller is `keepAlive: true` rather than relying on a watcher that
+/// may not exist.
 final class FriendsControllerProvider
     extends $NotifierProvider<FriendsController, void> {
   /// Imperative actions for the Challengers tab (§6.4) and the Settings
@@ -345,13 +367,24 @@ final class FriendsControllerProvider
   /// Google upgrade first if still anonymous), accepting, removing/declining,
   /// the per-friend hide toggle (§7), and renaming the signed-in user's own
   /// nickname.
+  ///
+  /// `keepAlive: true`, not the `@riverpod` default — every call site reaches
+  /// this only via `ref.read(friendsControllerProvider.notifier)`, never
+  /// `ref.watch`, so nothing ever keeps a listener on it. An autoDispose
+  /// provider with zero listeners can be torn down while one of its own
+  /// methods is still mid-`await` (bug found running this file's own test
+  /// suite: `addFriendByNickname` crashed with "Cannot use the Ref... after
+  /// it has been disposed" between its `resolveUidForNickname` and
+  /// `sendRequest` awaits) — same reason `lock_screen_controller.dart`'s main
+  /// controller is `keepAlive: true` rather than relying on a watcher that
+  /// may not exist.
   FriendsControllerProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
         name: r'friendsControllerProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -372,13 +405,24 @@ final class FriendsControllerProvider
   }
 }
 
-String _$friendsControllerHash() => r'ea4f6f842e61140b4e09068985e4c9b1e7a135ce';
+String _$friendsControllerHash() => r'6fb253b83ae788525ca960f3a8943fcab8376fab';
 
 /// Imperative actions for the Challengers tab (§6.4) and the Settings
 /// nickname editor (§6.5): sending a request by nickname (triggering the
 /// Google upgrade first if still anonymous), accepting, removing/declining,
 /// the per-friend hide toggle (§7), and renaming the signed-in user's own
 /// nickname.
+///
+/// `keepAlive: true`, not the `@riverpod` default — every call site reaches
+/// this only via `ref.read(friendsControllerProvider.notifier)`, never
+/// `ref.watch`, so nothing ever keeps a listener on it. An autoDispose
+/// provider with zero listeners can be torn down while one of its own
+/// methods is still mid-`await` (bug found running this file's own test
+/// suite: `addFriendByNickname` crashed with "Cannot use the Ref... after
+/// it has been disposed" between its `resolveUidForNickname` and
+/// `sendRequest` awaits) — same reason `lock_screen_controller.dart`'s main
+/// controller is `keepAlive: true` rather than relying on a watcher that
+/// may not exist.
 
 abstract class _$FriendsController extends $Notifier<void> {
   void build();

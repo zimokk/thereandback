@@ -1,3 +1,5 @@
+import 'dart:async' show unawaited;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -85,13 +87,21 @@ class ChallengersTab extends ConsumerWidget {
                     request.otherNickname,
                   ),
                   primaryLabel: l10n.friendsAcceptButton,
-                  onPrimary: () => ref
-                      .read(friendsControllerProvider.notifier)
-                      .acceptRequest(request.pairId),
+                  onPrimary: () => _runFriendAction(
+                    context,
+                    l10n,
+                    () => ref
+                        .read(friendsControllerProvider.notifier)
+                        .acceptRequest(request.pairId),
+                  ),
                   secondaryLabel: l10n.friendsDeclineButton,
-                  onSecondary: () => ref
-                      .read(friendsControllerProvider.notifier)
-                      .removeOrDecline(request.pairId),
+                  onSecondary: () => _runFriendAction(
+                    context,
+                    l10n,
+                    () => ref
+                        .read(friendsControllerProvider.notifier)
+                        .removeOrDecline(request.pairId),
+                  ),
                 ),
               const SizedBox(height: AppSpacing.md),
             ],
@@ -107,9 +117,13 @@ class ChallengersTab extends ConsumerWidget {
                     request.otherNickname,
                   ),
                   primaryLabel: l10n.friendsCancelRequestButton,
-                  onPrimary: () => ref
-                      .read(friendsControllerProvider.notifier)
-                      .removeOrDecline(request.pairId),
+                  onPrimary: () => _runFriendAction(
+                    context,
+                    l10n,
+                    () => ref
+                        .read(friendsControllerProvider.notifier)
+                        .removeOrDecline(request.pairId),
+                  ),
                 ),
               const SizedBox(height: AppSpacing.md),
             ],
@@ -125,9 +139,13 @@ class ChallengersTab extends ConsumerWidget {
                   myMeters: myMeters,
                   onRemove: row.pairId == null
                       ? null
-                      : () => ref
-                            .read(friendsControllerProvider.notifier)
-                            .removeOrDecline(row.pairId!),
+                      : () => _runFriendAction(
+                          context,
+                          l10n,
+                          () => ref
+                              .read(friendsControllerProvider.notifier)
+                              .removeOrDecline(row.pairId!),
+                        ),
                 ),
           ],
         ),
@@ -187,6 +205,34 @@ class _LockedPlaceholder extends StatelessWidget {
   }
 }
 
+/// Runs a fire-and-forget friend action (accept / decline / cancel /
+/// remove — every `onPrimary`/`onSecondary`/`onRemove` callback below) and
+/// surfaces a generic error snackbar if it throws. None of these have their
+/// own outcome enum the way `addFriendByNickname` does — there is nothing
+/// to disambiguate, "it worked" is the only expected result — so any
+/// exception here (firestore.rules denying the write, no network) is
+/// unexpected by definition.
+///
+/// Without this, the `Future<void>` these buttons kick off was never
+/// awaited by anything (`VoidCallback` discards it) — a rejection just
+/// became an unhandled Future error with nothing on screen to show for it:
+/// a tap that visibly did nothing (§7 — never a dead end, not even a
+/// silent one; the same fix `_showAddFriendDialog` applies to its own add-
+/// friend flow, `settings_tab.dart`'s `_signInWithGoogle`/`_updateNickname`
+/// to theirs).
+void _runFriendAction(
+  BuildContext context,
+  AppLocalizations l10n,
+  Future<void> Function() action,
+) {
+  unawaited(
+    action().catchError((Object error) {
+      debugPrint('Friend action failed: $error');
+      if (context.mounted) showAppSnackBar(context, l10n.friendsOutcomeError);
+    }),
+  );
+}
+
 void _showAddFriendDialog(
   BuildContext context,
   WidgetRef ref,
@@ -218,12 +264,34 @@ void _showAddFriendDialog(
             if (nickname.isEmpty) return;
             Navigator.of(dialogContext).pop();
 
-            final outcome = await ref
-                .read(friendsControllerProvider.notifier)
-                .addFriendByNickname(nickname);
+            String message;
+            try {
+              final outcome = await ref
+                  .read(friendsControllerProvider.notifier)
+                  .addFriendByNickname(nickname);
+              message = _outcomeMessage(outcome, l10n);
+            } catch (error) {
+              // Anything beyond the known AddFriendOutcome cases —
+              // firestore.rules denying the write, no network, a plugin
+              // exception. Without this the request just silently failed:
+              // the dialog had already closed above and the rejected
+              // Future had nothing awaiting it, so nothing at all appeared
+              // on screen and no `friendships/{pairId}` doc was created
+              // (§7 — never a dead end, not even a silent one; the same
+              // fix `settings_tab.dart`'s `_signInWithGoogle`/
+              // `_updateNickname` already apply to their own flows).
+              //
+              // Logged (debug builds only, per `debugPrint`'s own
+              // contract) so a report of "adding a friend does nothing" is
+              // actually diagnosable — the caught error here carries only
+              // an error code/message, never a nickname or uid, so this
+              // doesn't violate §13's no-PII-in-logs rule.
+              debugPrint('Add friend failed: $error');
+              message = l10n.friendsOutcomeError;
+            }
 
             if (!context.mounted) return;
-            showAppSnackBar(context, _outcomeMessage(outcome, l10n));
+            showAppSnackBar(context, message);
           },
           child: Text(
             l10n.friendsAddSubmit,

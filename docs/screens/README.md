@@ -16,6 +16,17 @@ into phases; these files are the as-built record for this base.
 | Настройки (settings) | `/settings` | [`settings.md`](settings.md) |
 | Steps sync (embedded in Путь, not its own tab) | — | [`steps-sync.md`](steps-sync.md) |
 
+## Planned, not yet built
+
+| Feature | Doc |
+|---|---|
+| Journey replay — timelapse play-back of a whole quest | [`journey-replay.md`](journey-replay.md) |
+
+No route, no screen, no code — a data-model decision only (which quests get
+a durable daily-progress log, and why), captured before the code so it ships
+correctly from the first quest that needs it. See the doc for what's decided
+and what isn't.
+
 ## Five tabs
 
 CLAUDE.md §6 fixes five bottom tabs (Путь · Карта · Трофеи · Друзья ·

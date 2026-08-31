@@ -1,7 +1,8 @@
 import 'package:drift/drift.dart';
 
 import '../../../data/drift/database.dart';
-import '../../journey/domain/quest_time_service.dart' show MeteredInterval;
+import '../../journey/domain/quest_time_service.dart'
+    show MeteredInterval, calendarDate;
 import '../domain/achievement_unlocks.dart';
 import 'achievement_catalog.dart';
 
@@ -27,6 +28,15 @@ abstract class AchievementRepository {
   /// most one date for a quest achievement, potentially several (sorted
   /// ascending) for a daily one. A missing key means never earned.
   Future<Map<String, List<DateTime>>> loadUnlocks(String ownerId);
+
+  /// Total meters walked across every quest so far today (local calendar
+  /// day, §5.3) — what a daily trophy's progress line needs (this task's
+  /// requirement: "для ежедневных — прогресс за сегодняшний день"), unlike
+  /// [loadUnlocks], which only knows about days that already crossed a
+  /// threshold. Recomputed live from [StepIntervalRecords] rather than
+  /// [AchievementUnlockRows] — today not yet reaching any threshold still
+  /// has no persisted unlock row to read a partial number from.
+  Future<int> todayTotalMeters(String ownerId);
 }
 
 class DriftAchievementRepository implements AchievementRepository {
@@ -126,6 +136,34 @@ class DriftAchievementRepository implements AchievementRepository {
       );
     }
     return result;
+  }
+
+  @override
+  Future<int> todayTotalMeters(String ownerId) async {
+    final intervals = _db.stepIntervalRecords;
+    final today = calendarDate(DateTime.now());
+
+    // A day of margin covers any timezone offset between UTC storage and
+    // the user's local calendar day — the same wide-window-then-exact-
+    // domain-math idiom `journey_providers.dart`'s `recentMeteredIntervals`
+    // uses (§13: the query lives here in `data/`, the calendar math in
+    // `domain/`'s `groupMetersByLocalDay`).
+    final since = today.subtract(const Duration(days: 1)).toUtc();
+    final rows =
+        await (_db.select(intervals)..where(
+              (t) =>
+                  t.ownerId.equals(ownerId) &
+                  t.intervalEnd.isBiggerOrEqualValue(since),
+            ))
+            .get();
+    final todaysIntervals = [
+      for (final row in rows)
+        MeteredInterval(
+          end: row.intervalEnd.toLocal(),
+          meters: row.resolvedMeters,
+        ),
+    ];
+    return groupMetersByLocalDay(todaysIntervals)[today] ?? 0;
   }
 
   /// Encodes a local calendar date ([AchievementUnlockRows.unlockedLocalDate]'s

@@ -100,11 +100,11 @@
   "settingsThemeSectionSubtitle": "По умолчанию — тема текущего похода.",
   "settingsThemeFollowQuest": "Тема похода",
   "settingsThemeClassic": "Классическая",
-  "settingsThemeOdyssey": "Одиссея",
+  "settingsThemeOdyssey": "Одиссея (активный поход)",
 
   "settingsLockScreenSectionTitle": "Экран блокировки",
   "settingsLockScreenToggleTitle": "Показывать прогресс на экране блокировки",
-  "settingsLockScreenToggleSubtitle": "Тихое постоянное уведомление с прогрессом похода — видно в шторке уведомлений и на экране блокировки.",
+  "settingsLockScreenToggleSubtitle": "Показывать прогресс похода в шторке уведомлений и на экране блокировки.",
   "lockScreenPermissionExplainTitle": "Прогресс всегда на виду",
   "lockScreenPermissionExplainBody": "Чтобы показывать прогресс на экране блокировки, There and Back нужно разрешение показывать уведомление и читать шаги в фоне — примерно раз в 15 минут. Там показывается только прогресс похода — никогда не сырые данные о здоровье.",
   "lockScreenPermissionAllow": "Разрешить",
@@ -152,5 +152,6 @@
   "friendsOutcomeCannotAddSelf": "Это ваш собственный ник.",
   "friendsOutcomeAlreadyExists": "Вы уже связаны с этим пользователем.",
   "friendsOutcomeNotSignedIn": "Не удалось войти — попробуйте ещё раз через момент.",
-  "friendsOutcomeUpgradeCancelled": "Чтобы добавлять друзей, нужен аккаунт Google — вход отменён."
+  "friendsOutcomeUpgradeCancelled": "Чтобы добавлять друзей, нужен аккаунт Google — вход отменён.",
+  "friendsOutcomeError": "Не удалось выполнить действие — попробуйте ещё раз."
 }

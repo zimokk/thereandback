@@ -7,6 +7,7 @@ import '../../../app/auth_provider.dart';
 import '../../../core/app_theme_id.dart';
 import '../../../design/colors.dart';
 import '../../../design/components/app_snackbar.dart';
+import '../../../design/components/selectable_option_tile.dart';
 import '../../../design/spacing.dart';
 import '../../../design/typography.dart';
 import '../../../l10n/app_localizations.dart';
@@ -15,6 +16,12 @@ import '../../journey/presentation/lock_screen_controller.dart';
 import '../../journey/presentation/lock_screen_state.dart';
 import 'locale_provider.dart';
 import 'theme_provider.dart';
+
+/// Shared leading-preview size for the language and theme pickers below —
+/// keeps a flag emoji and a theme's icon reading as the same size in the
+/// same leading slot, one constant rather than two independent magic
+/// numbers at each call site.
+const double _pickerLeadingIconSize = 22;
 
 /// Настройки (§6.5), trimmed to what this base ships: the Google sign-in
 /// entry point, an editable nickname, and a working language switch.
@@ -46,7 +53,7 @@ class SettingsTab extends ConsumerWidget {
       ),
       body: SafeArea(
         child: ListView(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.all(AppSpacing.lg),
           children: [
             _SectionCard(
               title: l10n.settingsAccountSectionTitle,
@@ -81,7 +88,7 @@ class SettingsTab extends ConsumerWidget {
                     : null,
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.lg),
             _SectionCard(
               title: l10n.settingsNicknameSectionTitle,
               child: ListTile(
@@ -111,42 +118,45 @@ class SettingsTab extends ConsumerWidget {
               ),
             ),
             if (lockScreenSupported) ...[
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.lg),
               const _LockScreenSection(),
             ],
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.lg),
             _SectionCard(
               title: l10n.settingsLanguageSectionTitle,
-              child: RadioGroup<Locale>(
-                groupValue: locale,
-                onChanged: (value) => value == null
-                    ? null
-                    : ref.read(appLocaleProvider.notifier).setLocale(value),
-                child: Column(
-                  children: [
-                    RadioListTile<Locale>(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        l10n.settingsLanguageRussian,
-                        style: AppTypography.body,
-                      ),
-                      value: const Locale('ru'),
-                      activeColor: AppColors.gold,
+              // A flag leading each label (styling fix: "флаги стран... это
+              // ускоряет восприятие") rather than folded into the l10n
+              // string itself — the label stays exactly "Русский"/"English"
+              // (§11), only its preview icon changes.
+              child: Column(
+                children: [
+                  SelectableOptionTile(
+                    leading: const Text(
+                      '🇷🇺',
+                      style: TextStyle(fontSize: _pickerLeadingIconSize),
                     ),
-                    RadioListTile<Locale>(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(
-                        l10n.settingsLanguageEnglish,
-                        style: AppTypography.body,
-                      ),
-                      value: const Locale('en'),
-                      activeColor: AppColors.gold,
+                    title: l10n.settingsLanguageRussian,
+                    selected: locale == const Locale('ru'),
+                    onTap: () => ref
+                        .read(appLocaleProvider.notifier)
+                        .setLocale(const Locale('ru')),
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  SelectableOptionTile(
+                    leading: const Text(
+                      '🇬🇧',
+                      style: TextStyle(fontSize: _pickerLeadingIconSize),
                     ),
-                  ],
-                ),
+                    title: l10n.settingsLanguageEnglish,
+                    selected: locale == const Locale('en'),
+                    onTap: () => ref
+                        .read(appLocaleProvider.notifier)
+                        .setLocale(const Locale('en')),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.lg),
             const _ThemeSection(),
           ],
         ),
@@ -334,7 +344,17 @@ class _LockScreenSection extends ConsumerWidget {
         children: [
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
+            // Explicit colors for every state — styling fix: with only
+            // `activeThumbColor` set, the off state fell back to the
+            // Material theme's own dark default and read as invisible
+            // against the near-black background ("сливается с фоном").
+            // `goldMuted` behind the bright `gold` thumb on, `surfaceActive`
+            // (one rung lighter than the card itself) behind a dim thumb
+            // off — the switch now reads as a real control in both states.
             activeThumbColor: AppColors.gold,
+            activeTrackColor: AppColors.goldMuted,
+            inactiveThumbColor: AppColors.textSecondary,
+            inactiveTrackColor: AppColors.surfaceActive,
             title: Text(
               l10n.settingsLockScreenToggleTitle,
               style: AppTypography.body,
@@ -538,47 +558,70 @@ class _ThemeSection extends ConsumerWidget {
             style: AppTypography.bodySecondary,
           ),
           const SizedBox(height: AppSpacing.sm),
-          RadioGroup<AppThemeId?>(
-            groupValue: override,
-            onChanged: (value) =>
-                ref.read(appThemeOverrideProvider.notifier).setOverride(value),
-            child: Column(
-              children: [
-                RadioListTile<AppThemeId?>(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    l10n.settingsThemeFollowQuest,
-                    style: AppTypography.body,
-                  ),
-                  value: null,
-                  activeColor: AppColors.gold,
+          Column(
+            children: [
+              SelectableOptionTile(
+                leading: Icon(
+                  _themeOptionIcon(null),
+                  size: _pickerLeadingIconSize,
+                  color: override == null
+                      ? AppColors.gold
+                      : AppColors.textSecondary,
                 ),
-                RadioListTile<AppThemeId?>(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    l10n.settingsThemeClassic,
-                    style: AppTypography.body,
-                  ),
-                  value: AppThemeId.classic,
-                  activeColor: AppColors.gold,
+                title: l10n.settingsThemeFollowQuest,
+                selected: override == null,
+                onTap: () => ref
+                    .read(appThemeOverrideProvider.notifier)
+                    .setOverride(null),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              SelectableOptionTile(
+                leading: Icon(
+                  _themeOptionIcon(AppThemeId.classic),
+                  size: _pickerLeadingIconSize,
+                  color: override == AppThemeId.classic
+                      ? AppColors.gold
+                      : AppColors.textSecondary,
                 ),
-                RadioListTile<AppThemeId?>(
-                  contentPadding: EdgeInsets.zero,
-                  title: Text(
-                    l10n.settingsThemeOdyssey,
-                    style: AppTypography.body,
-                  ),
-                  value: AppThemeId.odyssey,
-                  activeColor: AppColors.gold,
+                title: l10n.settingsThemeClassic,
+                selected: override == AppThemeId.classic,
+                onTap: () => ref
+                    .read(appThemeOverrideProvider.notifier)
+                    .setOverride(AppThemeId.classic),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              SelectableOptionTile(
+                leading: Icon(
+                  _themeOptionIcon(AppThemeId.odyssey),
+                  size: _pickerLeadingIconSize,
+                  color: override == AppThemeId.odyssey
+                      ? AppColors.gold
+                      : AppColors.textSecondary,
                 ),
-              ],
-            ),
+                title: l10n.settingsThemeOdyssey,
+                selected: override == AppThemeId.odyssey,
+                onTap: () => ref
+                    .read(appThemeOverrideProvider.notifier)
+                    .setOverride(AppThemeId.odyssey),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 }
+
+/// A small preview icon standing in for each theme option (styling fix:
+/// "пользователь должен видеть, как выглядит тема, до того как выберет
+/// её") — same "no real illustration asset yet, so an icon is the
+/// cheap-to-replace placeholder" reasoning `achievement_illustrations.dart`
+/// already uses for the same §9.1 open decision, not a second art system.
+IconData _themeOptionIcon(AppThemeId? theme) => switch (theme) {
+  null => Icons.auto_awesome, // follows whatever the active quest picks
+  AppThemeId.classic => Icons.shield_outlined,
+  AppThemeId.odyssey => Icons.sailing,
+};
 
 class _SectionCard extends StatelessWidget {
   const _SectionCard({required this.title, required this.child});
@@ -602,18 +645,26 @@ class _SectionCard extends StatelessWidget {
       // inside the Container (rather than being the card itself, as an
       // `AppCard` would be) so the hairline border above draws outside the
       // ink-clipping Material, never cut by it.
+      //
+      // `surfaceRaised`, not the app-wide default `surface` — styling fix:
+      // a screen built from several stacked, mostly-static cards reads
+      // better with a touch more separation from `background` than a
+      // single hero card needs.
       child: Material(
-        color: AppColors.surface,
+        color: AppColors.surfaceRaised,
         borderRadius: BorderRadius.circular(AppRadius.card),
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md,
-            vertical: AppSpacing.sm,
+            vertical: AppSpacing.md,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: AppTypography.label),
+              // Small, uppercase, muted gold — styling fix: a section title
+              // now reads as structure at a glance, not just another line
+              // of body copy above the content.
+              Text(title.toUpperCase(), style: AppTypography.sectionLabel),
               const SizedBox(height: AppSpacing.sm),
               child,
             ],

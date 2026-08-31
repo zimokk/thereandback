@@ -19,6 +19,25 @@ import 'package:thereandback/features/journey/presentation/journey_providers.dar
 import 'package:thereandback/features/profile/presentation/theme_provider.dart';
 import 'package:thereandback/l10n/app_localizations.dart';
 
+/// Pumps in small steps until [finder] finds something, or gives up after
+/// [maxSteps] — for a SnackBar shown after a chain of awaited Futures
+/// (`FriendsController` methods, plus Riverpod's own notification
+/// scheduling), where a single `pump()` isn't always enough rounds to
+/// drain every hop, and `pumpAndSettle()` would pump straight through the
+/// SnackBar's own multi-second auto-dismiss timer and find it already
+/// gone. 50ms × 20 steps = 1s of simulated time, comfortably under that
+/// default duration either way.
+Future<void> _pumpUntilFound(
+  WidgetTester tester,
+  Finder finder, {
+  int maxSteps = 20,
+}) async {
+  for (var i = 0; i < maxSteps; i++) {
+    if (finder.evaluate().isNotEmpty) return;
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+}
+
 class _MockFriendshipRepository extends Mock implements FriendshipRepository {}
 
 class _MockUserProfileRepository extends Mock
@@ -285,6 +304,114 @@ void main() {
     verify(() => friendshipRepository.acceptRequest(pairIdFor('me', 'bob')))
         .called(1);
   });
+
+  testWidgets(
+    'an incoming request action that throws shows a generic error message '
+    'instead of failing silently — regression: the Future these buttons '
+    'kick off used to be discarded unawaited (VoidCallback), so a '
+    'rejection had nothing on screen to show for it',
+    (tester) async {
+      when(() => friendshipRepository.watchMyFriendships('me')).thenAnswer(
+        (_) => Stream.value([
+          _friendship(
+            a: 'me',
+            b: 'bob',
+            status: FriendshipStatus.pending,
+            initiatorUid: 'bob',
+          ),
+        ]),
+      );
+      when(() => userProfileRepository.watchProfile('bob')).thenAnswer(
+        (_) => Stream.value(
+          const FriendProfile(
+            uid: 'bob',
+            nickname: 'Bob',
+            avatarPresetIndex: 1,
+          ),
+        ),
+      );
+      // `.thenAnswer((_) async => throw ...)`, not `.thenThrow` — this
+      // must reject the returned Future asynchronously (what a real
+      // Firestore write denied by firestore.rules does), not throw
+      // synchronously from the call itself, or it would escape
+      // `_runFriendAction`'s `.catchError` entirely and this test would
+      // pass for the wrong reason.
+      when(() => friendshipRepository.acceptRequest(pairIdFor('me', 'bob')))
+          .thenAnswer((_) async => throw Exception('permission-denied'));
+
+      await tester.pumpWidget(
+        _wrap(
+          friendshipRepository: friendshipRepository,
+          userProfileRepository: userProfileRepository,
+          progressSyncRepository: progressSyncRepository,
+          googleAuthService: googleAuthService,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final message = find.text("Couldn't complete that — please try again.");
+      await tester.tap(find.text('Accept'));
+      // Not a single pump, and not pumpAndSettle(): see _pumpUntilFound's
+      // own doc comment.
+      await _pumpUntilFound(tester, message);
+
+      expect(message, findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'sending a friend request that throws shows a generic error message '
+    'instead of failing silently — regression: the dialog had already '
+    'closed before the write landed, so an unhandled exception previously '
+    'had nothing on screen to show for it, and no friendships/{pairId} '
+    'doc was created',
+    (tester) async {
+      when(() => friendshipRepository.watchMyFriendships('me'))
+          .thenAnswer((_) => Stream.value(const []));
+      when(() => userProfileRepository.resolveUidForNickname('Bob'))
+          .thenAnswer((_) async => 'bob');
+      when(() => friendshipRepository.sendRequest(fromUid: 'me', toUid: 'bob'))
+          .thenAnswer((_) async => throw Exception('permission-denied'));
+
+      await tester.pumpWidget(
+        _wrap(
+          friendshipRepository: friendshipRepository,
+          userProfileRepository: userProfileRepository,
+          progressSyncRepository: progressSyncRepository,
+          googleAuthService: googleAuthService,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.person_add_alt_1));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'Bob');
+      await tester.tap(find.text('Send request'));
+      // This path has two awaited hops (resolveUidForNickname, then
+      // sendRequest) plus Riverpod's own notification scheduling, so it
+      // needs more than a fixed pump count — settle rather than guess.
+      // pumpAndSettle() is safe here specifically because this test
+      // doesn't check the SnackBar's own text (see below), so pumping past
+      // its auto-dismiss timer doesn't matter.
+      await tester.pumpAndSettle();
+
+      // Not asserting on the SnackBar text here, unlike the sibling
+      // "incoming request" test above — `showAppSnackBar`'s `_debouncer`
+      // is process-wide, real-wall-clock state (`app_snackbar.dart`'s own
+      // doc comment), and this test fires the *exact* same generic
+      // `friendsOutcomeError` string that test just showed, well inside
+      // the debouncer's window. A real second SnackBar not appearing here
+      // is the debouncer working as designed (already covered by
+      // `app_snackbar_test.dart`), not a regression — what this test
+      // actually guards is that the exception from `sendRequest` doesn't
+      // leak as an uncaught error and that the write really was attempted,
+      // both asserted below.
+      expect(tester.takeException(), isNull);
+      verify(
+        () => friendshipRepository.sendRequest(fromUid: 'me', toUid: 'bob'),
+      ).called(1);
+    },
+  );
 
   testWidgets(
     'tapping the copy icon on the own-nickname card copies it and shows a '

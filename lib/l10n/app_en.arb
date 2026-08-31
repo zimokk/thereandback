@@ -225,15 +225,15 @@
   "@settingsThemeFollowQuest": {"description": "Theme option: follow the active quest's own theme (AppThemeOverride == null) rather than an explicit pin"},
   "settingsThemeClassic": "Classic",
   "@settingsThemeClassic": {"description": "Theme option label for AppThemeId.classic"},
-  "settingsThemeOdyssey": "Odyssey",
-  "@settingsThemeOdyssey": {"description": "Theme option label for AppThemeId.odyssey"},
+  "settingsThemeOdyssey": "Odyssey (active quest)",
+  "@settingsThemeOdyssey": {"description": "Theme option label for AppThemeId.odyssey — names it as the active quest (this app ships one quest today, §14) so it reads as distinct from \"Quest theme\" (settingsThemeFollowQuest) rather than a confusing duplicate"},
 
   "settingsLockScreenSectionTitle": "Lock screen",
   "@settingsLockScreenSectionTitle": {"description": "Settings section heading for the persistent lock-screen/notification-shade progress toggle (§7)"},
   "settingsLockScreenToggleTitle": "Show progress on the lock screen",
   "@settingsLockScreenToggleTitle": {"description": "Label of the off-by-default toggle that turns on the ongoing notification"},
-  "settingsLockScreenToggleSubtitle": "A quiet, ongoing notification with your quest progress — visible in the notification shade and on the lock screen.",
-  "@settingsLockScreenToggleSubtitle": {"description": "Subtitle explaining what the toggle does, shown under it"},
+  "settingsLockScreenToggleSubtitle": "Show your quest progress in the notification shade and on the lock screen.",
+  "@settingsLockScreenToggleSubtitle": {"description": "Subtitle explaining what the toggle does, shown under it — kept short and in journey-progress language (§5.4: never a raw step count as the hero copy), not the earlier more technical wording"},
   "lockScreenPermissionExplainTitle": "Keep your progress visible",
   "@lockScreenPermissionExplainTitle": {"description": "Title of the explanation shown before requesting the notification + background-sync permissions (§7)"},
   "lockScreenPermissionExplainBody": "To show your progress on the lock screen, There and Back needs permission to post a notification and to read your steps in the background, roughly every 15 minutes. Only your quest progress is shown there — never raw health data.",
@@ -336,5 +336,7 @@
   "friendsOutcomeNotSignedIn": "Couldn't sign you in — try again in a moment.",
   "@friendsOutcomeNotSignedIn": {"description": "Shown for AddFriendOutcome.notSignedIn — an unexpected, likely transient state"},
   "friendsOutcomeUpgradeCancelled": "Adding friends needs a Google account — sign-in was cancelled.",
-  "@friendsOutcomeUpgradeCancelled": {"description": "Shown for AddFriendOutcome.googleUpgradeCancelled — the user closed the Google account picker"}
+  "@friendsOutcomeUpgradeCancelled": {"description": "Shown for AddFriendOutcome.googleUpgradeCancelled — the user closed the Google account picker"},
+  "friendsOutcomeError": "Couldn't complete that — please try again.",
+  "@friendsOutcomeError": {"description": "Generic fallback shown when a friend action (add/accept/decline/cancel/remove) throws something other than its own known outcome enum — firestore.rules denying the write, no network, etc."}
 }

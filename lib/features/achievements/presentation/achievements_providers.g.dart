@@ -125,3 +125,66 @@ final class AchievementUnlocksProvider
 
 String _$achievementUnlocksHash() =>
     r'5a46204d3c009f3877a284825a95730e2f71a509';
+
+/// Today's total distance across every quest — the live number a daily
+/// trophy's progress line needs (this task's requirement: "для ежедневных —
+/// прогресс за сегодняшний день"), as opposed to [achievementUnlocksProvider]'s
+/// forever-cumulative unlock history. autoDispose default, same as
+/// [achievementUnlocksProvider]: leaving the Трофеи tab drops the cached
+/// read, so the next visit re-queries current data. `steps_providers.dart`'s
+/// `StepsSync.sync()` invalidates this alongside [achievementUnlocksProvider]
+/// for the one case autoDispose doesn't cover on its own — the tab open and
+/// watching while a sync lands.
+
+@ProviderFor(todayAllQuestsMeters)
+final todayAllQuestsMetersProvider = TodayAllQuestsMetersProvider._();
+
+/// Today's total distance across every quest — the live number a daily
+/// trophy's progress line needs (this task's requirement: "для ежедневных —
+/// прогресс за сегодняшний день"), as opposed to [achievementUnlocksProvider]'s
+/// forever-cumulative unlock history. autoDispose default, same as
+/// [achievementUnlocksProvider]: leaving the Трофеи tab drops the cached
+/// read, so the next visit re-queries current data. `steps_providers.dart`'s
+/// `StepsSync.sync()` invalidates this alongside [achievementUnlocksProvider]
+/// for the one case autoDispose doesn't cover on its own — the tab open and
+/// watching while a sync lands.
+
+final class TodayAllQuestsMetersProvider
+    extends $FunctionalProvider<AsyncValue<int>, int, FutureOr<int>>
+    with $FutureModifier<int>, $FutureProvider<int> {
+  /// Today's total distance across every quest — the live number a daily
+  /// trophy's progress line needs (this task's requirement: "для ежедневных —
+  /// прогресс за сегодняшний день"), as opposed to [achievementUnlocksProvider]'s
+  /// forever-cumulative unlock history. autoDispose default, same as
+  /// [achievementUnlocksProvider]: leaving the Трофеи tab drops the cached
+  /// read, so the next visit re-queries current data. `steps_providers.dart`'s
+  /// `StepsSync.sync()` invalidates this alongside [achievementUnlocksProvider]
+  /// for the one case autoDispose doesn't cover on its own — the tab open and
+  /// watching while a sync lands.
+  TodayAllQuestsMetersProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'todayAllQuestsMetersProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$todayAllQuestsMetersHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<int> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<int> create(Ref ref) {
+    return todayAllQuestsMeters(ref);
+  }
+}
+
+String _$todayAllQuestsMetersHash() =>
+    r'e8d0279b099852e2729095f1dd4313b4763aa2a5';

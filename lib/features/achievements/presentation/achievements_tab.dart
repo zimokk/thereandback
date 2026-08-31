@@ -43,6 +43,10 @@ class AchievementsTab extends ConsumerWidget {
     final unlocks =
         ref.watch(achievementUnlocksProvider).value ??
         const <String, List<DateTime>>{};
+    // Same `.value ?? 0` idiom as `unlocks` above — while today's total is
+    // still loading, 0 is already the right input for every daily tile's
+    // progress line, not a state worth a spinner over.
+    final todayMeters = ref.watch(todayAllQuestsMetersProvider).value ?? 0;
 
     final journeyStates = evaluateAchievements(
       progressMeters: selected?.progressMeters ?? 0,
@@ -81,6 +85,7 @@ class AchievementsTab extends ConsumerWidget {
                     ),
                     _DailyGrid(
                       states: dailyStates,
+                      todayMeters: todayMeters,
                       l10n: l10n,
                       localeName: locale,
                       theme: theme,
@@ -196,16 +201,15 @@ class _AchievementTile extends StatelessWidget {
               style: AppTypography.bodySecondary,
               textAlign: TextAlign.center,
             ),
-            if (!unlocked) ...[
-              const SizedBox(height: AppSpacing.sm),
-              _TrophyProgressThread(
-                fraction: progressFraction(
-                  progressMeters:
-                      state.def.thresholdMeters - state.remainingMeters,
-                  totalMeters: state.def.thresholdMeters,
-                ),
+            const SizedBox(height: AppSpacing.sm),
+            _AchievementProgressBar(
+              fraction: progressFraction(
+                progressMeters:
+                    state.def.thresholdMeters - state.remainingMeters,
+                totalMeters: state.def.thresholdMeters,
               ),
-            ],
+              showPercent: !unlocked,
+            ),
           ],
         ),
       ),
@@ -265,30 +269,81 @@ BoxDecoration _trophyTileDecoration({required bool unlocked}) {
   );
 }
 
-/// A thin gold "thread" showing how far a locked trophy's progress is
-/// toward its own threshold (styling fix: "микро-прогрессбар... тонкую
-/// золотую нить"). [fraction] is `progress_fraction.dart`'s pure `0..1`
-/// value — this widget only draws it, no math of its own.
-class _TrophyProgressThread extends StatelessWidget {
-  const _TrophyProgressThread({required this.fraction});
+/// A thin gold progress line at the bottom of every trophy tile (this task's
+/// requirement — "нетолстую линию прогресса для каждого достижения... линия
+/// должна заполняться золотым цветом по мере прогресса"), replacing the
+/// earlier "thread" that only appeared on locked journey trophies. Now shown
+/// unconditionally on every tile in both grids — [fraction] is already `1.0`
+/// for an unlocked/completed one, so the line simply reads as fully filled
+/// rather than disappearing.
+///
+/// [fraction] is `progress_fraction.dart`'s pure `0..1` value — this widget
+/// only draws it, no math of its own. [showPercent] gates the small "N%"
+/// label above the filled end (this task's requirement — "процент пропадает
+/// когда достижение выполнено"): callers pass `false` once the achievement
+/// this fraction belongs to is complete (the journey trophy itself for
+/// [_AchievementTile], today's threshold for [_DailyAchievementTile]).
+class _AchievementProgressBar extends StatelessWidget {
+  const _AchievementProgressBar({
+    required this.fraction,
+    required this.showPercent,
+  });
 
   final double fraction;
+  final bool showPercent;
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.pill),
-      child: SizedBox(
-        height: 3,
-        child: Stack(
-          children: [
-            const ColoredBox(color: AppColors.cardBorder),
-            FractionallySizedBox(
-              widthFactor: fraction,
-              child: const ColoredBox(color: AppColors.gold),
+    const lineHeight = 3.0;
+    const labelHeight = 14.0;
+
+    return SizedBox(
+      height: showPercent
+          ? labelHeight + AppSpacing.xs + lineHeight
+          : lineHeight,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.pill),
+              child: SizedBox(
+                height: lineHeight,
+                child: Stack(
+                  children: [
+                    const ColoredBox(color: AppColors.cardBorder),
+                    FractionallySizedBox(
+                      widthFactor: fraction,
+                      child: const ColoredBox(color: AppColors.gold),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ],
-        ),
+          ),
+          // Positioned above the filled end of the line, not at a fixed
+          // spot — `Align`'s `-1..1` range naturally keeps the label inside
+          // the tile's width at both ends (0% and 100%) rather than letting
+          // it overflow past either edge.
+          if (showPercent)
+            Positioned.fill(
+              bottom: lineHeight,
+              child: Align(
+                alignment: Alignment(fraction * 2 - 1, 1),
+                child: Text(
+                  '${(fraction * 100).round()}%',
+                  style: AppTypography.bodySecondary.copyWith(
+                    color: AppColors.gold,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -297,12 +352,18 @@ class _TrophyProgressThread extends StatelessWidget {
 class _DailyGrid extends StatelessWidget {
   const _DailyGrid({
     required this.states,
+    required this.todayMeters,
     required this.l10n,
     required this.localeName,
     required this.theme,
   });
 
   final List<DailyAchievementState> states;
+
+  /// Today's total distance across every quest (this task's requirement —
+  /// a daily trophy's progress line shows "today's progress", not the
+  /// forever-cumulative unlock count [states] itself carries).
+  final int todayMeters;
   final AppLocalizations l10n;
   final String localeName;
   final AppThemeId theme;
@@ -322,6 +383,7 @@ class _DailyGrid extends StatelessWidget {
         final state = states[index];
         return _DailyAchievementTile(
           state: state,
+          todayMeters: todayMeters,
           l10n: l10n,
           theme: theme,
           onTap: () => _showAchievementDetailsSheet(
@@ -376,12 +438,17 @@ class _CountBadge extends StatelessWidget {
 class _DailyAchievementTile extends StatelessWidget {
   const _DailyAchievementTile({
     required this.state,
+    required this.todayMeters,
     required this.l10n,
     required this.onTap,
     required this.theme,
   });
 
   final DailyAchievementState state;
+
+  /// Today's total distance across every quest — see `_DailyGrid`'s own
+  /// doc comment on this same field.
+  final int todayMeters;
   final AppLocalizations l10n;
   final VoidCallback onTap;
   final AppThemeId theme;
@@ -391,6 +458,17 @@ class _DailyAchievementTile extends StatelessWidget {
     final unlocked = state.unlocked;
     final iconColor = unlocked ? AppColors.gold : AppColors.textSecondary;
     final streak = currentStreak(state.unlockedDates);
+    // Today's own fraction, not `unlocked` above (whether this trophy was
+    // *ever* earned on some past day) — this task's requirement is "прогресс
+    // за сегодняшний день", so the bar and its "N%" label answer "how close
+    // is today", and the label disappears once today itself clears the
+    // threshold, whether or not this trophy already has earlier unlock
+    // dates.
+    final todayFraction = progressFraction(
+      progressMeters: todayMeters,
+      totalMeters: state.def.thresholdMeters,
+    );
+    final unlockedToday = todayFraction >= 1.0;
 
     return GestureDetector(
       onTap: onTap,
@@ -419,6 +497,11 @@ class _DailyAchievementTile extends StatelessWidget {
                       : l10n.achievementNeverUnlockedLabel,
                   style: AppTypography.bodySecondary,
                   textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                _AchievementProgressBar(
+                  fraction: todayFraction,
+                  showPercent: !unlockedToday,
                 ),
               ],
             ),

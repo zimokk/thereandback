@@ -146,4 +146,58 @@ void main() {
 
     expect(await repository.loadUnlocks('owner-2'), isEmpty);
   });
+
+  group('todayTotalMeters (a daily trophy tile\'s live "today" progress)', () {
+    test('an owner with no history at all has 0 meters today', () async {
+      expect(await repository.todayTotalMeters('owner-1'), 0);
+    });
+
+    test('sums today\'s intervals across every quest, not just one', () async {
+      await recordInterval(
+        journeyId: 'odyssey-ithaca',
+        end: DateTime.now(),
+        meters: 400,
+      );
+      await recordInterval(
+        journeyId: 'some-other-quest',
+        end: DateTime.now(),
+        meters: 300,
+      );
+
+      expect(await repository.todayTotalMeters('owner-1'), 700);
+    });
+
+    test('ignores an interval from an earlier calendar day', () async {
+      await recordInterval(
+        journeyId: 'odyssey-ithaca',
+        end: DateTime.now().subtract(const Duration(days: 2)),
+        meters: 5000,
+      );
+      await recordInterval(
+        journeyId: 'odyssey-ithaca',
+        end: DateTime.now(),
+        meters: 250,
+      );
+
+      expect(await repository.todayTotalMeters('owner-1'), 250);
+    });
+
+    test('never sees another owner\'s steps', () async {
+      await db
+          .into(db.stepIntervalRecords)
+          .insert(
+            StepIntervalRecordsCompanion.insert(
+              ownerId: 'owner-2',
+              journeyId: 'odyssey-ithaca',
+              intervalStart: DateTime.now().subtract(const Duration(hours: 1)),
+              intervalEnd: DateTime.now(),
+              steps: 0,
+              resolvedMeters: 900,
+              syncedAt: DateTime.now(),
+            ),
+          );
+
+      expect(await repository.todayTotalMeters('owner-1'), 0);
+    });
+  });
 }

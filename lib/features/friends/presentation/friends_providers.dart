@@ -228,7 +228,18 @@ enum UpdateNicknameOutcome { success, nicknameTaken, notSignedIn }
 /// Google upgrade first if still anonymous), accepting, removing/declining,
 /// the per-friend hide toggle (§7), and renaming the signed-in user's own
 /// nickname.
-@riverpod
+///
+/// `keepAlive: true`, not the `@riverpod` default — every call site reaches
+/// this only via `ref.read(friendsControllerProvider.notifier)`, never
+/// `ref.watch`, so nothing ever keeps a listener on it. An autoDispose
+/// provider with zero listeners can be torn down while one of its own
+/// methods is still mid-`await` (bug found running this file's own test
+/// suite: `addFriendByNickname` crashed with "Cannot use the Ref... after
+/// it has been disposed" between its `resolveUidForNickname` and
+/// `sendRequest` awaits) — same reason `lock_screen_controller.dart`'s main
+/// controller is `keepAlive: true` rather than relying on a watcher that
+/// may not exist.
+@Riverpod(keepAlive: true)
 class FriendsController extends _$FriendsController {
   @override
   void build() {}
