@@ -29,20 +29,88 @@ const double _navBarHeight = 56;
 /// default 24, part of the same "more compact" styling fix.
 const double _navIconSize = 22;
 
-/// The bottom nav shell wrapping all five tab branches (§6). One nav item
+/// Height of the invisible edge-swipe strip anchored to the very bottom of
+/// the screen, on top of the device's safe-area inset. Kept thin so it
+/// doesn't compete with vertical scrolling/dragging inside tab content —
+/// only a touch that starts this close to the physical bottom edge can
+/// reveal the nav bar (2026-08-31, hide-by-default nav, see CLAUDE.md §14).
+const double _edgeSwipeZoneHeight = 20;
+
+/// Vertical drag distance (logical px) that fully opens or closes the nav
+/// bar — the drag is interactive up to this distance, then snaps to fully
+/// open/closed on release based on position and velocity.
+const double _dragExtent = 120;
+
+/// Fling velocity (logical px/s) past which a single swipe snaps the nav
+/// bar open/closed regardless of how far it was dragged.
+const double _flingVelocity = 600;
+
+/// The bottom nav overlay wrapping all five tab branches (§6). One nav item
 /// per `StatefulShellBranch` in `router.dart`.
 ///
-/// A hand-rolled row rather than `BottomNavigationBar` (styling fix): stock
+/// Hidden by default across the whole app (2026-08-31, direct request —
+/// see CLAUDE.md §14): tab content fills the full screen, and the nav bar
+/// is a temporary overlay revealed by swiping up from the bottom edge,
+/// dismissed by tapping the content behind it or swiping back down. A
+/// hand-rolled row rather than `BottomNavigationBar` (styling fix): stock
 /// Material gave no way to both shrink the bar *and* paint a capsule behind
 /// the active icon, and its label sizing had no fallback for a locale whose
 /// longest label ("Настройки") clipped at the default font size.
-class AppShell extends ConsumerWidget {
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends ConsumerState<AppShell>
+    with SingleTickerProviderStateMixin {
+  /// 0 = nav bar fully hidden (translated off-screen below), 1 = fully
+  /// shown. Driven interactively by the edge-swipe drag, then animated to
+  /// settle at either end.
+  late final AnimationController _navController;
+
+  @override
+  void initState() {
+    super.initState();
+    _navController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    );
+  }
+
+  @override
+  void dispose() {
+    _navController.dispose();
+    super.dispose();
+  }
+
+  void _openNav() => _navController.animateTo(1, curve: Curves.easeOutCubic);
+
+  void _closeNav() => _navController.animateTo(0, curve: Curves.easeInCubic);
+
+  void _handleDragUpdate(DragUpdateDetails details) {
+    _navController.value =
+        (_navController.value - details.delta.dy / _dragExtent).clamp(0.0, 1.0);
+  }
+
+  void _handleDragEnd(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    if (velocity <= -_flingVelocity) {
+      _openNav();
+    } else if (velocity >= _flingVelocity) {
+      _closeNav();
+    } else if (_navController.value > 0.5) {
+      _openNav();
+    } else {
+      _closeNav();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Eagerly keeps `LockScreenController` alive (and its build()-time
     // restore-then-refreshStatus running) for the whole app session,
     // starting the moment the app opens — not only once the user happens to
@@ -73,64 +141,115 @@ class AppShell extends ConsumerWidget {
       _NavItemData(icon: Icons.settings_outlined, label: l10n.navSettings),
     ];
 
-    return Scaffold(
-      body: navigationShell,
-      bottomNavigationBar: DecoratedBox(
-        decoration: const BoxDecoration(
-          color: AppColors.surface,
-          border: Border(top: BorderSide(color: AppColors.divider)),
-        ),
-        child: SafeArea(
-          top: false,
-          child: SizedBox(
-            height: _navBarHeight,
-            child: Row(
-              children: [
-                for (var index = 0; index < items.length; index++)
-                  Expanded(
-                    child: _NavItem(
-                      data: items[index],
-                      selected: navigationShell.currentIndex == index,
-                      onTap: () {
-                        // Blocks navigation into the locked tab entirely — a
-                        // tap is never a silent no-op (§7), it explains why
-                        // with a snackbar instead. `ChallengersTab` itself
-                        // also guards its own content the same way, in case
-                        // this tab is ever reached by another path (e.g. a
-                        // restored navigation stack) — this is the primary
-                        // gate the task asked for ("кнопка... должна
-                        // оставаться неактивной").
-                        if (index == _friendsTabIndex && !friendsUnlocked) {
-                          showAppSnackBar(context, l10n.friendsLockedBody);
-                          return;
-                        }
-                        // Closes an open achievement-marker popup before
-                        // leaving the Путь tab (styling fix regression) — it
-                        // lives on the root Navigator (see that popup's own
-                        // doc comment for why), so popping it here, rather
-                        // than relying on the tab switch itself, is the only
-                        // way it actually closes instead of staying stacked
-                        // over whichever tab the user switches to.
-                        if (navigationShell.currentIndex == _journeyTabIndex &&
-                            index != _journeyTabIndex) {
-                          final rootNavigator = Navigator.of(
-                            context,
-                            rootNavigator: true,
-                          );
-                          if (rootNavigator.canPop()) rootNavigator.pop();
-                        }
-                        navigationShell.goBranch(
-                          index,
-                          initialLocation:
-                              index == navigationShell.currentIndex,
-                        );
-                      },
-                    ),
+    void handleItemTap(int index) {
+      // Blocks navigation into the locked tab entirely — a tap is never a
+      // silent no-op (§7), it explains why with a snackbar instead.
+      // `ChallengersTab` itself also guards its own content the same way,
+      // in case this tab is ever reached by another path (e.g. a restored
+      // navigation stack) — this is the primary gate the task asked for
+      // ("кнопка... должна оставаться неактивной"). Left open on this path
+      // — nothing navigated, so there's nothing for the overlay to reveal.
+      if (index == _friendsTabIndex && !friendsUnlocked) {
+        showAppSnackBar(context, l10n.friendsLockedBody);
+        return;
+      }
+      // Closes an open achievement-marker popup before leaving the Путь
+      // tab (styling fix regression) — it lives on the root Navigator (see
+      // that popup's own doc comment for why), so popping it here, rather
+      // than relying on the tab switch itself, is the only way it actually
+      // closes instead of staying stacked over whichever tab the user
+      // switches to.
+      if (widget.navigationShell.currentIndex == _journeyTabIndex &&
+          index != _journeyTabIndex) {
+        final rootNavigator = Navigator.of(context, rootNavigator: true);
+        if (rootNavigator.canPop()) rootNavigator.pop();
+      }
+      widget.navigationShell.goBranch(
+        index,
+        initialLocation: index == widget.navigationShell.currentIndex,
+      );
+      // The nav bar is a temporary overlay (2026-08-31) — once it's done
+      // its job of picking a destination, get out of the way of the full
+      // screen again rather than lingering open.
+      _closeNav();
+    }
+
+    final navBar = DecoratedBox(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        border: Border(top: BorderSide(color: AppColors.divider)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: SizedBox(
+          height: _navBarHeight,
+          child: Row(
+            children: [
+              for (var index = 0; index < items.length; index++)
+                Expanded(
+                  child: _NavItem(
+                    data: items[index],
+                    selected: widget.navigationShell.currentIndex == index,
+                    onTap: () => handleItemTap(index),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         ),
+      ),
+    );
+
+    return Scaffold(
+      body: Stack(
+        children: [
+          Positioned.fill(child: widget.navigationShell),
+          // The edge-swipe strip that opens the nav bar. Anchored to the
+          // physical bottom edge (below the safe-area inset too, so it's
+          // reachable even on gesture-nav devices) and kept thin — see
+          // `_edgeSwipeZoneHeight`'s doc comment for why.
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            height:
+                _edgeSwipeZoneHeight + MediaQuery.of(context).padding.bottom,
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onVerticalDragUpdate: _handleDragUpdate,
+              onVerticalDragEnd: _handleDragEnd,
+            ),
+          ),
+          // The barrier that dismisses the nav bar: a tap anywhere on the
+          // content behind it, or a swipe down, closes it. Only
+          // hit-testable while the nav bar is at least partially open —
+          // otherwise it would swallow every tap into tab content.
+          AnimatedBuilder(
+            animation: _navController,
+            builder: (context, _) => IgnorePointer(
+              ignoring: _navController.value == 0,
+              child: GestureDetector(
+                behavior: HitTestBehavior.translucent,
+                onTap: _closeNav,
+                onVerticalDragUpdate: _handleDragUpdate,
+                onVerticalDragEnd: _handleDragEnd,
+                child: const SizedBox.expand(),
+              ),
+            ),
+          ),
+          AnimatedBuilder(
+            animation: _navController,
+            builder: (context, child) => Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: FractionalTranslation(
+                translation: Offset(0, 1 - _navController.value),
+                child: child,
+              ),
+            ),
+            child: navBar,
+          ),
+        ],
       ),
     );
   }
