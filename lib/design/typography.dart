@@ -73,6 +73,22 @@ abstract final class AppTypography {
     color: AppColors.textSecondary,
   );
 
+  /// A settings-style section header — small, uppercase, and a muted-gold
+  /// tone rather than plain body text, so a section title reads as
+  /// structure at a glance instead of blending into the paragraph under it
+  /// (styling fix: "заголовки разделов... сделайте более заметными").
+  /// Callers render the string through [String.toUpperCase] themselves —
+  /// this style only sets the letter-spacing an all-caps label needs, not
+  /// the transform, since the transform has to run on the localized string
+  /// (§11), not live in a shared constant.
+  static const TextStyle sectionLabel = TextStyle(
+    fontFamily: _sansFontFamilyPlaceholder,
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+    color: AppColors.goldMuted,
+    letterSpacing: 1.2,
+  );
+
   /// Narrative lines — serif italic (§9): this is atmosphere, not a UI
   /// label, so it stays exempt from the sans-serif switch above.
   static const TextStyle narrative = TextStyle(

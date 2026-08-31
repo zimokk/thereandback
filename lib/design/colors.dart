@@ -23,6 +23,14 @@ abstract final class AppColors {
   /// card color; only for the one element on a card that's currently active.
   static const Color surfaceActive = Color(0xFF232227);
 
+  /// A step lighter than [surface] — [surface]'s own pre-styling-fix tone,
+  /// kept here for screens built from many stacked, mostly-static cards
+  /// (Настройки) rather than one hero card: a touch more presence against
+  /// [background] without reintroducing "generic grey rectangle" app-wide,
+  /// since it's opt-in per screen, not the default (styling fix: "фон
+  /// карточек чуть светлее").
+  static const Color surfaceRaised = Color(0xFF1B1B1E);
+
   /// Thin hairline border for cards (styling fix: a flat color fill alone
   /// read as generic Material design) — a faint warm gold/bronze tint
   /// rather than solid [gold], so every card gets *some* edge definition

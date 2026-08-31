@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:thereandback/app/auth_provider.dart';
 import 'package:thereandback/app/database_provider.dart';
 import 'package:thereandback/app/theme.dart';
+import 'package:thereandback/core/app_theme_id.dart';
 import 'package:thereandback/data/drift/database.dart';
 import 'package:thereandback/data/firebase/auth_repository.dart';
 import 'package:thereandback/data/firebase/google_sign_in_service.dart';
@@ -19,6 +20,7 @@ import 'package:thereandback/features/journey/presentation/lock_screen_controlle
 import 'package:thereandback/features/journey/presentation/lock_screen_state.dart';
 import 'package:thereandback/features/profile/presentation/locale_provider.dart';
 import 'package:thereandback/features/profile/presentation/settings_tab.dart';
+import 'package:thereandback/features/profile/presentation/theme_provider.dart';
 import 'package:thereandback/features/steps/data/android_background_sync.dart';
 import 'package:thereandback/features/steps/data/step_counting_service.dart'
     show StepCountingService, RuntimePermissionResult;
@@ -743,6 +745,67 @@ void main() {
       // title use the same copy by design — both match now.
       expect(find.text('Не видно на экране блокировки?'), findsNWidgets(2));
       expect(find.text('Закрыть'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'section headers render uppercase, so they stand apart from the body '
+    'copy under them (styling fix)',
+    (tester) async {
+      await tester.pumpWidget(_wrap(const SettingsTab()));
+      await tester.pump();
+
+      expect(find.text('ЯЗЫК'), findsOneWidget);
+      expect(find.text('Язык'), findsNothing);
+      expect(find.text('ТЕМА'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the Odyssey theme option names itself as the active quest, so it '
+    "reads as distinct from the default 'Тема похода' option instead of a "
+    'confusing duplicate',
+    (tester) async {
+      await tester.pumpWidget(_wrap(const SettingsTab()));
+      await tester.pump();
+
+      expect(find.text('Одиссея (активный поход)'), findsOneWidget);
+    },
+  );
+
+  testWidgets('tapping a theme option pins that theme override', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_wrap(const SettingsTab()));
+    await tester.pump();
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(SettingsTab)),
+    );
+    expect(container.read(appThemeOverrideProvider), isNull);
+
+    await tester.tap(find.text('Классическая'));
+    await tester.pump();
+
+    expect(container.read(appThemeOverrideProvider), AppThemeId.classic);
+  });
+
+  testWidgets(
+    "the lock-screen toggle's subtitle uses short, journey-progress "
+    'language, not a raw step count (§5.4)',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(const SettingsTab(), lockScreenSupported: true),
+      );
+      await tester.pump();
+
+      expect(
+        find.text(
+          'Показывать прогресс похода в шторке уведомлений и на экране '
+          'блокировки.',
+        ),
+        findsOneWidget,
+      );
     },
   );
 }

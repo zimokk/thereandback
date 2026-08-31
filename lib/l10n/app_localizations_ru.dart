@@ -340,7 +340,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsThemeClassic => 'Классическая';
 
   @override
-  String get settingsThemeOdyssey => 'Одиссея';
+  String get settingsThemeOdyssey => 'Одиссея (активный поход)';
 
   @override
   String get settingsLockScreenSectionTitle => 'Экран блокировки';
@@ -351,7 +351,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsLockScreenToggleSubtitle =>
-      'Тихое постоянное уведомление с прогрессом похода — видно в шторке уведомлений и на экране блокировки.';
+      'Показывать прогресс похода в шторке уведомлений и на экране блокировки.';
 
   @override
   String get lockScreenPermissionExplainTitle => 'Прогресс всегда на виду';

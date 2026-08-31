@@ -336,7 +336,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsThemeClassic => 'Classic';
 
   @override
-  String get settingsThemeOdyssey => 'Odyssey';
+  String get settingsThemeOdyssey => 'Odyssey (active quest)';
 
   @override
   String get settingsLockScreenSectionTitle => 'Lock screen';
@@ -347,7 +347,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsLockScreenToggleSubtitle =>
-      'A quiet, ongoing notification with your quest progress — visible in the notification shade and on the lock screen.';
+      'Show your quest progress in the notification shade and on the lock screen.';
 
   @override
   String get lockScreenPermissionExplainTitle => 'Keep your progress visible';
