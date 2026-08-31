@@ -19,6 +19,25 @@ import 'package:thereandback/features/journey/presentation/journey_providers.dar
 import 'package:thereandback/features/profile/presentation/theme_provider.dart';
 import 'package:thereandback/l10n/app_localizations.dart';
 
+/// Pumps in small steps until [finder] finds something, or gives up after
+/// [maxSteps] — for a SnackBar shown after a chain of awaited Futures
+/// (`FriendsController` methods, plus Riverpod's own notification
+/// scheduling), where a single `pump()` isn't always enough rounds to
+/// drain every hop, and `pumpAndSettle()` would pump straight through the
+/// SnackBar's own multi-second auto-dismiss timer and find it already
+/// gone. 50ms × 20 steps = 1s of simulated time, comfortably under that
+/// default duration either way.
+Future<void> _pumpUntilFound(
+  WidgetTester tester,
+  Finder finder, {
+  int maxSteps = 20,
+}) async {
+  for (var i = 0; i < maxSteps; i++) {
+    if (finder.evaluate().isNotEmpty) return;
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+}
+
 class _MockFriendshipRepository extends Mock implements FriendshipRepository {}
 
 class _MockUserProfileRepository extends Mock
@@ -317,9 +336,8 @@ void main() {
       // synchronously from the call itself, or it would escape
       // `_runFriendAction`'s `.catchError` entirely and this test would
       // pass for the wrong reason.
-      when(
-        () => friendshipRepository.acceptRequest(pairIdFor('me', 'bob')),
-      ).thenAnswer((_) async => throw Exception('permission-denied'));
+      when(() => friendshipRepository.acceptRequest(pairIdFor('me', 'bob')))
+          .thenAnswer((_) async => throw Exception('permission-denied'));
 
       await tester.pumpWidget(
         _wrap(
@@ -331,16 +349,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      final message = find.text("Couldn't complete that — please try again.");
       await tester.tap(find.text('Accept'));
-      // A single pump, not pumpAndSettle: the SnackBar's own auto-dismiss
-      // timer means settling would pump straight through its whole visible
-      // duration and find it already gone by the time this returns.
-      await tester.pump();
+      // Not a single pump, and not pumpAndSettle(): see _pumpUntilFound's
+      // own doc comment.
+      await _pumpUntilFound(tester, message);
 
-      expect(
-        find.text("Couldn't complete that — please try again."),
-        findsOneWidget,
-      );
+      expect(message, findsOneWidget);
     },
   );
 
@@ -355,9 +370,8 @@ void main() {
           .thenAnswer((_) => Stream.value(const []));
       when(() => userProfileRepository.resolveUidForNickname('Bob'))
           .thenAnswer((_) async => 'bob');
-      when(
-        () => friendshipRepository.sendRequest(fromUid: 'me', toUid: 'bob'),
-      ).thenAnswer((_) async => throw Exception('permission-denied'));
+      when(() => friendshipRepository.sendRequest(fromUid: 'me', toUid: 'bob'))
+          .thenAnswer((_) async => throw Exception('permission-denied'));
 
       await tester.pumpWidget(
         _wrap(
@@ -373,12 +387,29 @@ void main() {
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField), 'Bob');
       await tester.tap(find.text('Send request'));
-      await tester.pump();
+      // This path has two awaited hops (resolveUidForNickname, then
+      // sendRequest) plus Riverpod's own notification scheduling, so it
+      // needs more than a fixed pump count — settle rather than guess.
+      // pumpAndSettle() is safe here specifically because this test
+      // doesn't check the SnackBar's own text (see below), so pumping past
+      // its auto-dismiss timer doesn't matter.
+      await tester.pumpAndSettle();
 
-      expect(
-        find.text("Couldn't complete that — please try again."),
-        findsOneWidget,
-      );
+      // Not asserting on the SnackBar text here, unlike the sibling
+      // "incoming request" test above — `showAppSnackBar`'s `_debouncer`
+      // is process-wide, real-wall-clock state (`app_snackbar.dart`'s own
+      // doc comment), and this test fires the *exact* same generic
+      // `friendsOutcomeError` string that test just showed, well inside
+      // the debouncer's window. A real second SnackBar not appearing here
+      // is the debouncer working as designed (already covered by
+      // `app_snackbar_test.dart`), not a regression — what this test
+      // actually guards is that the exception from `sendRequest` doesn't
+      // leak as an uncaught error and that the write really was attempted,
+      // both asserted below.
+      expect(tester.takeException(), isNull);
+      verify(
+        () => friendshipRepository.sendRequest(fromUid: 'me', toUid: 'bob'),
+      ).called(1);
     },
   );
 

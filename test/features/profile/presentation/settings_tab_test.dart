@@ -757,6 +757,18 @@ void main() {
 
       expect(find.text('ЯЗЫК'), findsOneWidget);
       expect(find.text('Язык'), findsNothing);
+      // The Theme section is the last one on the screen — with the extra
+      // padding/spacing this task's styling fix added, it now sits past
+      // the test surface's default viewport + cache extent, so `ListView`
+      // (a Sliver underneath, lazy about which children it mounts
+      // regardless of `children:` vs `.builder`) never builds it without
+      // an explicit scroll — same reason `achievements_tab_test.dart`
+      // scrolls to its own last tile.
+      await tester.dragUntilVisible(
+        find.text('ТЕМА'),
+        find.byType(ListView),
+        const Offset(0, -300),
+      );
       expect(find.text('ТЕМА'), findsOneWidget);
     },
   );
@@ -769,6 +781,11 @@ void main() {
       await tester.pumpWidget(_wrap(const SettingsTab()));
       await tester.pump();
 
+      await tester.dragUntilVisible(
+        find.text('Одиссея (активный поход)'),
+        find.byType(ListView),
+        const Offset(0, -300),
+      );
       expect(find.text('Одиссея (активный поход)'), findsOneWidget);
     },
   );
@@ -784,28 +801,30 @@ void main() {
     );
     expect(container.read(appThemeOverrideProvider), isNull);
 
+    await tester.dragUntilVisible(
+      find.text('Классическая'),
+      find.byType(ListView),
+      const Offset(0, -300),
+    );
     await tester.tap(find.text('Классическая'));
     await tester.pump();
 
     expect(container.read(appThemeOverrideProvider), AppThemeId.classic);
   });
 
-  testWidgets(
-    "the lock-screen toggle's subtitle uses short, journey-progress "
-    'language, not a raw step count (§5.4)',
-    (tester) async {
-      await tester.pumpWidget(
-        _wrap(const SettingsTab(), lockScreenSupported: true),
-      );
-      await tester.pump();
+  testWidgets("the lock-screen toggle's subtitle uses short, journey-progress "
+      'language, not a raw step count (§5.4)', (tester) async {
+    await tester.pumpWidget(
+      _wrap(const SettingsTab(), lockScreenSupported: true),
+    );
+    await tester.pump();
 
-      expect(
-        find.text(
-          'Показывать прогресс похода в шторке уведомлений и на экране '
-          'блокировки.',
-        ),
-        findsOneWidget,
-      );
-    },
-  );
+    expect(
+      find.text(
+        'Показывать прогресс похода в шторке уведомлений и на экране '
+        'блокировки.',
+      ),
+      findsOneWidget,
+    );
+  });
 }
