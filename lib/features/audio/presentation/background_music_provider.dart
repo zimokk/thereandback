@@ -43,9 +43,14 @@ BackgroundMusicPlayer backgroundMusicPlayer(Ref ref) {
 class BackgroundMusicController extends _$BackgroundMusicController {
   @override
   bool build() {
+    // Resolved once here, not inside the `onDispose` callback below —
+    // riverpod asserts against calling `ref.read`/`ref.watch` from inside a
+    // lifecycle callback (`Ref._throwIfInvalidUsage`), so the player has to
+    // be captured in this synchronous scope and closed over instead.
+    final player = ref.read(backgroundMusicPlayerProvider);
     ref.listen<AppLifecycleState>(appLifecycleProvider, _onLifecycleChanged);
     ref.onDispose(() {
-      unawaited(ref.read(backgroundMusicPlayerProvider).stop());
+      unawaited(player.stop());
     });
     return false;
   }

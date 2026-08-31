@@ -469,7 +469,9 @@ class _LegendToggleButton extends StatelessWidget {
             width: _legendToggleButtonSize,
             height: _legendToggleButtonSize,
             child: Icon(
-              visible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+              visible
+                  ? Icons.visibility_off_outlined
+                  : Icons.visibility_outlined,
               color: AppColors.gold,
               size: _legendToggleIconSize,
             ),
@@ -710,7 +712,8 @@ class _RouteOverlayPainter extends CustomPainter {
     final topLeft =
         at - Offset(painter.width / 2, _friendNicknameOffsetY + painter.height);
     final backgroundRect =
-        (topLeft - const Offset(_friendNicknamePadding, _friendNicknamePadding)) &
+        (topLeft -
+            const Offset(_friendNicknamePadding, _friendNicknamePadding)) &
         Size(
           painter.width + _friendNicknamePadding * 2,
           painter.height + _friendNicknamePadding * 2,

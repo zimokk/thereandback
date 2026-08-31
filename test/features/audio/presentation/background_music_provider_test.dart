@@ -62,9 +62,7 @@ void main() {
   });
 
   test('setEnabled(false) stops playback and flips state off', () async {
-    final notifier = container.read(
-      backgroundMusicControllerProvider.notifier,
-    );
+    final notifier = container.read(backgroundMusicControllerProvider.notifier);
     await notifier.setEnabled(true);
 
     await notifier.setEnabled(false);
@@ -82,23 +80,20 @@ void main() {
     verifyNever(() => player.stop());
   });
 
-  test(
-    'a start() failure leaves state off and propagates to the caller — the '
-    'toggle must never read "on" while nothing is actually playing (§7: '
-    'never a silent dead end)',
-    () async {
-      when(() => player.start()).thenThrow(Exception('asset missing'));
+  test('a start() failure leaves state off and propagates to the caller — the '
+      'toggle must never read "on" while nothing is actually playing (§7: '
+      'never a silent dead end)', () async {
+    when(() => player.start()).thenThrow(Exception('asset missing'));
 
-      await expectLater(
-        container
-            .read(backgroundMusicControllerProvider.notifier)
-            .setEnabled(true),
-        throwsException,
-      );
+    await expectLater(
+      container
+          .read(backgroundMusicControllerProvider.notifier)
+          .setEnabled(true),
+      throwsException,
+    );
 
-      expect(container.read(backgroundMusicControllerProvider), isFalse);
-    },
-  );
+    expect(container.read(backgroundMusicControllerProvider), isFalse);
+  });
 
   test(
     'backgrounding the app pauses playback while the feature is on',

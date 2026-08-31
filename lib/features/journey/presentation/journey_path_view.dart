@@ -615,7 +615,11 @@ class _FriendMarker extends StatelessWidget {
       left: x - _travelerIconSize / 2,
       top: y - _travelerIconSize / 2,
       child: IgnorePointer(
-        child: Icon(Icons.directions_walk, color: color, size: _travelerIconSize),
+        child: Icon(
+          Icons.directions_walk,
+          color: color,
+          size: _travelerIconSize,
+        ),
       ),
     );
   }

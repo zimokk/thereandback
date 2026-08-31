@@ -375,8 +375,7 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get settingsFriendsOnMapToggleSubtitle =>
-      'Показывает друзей на вкладках «Путь» и «Карта»: цветной человечек с '
-      'ником и цветной шлем.';
+      'Показывает друзей на вкладках «Путь» и «Карта»: цветной человечек с ником и цветной шлем.';
 
   @override
   String get questMapLegendShowLabel => 'Показать легенду карты';

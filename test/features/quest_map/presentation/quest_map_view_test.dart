@@ -62,7 +62,12 @@ const _mapJson = '''
 Widget _wrap(
   Widget child, {
   required AssetBundle bundle,
-  List<Override> extraOverrides = const [],
+  // No explicit `List<Override>` here — `Override` (riverpod's own type for
+  // a `ProviderScope.overrides` entry) isn't actually exported by the
+  // package under that name, only used structurally; every override list
+  // in this repo is built as an inline list literal for the same reason
+  // (see `_friendOverrides` below).
+  extraOverrides = const [],
 }) {
   return ProviderScope(
     overrides: [
@@ -126,7 +131,12 @@ class _MockProgressSyncRepository extends Mock
 /// already self-contained by this repo's own convention (e.g.
 /// `settings_tab_test.dart`/`lock_screen_controller_test.dart` both define
 /// their own `_MockChannel`).
-List<Override> _friendOverrides({required int friendProgressMeters}) {
+///
+/// No explicit return type — see `journey_path_view_test.dart`'s own
+/// `_friendOverrides` doc comment for why (`Override` isn't a nameable
+/// riverpod type).
+// ignore: strict_top_level_inference
+_friendOverrides({required int friendProgressMeters}) {
   final friendshipRepository = _MockFriendshipRepository();
   final userProfileRepository = _MockUserProfileRepository();
   final progressSyncRepository = _MockProgressSyncRepository();
@@ -139,17 +149,24 @@ List<Override> _friendOverrides({required int friendProgressMeters}) {
     createdAt: DateTime.utc(2026, 1, 1),
     updatedAt: DateTime.utc(2026, 1, 1),
   );
-  when(
-    () => friendshipRepository.watchMyFriendships('me'),
-  ).thenAnswer((_) => Stream.value([friendship]));
+  when(() => friendshipRepository.watchMyFriendships('me'))
+      .thenAnswer((_) => Stream.value([friendship]));
   when(() => userProfileRepository.watchProfile('me')).thenAnswer(
     (_) => Stream.value(
-      const FriendProfile(uid: 'me', nickname: 'Odysseus', avatarPresetIndex: 0),
+      const FriendProfile(
+        uid: 'me',
+        nickname: 'Odysseus',
+        avatarPresetIndex: 0,
+      ),
     ),
   );
   when(() => userProfileRepository.watchProfile('friend-1')).thenAnswer(
     (_) => Stream.value(
-      const FriendProfile(uid: 'friend-1', nickname: 'Circe', avatarPresetIndex: 1),
+      const FriendProfile(
+        uid: 'friend-1',
+        nickname: 'Circe',
+        avatarPresetIndex: 1,
+      ),
     ),
   );
   when(
@@ -327,6 +344,10 @@ void main() {
   });
 
   group('tapping a landmark', () {
+    // Landmarks are only tappable while the map's legend is on (this task's
+    // requirement — hidden, non-interactive icons by default); every test
+    // in this group turns it on first, then exercises the tap behavior the
+    // same way it always did.
     testWidgets('ahead of the traveler shows how far it still is', (
       tester,
     ) async {
@@ -340,6 +361,8 @@ void main() {
         ),
       );
       await _startQuest(tester);
+      await tester.tap(find.byKey(const Key('questMapLegendToggle')));
+      await tester.pump();
 
       await tester.tapAt(_pointOn(tester, 0.5, 0.6)); // Calypso — 1 425 000 m.
       await tester.pump();
@@ -360,6 +383,8 @@ void main() {
         ),
       );
       await _startQuest(tester);
+      await tester.tap(find.byKey(const Key('questMapLegendToggle')));
+      await tester.pump();
 
       await tester.tapAt(_pointOn(tester, 0.9, 0.4)); // Troy — 0 m.
       await tester.pump();
@@ -381,6 +406,8 @@ void main() {
         ),
       );
       await _startQuest(tester);
+      await tester.tap(find.byKey(const Key('questMapLegendToggle')));
+      await tester.pump();
 
       await tester.tapAt(_pointOn(tester, 0.9, 0.4)); // Troy.
       await tester.pump();
@@ -403,6 +430,8 @@ void main() {
         ),
       );
       await _startQuest(tester);
+      await tester.tap(find.byKey(const Key('questMapLegendToggle')));
+      await tester.pump();
 
       await tester.tapAt(_pointOn(tester, 0.9, 0.4)); // Troy.
       await tester.pump();
@@ -487,42 +516,43 @@ void main() {
         await tester.tapAt(_pointOn(tester, 0.5, 0.6)); // Calypso.
         await tester.pump();
 
-        expect(find.byKey(const Key('questMapLandmarkTooltip')), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'tapping the toggle a second time hides the legend again — a '
-      'landmark tap stops opening a tooltip',
-      (tester) async {
-        _growViewportForTapping(tester);
-        await tester.pumpWidget(
-          _wrap(
-            QuestMapView(progressMeters: 425000, startedAt: DateTime.now()),
-            bundle: _FakeBundle({
-              'assets/journeys/odyssey-ithaca/map.json': _mapJson,
-            }),
-          ),
+        expect(
+          find.byKey(const Key('questMapLandmarkTooltip')),
+          findsOneWidget,
         );
-        await _startQuest(tester);
-
-        final toggle = find.byKey(const Key('questMapLegendToggle'));
-        await tester.tap(toggle);
-        await tester.pump();
-        await tester.tap(toggle);
-        await tester.pump();
-
-        await tester.tapAt(_pointOn(tester, 0.5, 0.6)); // Calypso.
-        await tester.pump();
-
-        expect(find.byKey(const Key('questMapLandmarkTooltip')), findsNothing);
       },
     );
+
+    testWidgets('tapping the toggle a second time hides the legend again — a '
+        'landmark tap stops opening a tooltip', (tester) async {
+      _growViewportForTapping(tester);
+      await tester.pumpWidget(
+        _wrap(
+          QuestMapView(progressMeters: 425000, startedAt: DateTime.now()),
+          bundle: _FakeBundle({
+            'assets/journeys/odyssey-ithaca/map.json': _mapJson,
+          }),
+        ),
+      );
+      await _startQuest(tester);
+
+      final toggle = find.byKey(const Key('questMapLegendToggle'));
+      await tester.tap(toggle);
+      await tester.pump();
+      await tester.tap(toggle);
+      await tester.pump();
+
+      await tester.tapAt(_pointOn(tester, 0.5, 0.6)); // Calypso.
+      await tester.pump();
+
+      expect(find.byKey(const Key('questMapLandmarkTooltip')), findsNothing);
+    });
 
     testWidgets(
       "the toggle's own semantics label names the action a tap will take, "
       'swapping between the two states',
       (tester) async {
+        _growViewportForTapping(tester);
         final semantics = tester.ensureSemantics();
         await tester.pumpWidget(
           _wrap(
@@ -581,9 +611,21 @@ void main() {
         );
         await _startQuest(tester);
 
-        ProviderScope.containerOf(tester.element(find.byType(QuestMapView)))
-            .read(showFriendsOnMapProvider.notifier)
-            .setEnabled(true);
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(QuestMapView)),
+        );
+        // `friends_providers_test.dart`'s own note, both halves: a
+        // persistent listener so autoDispose can't tear either Stream
+        // provider down mid-flight, plus awaiting each one's own `.future`
+        // so `friendsView`'s synchronous `.value` read (still `null`/
+        // loading at first subscription) sees real data by the time
+        // `friendsViewProvider` is watched for the first time below (via
+        // the toggle), instead of racing it.
+        container.listen(friendshipsProvider, (_, _) {});
+        container.listen(myProfileProvider, (_, _) {});
+        await container.read(friendshipsProvider.future);
+        await container.read(myProfileProvider.future);
+        container.read(showFriendsOnMapProvider.notifier).setEnabled(true);
         await tester.pumpAndSettle();
 
         expect(find.byKey(const Key('questMapRouteOverlay')), findsOneWidget);
@@ -592,7 +634,10 @@ void main() {
         // friend's helmet is stealing the traveler's own hit-test area.
         await tester.tapAt(_pointOn(tester, 0.9, 0.4)); // Troy — 0 m.
         await tester.pump();
-        expect(find.byKey(const Key('questMapTravelerTooltip')), findsOneWidget);
+        expect(
+          find.byKey(const Key('questMapTravelerTooltip')),
+          findsOneWidget,
+        );
       },
     );
   });

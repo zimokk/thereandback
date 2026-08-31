@@ -51,7 +51,8 @@ class _MockProgressSyncRepository extends Mock
 /// every test, the same "always override, whether or not the test cares"
 /// stance it already takes for `androidLockScreenChannelProvider` and
 /// `stepCountingServiceProvider`.
-class _MockBackgroundMusicPlayer extends Mock implements BackgroundMusicPlayer {}
+class _MockBackgroundMusicPlayer extends Mock
+    implements BackgroundMusicPlayer {}
 
 /// An [AuthController] that starts from a fixed state and skips the real
 /// `build()`'s Firebase bootstrap — same trick `auth_provider_test.dart`'s
@@ -823,6 +824,11 @@ void main() {
       find.byType(ListView),
       const Offset(0, -300),
     );
+    // One more section (§6.5's "Друзья на карте") now sits above Theme
+    // than when this test was written, so `dragUntilVisible`'s own found
+    // element can land right at the viewport edge — settle once more
+    // before tapping, so the offset `tap()` derives is fully on-screen.
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Классическая'));
     await tester.pump();
 
@@ -894,9 +900,9 @@ void main() {
       final container = ProviderScope.containerOf(
         tester.element(find.byType(SettingsTab)),
       );
-      final musicPlayer =
-          container.read(backgroundMusicPlayerProvider)
-              as _MockBackgroundMusicPlayer;
+      final musicPlayer = container.read(
+        backgroundMusicPlayerProvider,
+      ) as _MockBackgroundMusicPlayer;
 
       await tester.tap(musicToggle);
       await tester.pumpAndSettle();
@@ -933,9 +939,9 @@ void main() {
       final container = ProviderScope.containerOf(
         tester.element(find.byType(SettingsTab)),
       );
-      final musicPlayer =
-          container.read(backgroundMusicPlayerProvider)
-              as _MockBackgroundMusicPlayer;
+      final musicPlayer = container.read(
+        backgroundMusicPlayerProvider,
+      ) as _MockBackgroundMusicPlayer;
       when(() => musicPlayer.start()).thenThrow(Exception('asset missing'));
 
       await tester.tap(musicToggle);

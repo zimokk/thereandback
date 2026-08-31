@@ -360,7 +360,8 @@ class AppLocalizationsEn extends AppLocalizations {
       'Plays one ambient track while you\'re in the app. Off by default.';
 
   @override
-  String get settingsMusicErrorMessage => 'Couldn\'t start the music. Try again.';
+  String get settingsMusicErrorMessage =>
+      'Couldn\'t start the music. Try again.';
 
   @override
   String get settingsFriendsOnMapSectionTitle => 'Friends on the map';

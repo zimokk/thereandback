@@ -59,7 +59,13 @@ class _MockProgressSyncRepository extends Mock
 /// `friends_providers_test.dart` already proves works, copied here rather
 /// than guessing at a shortcut override for the generated `Future`
 /// provider itself.
-List<Override> _friendOverrides({
+///
+/// No explicit return type: it's really `List<Override>`, but riverpod
+/// doesn't export `Override` under that name for callers to spell — every
+/// override list in this repo is built as an inline list literal for the
+/// same reason.
+// ignore: strict_top_level_inference
+_friendOverrides({
   required _MockFriendshipRepository friendshipRepository,
   required _MockUserProfileRepository userProfileRepository,
   required _MockProgressSyncRepository progressSyncRepository,
@@ -73,17 +79,24 @@ List<Override> _friendOverrides({
     createdAt: DateTime.utc(2026, 1, 1),
     updatedAt: DateTime.utc(2026, 1, 1),
   );
-  when(
-    () => friendshipRepository.watchMyFriendships('me'),
-  ).thenAnswer((_) => Stream.value([friendship]));
+  when(() => friendshipRepository.watchMyFriendships('me'))
+      .thenAnswer((_) => Stream.value([friendship]));
   when(() => userProfileRepository.watchProfile('me')).thenAnswer(
     (_) => Stream.value(
-      const FriendProfile(uid: 'me', nickname: 'Odysseus', avatarPresetIndex: 0),
+      const FriendProfile(
+        uid: 'me',
+        nickname: 'Odysseus',
+        avatarPresetIndex: 0,
+      ),
     ),
   );
   when(() => userProfileRepository.watchProfile('friend-1')).thenAnswer(
     (_) => Stream.value(
-      const FriendProfile(uid: 'friend-1', nickname: 'Circe', avatarPresetIndex: 1),
+      const FriendProfile(
+        uid: 'friend-1',
+        nickname: 'Circe',
+        avatarPresetIndex: 1,
+      ),
     ),
   );
   when(
@@ -849,6 +862,19 @@ void main() {
         container
             .read(selectedJourneyProvider.notifier)
             .start('odyssey-ithaca', now: DateTime.now());
+        // `friends_providers_test.dart`'s own note, both halves: a
+        // persistent listener, so autoDispose can't tear either Stream
+        // provider down while its first event is still in flight
+        // (`Stream.value(...)` is single-subscription, not broadcast) —
+        // AND awaiting each one's own `.future` first, so `friendsView`'s
+        // synchronous `.value` read (still `null`/loading at first
+        // subscription) sees real data by the time `friendsViewProvider`
+        // is watched for the first time below (via the toggle), instead of
+        // racing it.
+        container.listen(friendshipsProvider, (_, _) {});
+        container.listen(myProfileProvider, (_, _) {});
+        await container.read(friendshipsProvider.future);
+        await container.read(myProfileProvider.future);
         container.read(showFriendsOnMapProvider.notifier).setEnabled(true);
         await tester.pumpAndSettle();
 
@@ -907,6 +933,12 @@ void main() {
           progressMeters: 500000,
           syncedAt: DateTime.now(),
         );
+        // See the previous test's comment — persistent listener plus
+        // awaiting `.future`, both halves of the same race guard.
+        container.listen(friendshipsProvider, (_, _) {});
+        container.listen(myProfileProvider, (_, _) {});
+        await container.read(friendshipsProvider.future);
+        await container.read(myProfileProvider.future);
         container.read(showFriendsOnMapProvider.notifier).setEnabled(true);
         await tester.pumpAndSettle();
 

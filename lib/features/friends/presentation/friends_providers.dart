@@ -337,7 +337,20 @@ class FriendsController extends _$FriendsController {
 /// In-memory only, like `AppThemeOverride`/`AppLocale` — resets to off on
 /// the next cold start, the same accepted gap every other un-persisted
 /// Настройки toggle has today.
-@riverpod
+///
+/// `keepAlive: true` — found the hard way (a widget test caught it, real
+/// bug, not just a test artifact): plain `@riverpod`'s default autoDispose
+/// tears this element down the instant its listener count reads zero, and
+/// [setEnabled] is called via `ref.read(...).notifier` from a widget event
+/// handler — a *read*, not a *watch* — so it doesn't itself count as a
+/// listener. The window between that call finishing and the watching
+/// widget's *next* build re-establishing its own `ref.watch` subscription
+/// was long enough for the disposal check to fire, discard the just-set
+/// `true`, and hand the next build a freshly rebuilt provider back at its
+/// `false` default — the toggle would flip on then silently flip itself
+/// back off. Same shape `LockScreenController`/`FriendsController`/
+/// `BackgroundMusicController` already avoid this way, for the same reason.
+@Riverpod(keepAlive: true)
 class ShowFriendsOnMap extends _$ShowFriendsOnMap {
   @override
   bool build() => false;

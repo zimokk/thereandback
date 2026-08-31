@@ -68,12 +68,15 @@ void main() {
     verifyNever(() => audioPlayer.stop());
   });
 
-  test('stop() releases playback, and start() can begin fresh after it', () async {
-    await player.start();
-    await player.stop();
-    verify(() => audioPlayer.stop()).called(1);
+  test(
+    'stop() releases playback, and start() can begin fresh after it',
+    () async {
+      await player.start();
+      await player.stop();
+      verify(() => audioPlayer.stop()).called(1);
 
-    await player.start();
-    verify(() => audioPlayer.play(any())).called(2);
-  });
+      await player.start();
+      verify(() => audioPlayer.play(any())).called(2);
+    },
+  );
 }

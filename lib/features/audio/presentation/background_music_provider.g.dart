@@ -68,7 +68,7 @@ final class BackgroundMusicPlayerProvider
 }
 
 String _$backgroundMusicPlayerHash() =>
-    r'7f0d3b6a1c9e4b28f5a0d6c3e8b1f47a2d9c5e60';
+    r'882399b04d01320a46f6e0ef39dc50a7c392a6bd';
 
 /// Whether the app's one background track (§6.5) is on. **Off by
 /// default** — this task's own requirement — turning it on in Настройки
@@ -92,8 +92,7 @@ String _$backgroundMusicPlayerHash() =>
 /// this task asked for.
 
 @ProviderFor(BackgroundMusicController)
-final backgroundMusicControllerProvider =
-    BackgroundMusicControllerProvider._();
+final backgroundMusicControllerProvider = BackgroundMusicControllerProvider._();
 
 /// Whether the app's one background track (§6.5) is on. **Off by
 /// default** — this task's own requirement — turning it on in Настройки
@@ -165,7 +164,28 @@ final class BackgroundMusicControllerProvider
 }
 
 String _$backgroundMusicControllerHash() =>
-    r'3a8e1f5c0b7d4e29a6f3c8b5d0e7f4a1c9b6e3d0';
+    r'18663941843a154806dccff79a649a701dced160';
+
+/// Whether the app's one background track (§6.5) is on. **Off by
+/// default** — this task's own requirement — turning it on in Настройки
+/// starts the track immediately (Настройки is only reachable while the app
+/// is in the foreground, so there's no lifecycle gate to check first).
+///
+/// While on, this also follows [appLifecycleProvider]: the track pauses the
+/// instant the app leaves the foreground and resumes the instant it
+/// returns — "играть будет... когда пользователь находится в приложении"
+/// is a standing lifecycle rule, not just an on/off switch checked once at
+/// toggle time. `keepAlive: true` so that rule keeps applying for the whole
+/// app session, not only while the Настройки tab happens to be mounted —
+/// see `app_shell.dart`'s eager `ref.watch`, same reasoning as
+/// `LockScreenController`.
+///
+/// In-memory only, like `AppThemeOverride`/`AppLocale` (`theme_provider
+/// .dart`, `locale_provider.dart`) — resets to off on the next cold start
+/// rather than persisting. Matches every other Настройки toggle that isn't
+/// already backed by drift; promoting it to a persisted preference (the
+/// `LockScreenPreferenceRepository` shape) is a follow-up, not something
+/// this task asked for.
 
 abstract class _$BackgroundMusicController extends $Notifier<bool> {
   bool build();
