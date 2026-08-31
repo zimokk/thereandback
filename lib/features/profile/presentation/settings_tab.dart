@@ -11,6 +11,7 @@ import '../../../design/components/selectable_option_tile.dart';
 import '../../../design/spacing.dart';
 import '../../../design/typography.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../audio/presentation/background_music_provider.dart';
 import '../../friends/presentation/friends_providers.dart';
 import '../../journey/presentation/lock_screen_controller.dart';
 import '../../journey/presentation/lock_screen_state.dart';
@@ -158,6 +159,8 @@ class SettingsTab extends ConsumerWidget {
             ),
             const SizedBox(height: AppSpacing.lg),
             const _ThemeSection(),
+            const SizedBox(height: AppSpacing.lg),
+            const _BackgroundMusicSection(),
           ],
         ),
       ),
@@ -533,6 +536,65 @@ void _showLockScreenTroubleshootSheet(
       ),
     ),
   );
+}
+
+/// The §6.5 background-music toggle — the app's one track, off by default
+/// (this task's own requirement). No permission dance to explain here
+/// (unlike `_LockScreenSection` above): local asset playback needs no OS
+/// permission on either platform, so the switch is a plain on/off with a
+/// snackbar on the one failure mode that can still happen — the bundled
+/// track failing to load (§7: never a silent dead end).
+class _BackgroundMusicSection extends ConsumerWidget {
+  const _BackgroundMusicSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enabled = ref.watch(backgroundMusicControllerProvider);
+    final l10n = AppLocalizations.of(context)!;
+
+    return _SectionCard(
+      title: l10n.settingsMusicSectionTitle,
+      child: SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        // Same explicit on/off colors as `_LockScreenSection`'s switch —
+        // see that one's comment for why the Material default isn't enough.
+        activeThumbColor: AppColors.gold,
+        activeTrackColor: AppColors.goldMuted,
+        inactiveThumbColor: AppColors.textSecondary,
+        inactiveTrackColor: AppColors.surfaceActive,
+        title: Text(l10n.settingsMusicToggleTitle, style: AppTypography.body),
+        subtitle: Text(
+          l10n.settingsMusicToggleSubtitle,
+          style: AppTypography.bodySecondary,
+        ),
+        value: enabled,
+        onChanged: (value) => _toggleMusic(context, ref, l10n, value),
+      ),
+    );
+  }
+}
+
+/// [BackgroundMusicController.setEnabled] throws when starting playback
+/// fails (e.g. the bundled asset missing) — caught here rather than in the
+/// controller so the failure reaches the user as a message instead of an
+/// unhandled `Future` rejection (§7), mirroring `_signInWithGoogle` above
+/// in this same file.
+Future<void> _toggleMusic(
+  BuildContext context,
+  WidgetRef ref,
+  AppLocalizations l10n,
+  bool value,
+) async {
+  try {
+    await ref
+        .read(backgroundMusicControllerProvider.notifier)
+        .setEnabled(value);
+  } catch (error) {
+    debugPrint('Background music toggle failed: $error');
+    if (context.mounted) {
+      showAppSnackBar(context, l10n.settingsMusicErrorMessage);
+    }
+  }
 }
 
 /// The theme picker (§6.5, §14 — "добавь темы... по умолчанию тема

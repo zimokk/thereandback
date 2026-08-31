@@ -674,6 +674,30 @@ abstract class AppLocalizations {
   /// **'Show your quest progress in the notification shade and on the lock screen.'**
   String get settingsLockScreenToggleSubtitle;
 
+  /// Settings section heading for the background-music toggle (§6.5)
+  ///
+  /// In en, this message translates to:
+  /// **'Background music'**
+  String get settingsMusicSectionTitle;
+
+  /// Label of the off-by-default toggle that turns the app's background track on
+  ///
+  /// In en, this message translates to:
+  /// **'Play background music'**
+  String get settingsMusicToggleTitle;
+
+  /// Subtitle explaining what the toggle does and that it's off unless turned on, shown under it
+  ///
+  /// In en, this message translates to:
+  /// **'Plays one ambient track while you\'re in the app. Off by default.'**
+  String get settingsMusicToggleSubtitle;
+
+  /// Shown when BackgroundMusicController.setEnabled() throws — e.g. the bundled track failed to load (§7: never a silent dead end)
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t start the music. Try again.'**
+  String get settingsMusicErrorMessage;
+
   /// Title of the explanation shown before requesting the notification + background-sync permissions (§7)
   ///
   /// In en, this message translates to:

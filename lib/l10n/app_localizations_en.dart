@@ -350,6 +350,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show your quest progress in the notification shade and on the lock screen.';
 
   @override
+  String get settingsMusicSectionTitle => 'Background music';
+
+  @override
+  String get settingsMusicToggleTitle => 'Play background music';
+
+  @override
+  String get settingsMusicToggleSubtitle =>
+      'Plays one ambient track while you\'re in the app. Off by default.';
+
+  @override
+  String get settingsMusicErrorMessage => 'Couldn\'t start the music. Try again.';
+
+  @override
   String get lockScreenPermissionExplainTitle => 'Keep your progress visible';
 
   @override
