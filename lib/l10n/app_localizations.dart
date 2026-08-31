@@ -650,10 +650,10 @@ abstract class AppLocalizations {
   /// **'Classic'**
   String get settingsThemeClassic;
 
-  /// Theme option label for AppThemeId.odyssey
+  /// Theme option label for AppThemeId.odyssey — names it as the active quest (this app ships one quest today, §14) so it reads as distinct from "Quest theme" (settingsThemeFollowQuest) rather than a confusing duplicate
   ///
   /// In en, this message translates to:
-  /// **'Odyssey'**
+  /// **'Odyssey (active quest)'**
   String get settingsThemeOdyssey;
 
   /// Settings section heading for the persistent lock-screen/notification-shade progress toggle (§7)
@@ -668,10 +668,10 @@ abstract class AppLocalizations {
   /// **'Show progress on the lock screen'**
   String get settingsLockScreenToggleTitle;
 
-  /// Subtitle explaining what the toggle does, shown under it
+  /// Subtitle explaining what the toggle does, shown under it — kept short and in journey-progress language (§5.4: never a raw step count as the hero copy), not the earlier more technical wording
   ///
   /// In en, this message translates to:
-  /// **'A quiet, ongoing notification with your quest progress — visible in the notification shade and on the lock screen.'**
+  /// **'Show your quest progress in the notification shade and on the lock screen.'**
   String get settingsLockScreenToggleSubtitle;
 
   /// Title of the explanation shown before requesting the notification + background-sync permissions (§7)

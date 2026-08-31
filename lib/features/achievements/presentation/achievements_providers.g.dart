@@ -187,4 +187,4 @@ final class TodayAllQuestsMetersProvider
 }
 
 String _$todayAllQuestsMetersHash() =>
-    r'8f1e5c3b6a0d4e2f9c7b1a5d3e8f0c6b4a2d9e7f';
+    r'e8d0279b099852e2729095f1dd4313b4763aa2a5';

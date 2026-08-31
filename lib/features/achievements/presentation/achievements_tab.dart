@@ -298,7 +298,9 @@ class _AchievementProgressBar extends StatelessWidget {
     const labelHeight = 14.0;
 
     return SizedBox(
-      height: showPercent ? labelHeight + AppSpacing.xs + lineHeight : lineHeight,
+      height: showPercent
+          ? labelHeight + AppSpacing.xs + lineHeight
+          : lineHeight,
       child: Stack(
         clipBehavior: Clip.none,
         children: [

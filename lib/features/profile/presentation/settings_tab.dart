@@ -664,10 +664,7 @@ class _SectionCard extends StatelessWidget {
               // Small, uppercase, muted gold — styling fix: a section title
               // now reads as structure at a glance, not just another line
               // of body copy above the content.
-              Text(
-                title.toUpperCase(),
-                style: AppTypography.sectionLabel,
-              ),
+              Text(title.toUpperCase(), style: AppTypography.sectionLabel),
               const SizedBox(height: AppSpacing.sm),
               child,
             ],
