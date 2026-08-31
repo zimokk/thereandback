@@ -244,6 +244,18 @@
   "settingsMusicErrorMessage": "Couldn't start the music. Try again.",
   "@settingsMusicErrorMessage": {"description": "Shown when BackgroundMusicController.setEnabled() throws — e.g. the bundled track failed to load (§7: never a silent dead end)"},
 
+  "settingsFriendsOnMapSectionTitle": "Friends on the map",
+  "@settingsFriendsOnMapSectionTitle": {"description": "Settings section heading for the show-friends-on-map toggle (§6.5)"},
+  "settingsFriendsOnMapToggleTitle": "Show friends on the map",
+  "@settingsFriendsOnMapToggleTitle": {"description": "Label of the off-by-default toggle that renders accepted friends on the Путь and Карта tabs"},
+  "settingsFriendsOnMapToggleSubtitle": "Shows friends on the Путь and Карта tabs: a colored figure with their name, and a colored helmet.",
+  "@settingsFriendsOnMapToggleSubtitle": {"description": "Subtitle explaining what the toggle does, shown under it"},
+
+  "questMapLegendShowLabel": "Show map legend",
+  "@questMapLegendShowLabel": {"description": "Semantics/tooltip label for the legend toggle button when the legend is currently hidden — tapping it reveals landmark icons and friend nicknames"},
+  "questMapLegendHideLabel": "Hide map legend",
+  "@questMapLegendHideLabel": {"description": "Semantics/tooltip label for the legend toggle button when the legend is currently shown — tapping it hides landmark icons and friend nicknames, leaving only the helmets"},
+
   "lockScreenPermissionExplainTitle": "Keep your progress visible",
   "@lockScreenPermissionExplainTitle": {"description": "Title of the explanation shown before requesting the notification + background-sync permissions (§7)"},
   "lockScreenPermissionExplainBody": "To show your progress on the lock screen, There and Back needs permission to post a notification and to read your steps in the background, roughly every 15 minutes. Only your quest progress is shown there — never raw health data.",

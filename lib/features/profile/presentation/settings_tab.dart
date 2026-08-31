@@ -158,6 +158,8 @@ class SettingsTab extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
+            const _FriendsOnMapSection(),
+            const SizedBox(height: AppSpacing.lg),
             const _ThemeSection(),
             const SizedBox(height: AppSpacing.lg),
             const _BackgroundMusicSection(),
@@ -594,6 +596,43 @@ Future<void> _toggleMusic(
     if (context.mounted) {
       showAppSnackBar(context, l10n.settingsMusicErrorMessage);
     }
+  }
+}
+
+/// The §6.5 "friends on the map" toggle (user request) — off by default,
+/// same convention as `_BackgroundMusicSection` above. No permission dance:
+/// this only renders progress a friendship already shares (§7), it doesn't
+/// request or expose anything new — the toggle is a plain on/off.
+class _FriendsOnMapSection extends ConsumerWidget {
+  const _FriendsOnMapSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final enabled = ref.watch(showFriendsOnMapProvider);
+    final l10n = AppLocalizations.of(context)!;
+
+    return _SectionCard(
+      title: l10n.settingsFriendsOnMapSectionTitle,
+      child: SwitchListTile(
+        contentPadding: EdgeInsets.zero,
+        // Same explicit on/off colors as the other toggles above.
+        activeThumbColor: AppColors.gold,
+        activeTrackColor: AppColors.goldMuted,
+        inactiveThumbColor: AppColors.textSecondary,
+        inactiveTrackColor: AppColors.surfaceActive,
+        title: Text(
+          l10n.settingsFriendsOnMapToggleTitle,
+          style: AppTypography.body,
+        ),
+        subtitle: Text(
+          l10n.settingsFriendsOnMapToggleSubtitle,
+          style: AppTypography.bodySecondary,
+        ),
+        value: enabled,
+        onChanged: (value) =>
+            ref.read(showFriendsOnMapProvider.notifier).setEnabled(value),
+      ),
+    );
   }
 }
 

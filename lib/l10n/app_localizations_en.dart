@@ -363,6 +363,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMusicErrorMessage => 'Couldn\'t start the music. Try again.';
 
   @override
+  String get settingsFriendsOnMapSectionTitle => 'Friends on the map';
+
+  @override
+  String get settingsFriendsOnMapToggleTitle => 'Show friends on the map';
+
+  @override
+  String get settingsFriendsOnMapToggleSubtitle =>
+      'Shows friends on the Путь and Карта tabs: a colored figure with their name, and a colored helmet.';
+
+  @override
+  String get questMapLegendShowLabel => 'Show map legend';
+
+  @override
+  String get questMapLegendHideLabel => 'Hide map legend';
+
+  @override
   String get lockScreenPermissionExplainTitle => 'Keep your progress visible';
 
   @override

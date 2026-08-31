@@ -698,6 +698,36 @@ abstract class AppLocalizations {
   /// **'Couldn\'t start the music. Try again.'**
   String get settingsMusicErrorMessage;
 
+  /// Settings section heading for the show-friends-on-map toggle (§6.5)
+  ///
+  /// In en, this message translates to:
+  /// **'Friends on the map'**
+  String get settingsFriendsOnMapSectionTitle;
+
+  /// Label of the off-by-default toggle that renders accepted friends on the Путь and Карта tabs
+  ///
+  /// In en, this message translates to:
+  /// **'Show friends on the map'**
+  String get settingsFriendsOnMapToggleTitle;
+
+  /// Subtitle explaining what the toggle does, shown under it
+  ///
+  /// In en, this message translates to:
+  /// **'Shows friends on the Путь and Карта tabs: a colored figure with their name, and a colored helmet.'**
+  String get settingsFriendsOnMapToggleSubtitle;
+
+  /// Semantics/tooltip label for the legend toggle button when the legend is currently hidden — tapping it reveals landmark icons and friend nicknames
+  ///
+  /// In en, this message translates to:
+  /// **'Show map legend'**
+  String get questMapLegendShowLabel;
+
+  /// Semantics/tooltip label for the legend toggle button when the legend is currently shown — tapping it hides landmark icons and friend nicknames, leaving only the helmets
+  ///
+  /// In en, this message translates to:
+  /// **'Hide map legend'**
+  String get questMapLegendHideLabel;
+
   /// Title of the explanation shown before requesting the notification + background-sync permissions (§7)
   ///
   /// In en, this message translates to:

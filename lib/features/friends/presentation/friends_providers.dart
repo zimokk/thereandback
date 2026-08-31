@@ -320,3 +320,27 @@ class FriendsController extends _$FriendsController {
     return UpdateNicknameOutcome.success;
   }
 }
+
+/// Settings-page preference (§6.5, user request): whether accepted friends'
+/// positions render on the Путь and Карта tabs — a colored figure with
+/// their nickname on Путь (`journey_path_view.dart`'s `_FriendMarker`/
+/// `_FriendNicknameLabel`), a colored helmet on Карта
+/// (`quest_map_view.dart`'s `_RouteOverlayPainter`; the nickname *there* is
+/// a separate map-local legend toggle, not this preference — see that
+/// file's `_legendVisible`). Off by default — nothing about rendering a
+/// friend's already-shared progress needs a permission (§7), but every
+/// display preference added since the lock-screen toggle (background
+/// music, the theme override) starts off, and this follows the same
+/// convention rather than surprising the user with friends suddenly
+/// appearing on a screen they haven't asked for.
+///
+/// In-memory only, like `AppThemeOverride`/`AppLocale` — resets to off on
+/// the next cold start, the same accepted gap every other un-persisted
+/// Настройки toggle has today.
+@riverpod
+class ShowFriendsOnMap extends _$ShowFriendsOnMap {
+  @override
+  bool build() => false;
+
+  void setEnabled(bool value) => state = value;
+}

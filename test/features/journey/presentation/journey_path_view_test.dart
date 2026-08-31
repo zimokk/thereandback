@@ -1,14 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:thereandback/app/auth_provider.dart';
 import 'package:thereandback/app/database_provider.dart';
 import 'package:thereandback/app/theme.dart';
 import 'package:thereandback/core/formatters.dart';
 import 'package:thereandback/data/drift/database.dart';
+import 'package:thereandback/data/firestore/firestore_providers.dart';
+import 'package:thereandback/data/firestore/friendship_repository.dart';
+import 'package:thereandback/data/firestore/progress_sync_repository.dart';
+import 'package:thereandback/data/firestore/user_profile_repository.dart';
 import 'package:thereandback/design/colors.dart';
 import 'package:thereandback/design/components/distance_text.dart';
 import 'package:thereandback/features/achievements/data/achievement_catalog.dart';
 import 'package:thereandback/features/achievements/presentation/achievement_titles.dart';
+import 'package:thereandback/features/friends/domain/friend_profile.dart';
+import 'package:thereandback/features/friends/domain/friend_progress.dart';
+import 'package:thereandback/features/friends/domain/friendship.dart';
+import 'package:thereandback/features/friends/presentation/friend_pin_color.dart';
+import 'package:thereandback/features/friends/presentation/friends_providers.dart';
 import 'package:thereandback/features/journey/domain/route_scale.dart';
 import 'package:thereandback/features/journey/presentation/journey_path_view.dart';
 import 'package:thereandback/features/journey/presentation/journey_providers.dart';
@@ -33,6 +44,62 @@ Widget _app(Widget child) {
 final _travelerSolid = find.byKey(const Key('travelerSolid'));
 final _travelerGhost = find.byKey(const Key('travelerGhost'));
 final _returnToYouButton = find.byKey(const Key('returnToYouButton'));
+
+class _MockFriendshipRepository extends Mock implements FriendshipRepository {}
+
+class _MockUserProfileRepository extends Mock
+    implements UserProfileRepository {}
+
+class _MockProgressSyncRepository extends Mock
+    implements ProgressSyncRepository {}
+
+/// Wires up one accepted friend ("friend-1", nickname "Circe") at
+/// [friendProgressMeters] meters into `friendsViewProvider`'s real
+/// dependency chain — same repositories-and-stubs shape
+/// `friends_providers_test.dart` already proves works, copied here rather
+/// than guessing at a shortcut override for the generated `Future`
+/// provider itself.
+List<Override> _friendOverrides({
+  required _MockFriendshipRepository friendshipRepository,
+  required _MockUserProfileRepository userProfileRepository,
+  required _MockProgressSyncRepository progressSyncRepository,
+  required int friendProgressMeters,
+}) {
+  final friendship = Friendship(
+    pairId: pairIdFor('me', 'friend-1'),
+    uids: ['me', 'friend-1']..sort(),
+    status: FriendshipStatus.accepted,
+    initiatorUid: 'me',
+    createdAt: DateTime.utc(2026, 1, 1),
+    updatedAt: DateTime.utc(2026, 1, 1),
+  );
+  when(
+    () => friendshipRepository.watchMyFriendships('me'),
+  ).thenAnswer((_) => Stream.value([friendship]));
+  when(() => userProfileRepository.watchProfile('me')).thenAnswer(
+    (_) => Stream.value(
+      const FriendProfile(uid: 'me', nickname: 'Odysseus', avatarPresetIndex: 0),
+    ),
+  );
+  when(() => userProfileRepository.watchProfile('friend-1')).thenAnswer(
+    (_) => Stream.value(
+      const FriendProfile(uid: 'friend-1', nickname: 'Circe', avatarPresetIndex: 1),
+    ),
+  );
+  when(
+    () => progressSyncRepository.watchFriendProgress(
+      'friend-1',
+      'odyssey-ithaca',
+    ),
+  ).thenAnswer((_) => Stream.value(friendProgressMeters));
+
+  return [
+    currentUidProvider.overrideWithValue('me'),
+    friendshipRepositoryProvider.overrideWithValue(friendshipRepository),
+    userProfileRepositoryProvider.overrideWithValue(userProfileRepository),
+    progressSyncRepositoryProvider.overrideWithValue(progressSyncRepository),
+  ];
+}
 
 void main() {
   testWidgets(
@@ -710,6 +777,144 @@ void main() {
         // all is evidence a guide was painted, without needing to pin down
         // every dash segment's exact endpoints.
         expect(find.byKey(const Key('journeyPathScene')), paints..line());
+      },
+    );
+  });
+
+  group('friend markers (§6.5, user request)', () {
+    late _MockFriendshipRepository friendshipRepository;
+    late _MockUserProfileRepository userProfileRepository;
+    late _MockProgressSyncRepository progressSyncRepository;
+
+    setUp(() {
+      friendshipRepository = _MockFriendshipRepository();
+      userProfileRepository = _MockUserProfileRepository();
+      progressSyncRepository = _MockProgressSyncRepository();
+    });
+
+    testWidgets(
+      'off by default — an accepted friend does not render even though '
+      'friendsView has data, until the Настройки toggle is on',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+              ..._friendOverrides(
+                friendshipRepository: friendshipRepository,
+                userProfileRepository: userProfileRepository,
+                progressSyncRepository: progressSyncRepository,
+                friendProgressMeters: 300000,
+              ),
+            ],
+            child: _app(const JourneyPathView()),
+          ),
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(JourneyPathView)),
+        );
+        container
+            .read(selectedJourneyProvider.notifier)
+            .start('odyssey-ithaca', now: DateTime.now());
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('friendMarker-friend-1')), findsNothing);
+        expect(find.text('Circe'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'turning the toggle on renders the friend as a figure with their '
+      'nickname above it, in their stable pin color',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+              ..._friendOverrides(
+                friendshipRepository: friendshipRepository,
+                userProfileRepository: userProfileRepository,
+                progressSyncRepository: progressSyncRepository,
+                friendProgressMeters: 300000,
+              ),
+            ],
+            child: _app(const JourneyPathView()),
+          ),
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(JourneyPathView)),
+        );
+        container
+            .read(selectedJourneyProvider.notifier)
+            .start('odyssey-ithaca', now: DateTime.now());
+        container.read(showFriendsOnMapProvider.notifier).setEnabled(true);
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('friendMarker-friend-1')), findsOneWidget);
+        expect(find.byKey(const Key('friendLabel-friend-1')), findsOneWidget);
+        expect(find.text('Circe'), findsOneWidget);
+
+        final icon = tester.widget<Icon>(
+          find.descendant(
+            of: find.byKey(const Key('friendMarker-friend-1')),
+            matching: find.byType(Icon),
+          ),
+        );
+        const friendRow = FriendProgressRow(
+          uid: 'friend-1',
+          nickname: 'Circe',
+          progressMeters: 300000,
+          isSelf: false,
+        );
+        expect(icon.color, friendMarkerColor(friendRow));
+        // Distinct from the traveler's own gold — this task's requirement
+        // ("человечками другого цвета").
+        expect(icon.color, isNot(AppColors.gold));
+      },
+    );
+
+    testWidgets(
+      "the friend's own progress places them on the wavy path independently "
+      "of the caller's `_panMeters` — a rewind moves where they land on "
+      'screen, never their real position (same rule the solid traveler '
+      'follows)',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+              ..._friendOverrides(
+                friendshipRepository: friendshipRepository,
+                userProfileRepository: userProfileRepository,
+                progressSyncRepository: progressSyncRepository,
+                friendProgressMeters: 500000,
+              ),
+            ],
+            child: _app(const JourneyPathView()),
+          ),
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(JourneyPathView)),
+        );
+        final notifier = container.read(selectedJourneyProvider.notifier);
+        notifier.start('odyssey-ithaca', now: DateTime.now());
+        // Same progress as the friend — if both marker types read the same
+        // route position math, the two land at the same screen x.
+        notifier.applySyncedProgress(
+          progressMeters: 500000,
+          syncedAt: DateTime.now(),
+        );
+        container.read(showFriendsOnMapProvider.notifier).setEnabled(true);
+        await tester.pumpAndSettle();
+
+        final friendX = tester
+            .getCenter(find.byKey(const Key('friendMarker-friend-1')))
+            .dx;
+        final travelerX = tester.getCenter(_travelerSolid).dx;
+        expect(friendX, moreOrLessEquals(travelerX, epsilon: 1));
       },
     );
   });

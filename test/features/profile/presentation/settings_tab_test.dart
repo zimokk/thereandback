@@ -17,6 +17,7 @@ import 'package:thereandback/data/firestore/user_profile_repository.dart';
 import 'package:thereandback/features/audio/data/background_music_player.dart';
 import 'package:thereandback/features/audio/presentation/background_music_provider.dart';
 import 'package:thereandback/features/friends/domain/friend_profile.dart';
+import 'package:thereandback/features/friends/presentation/friends_providers.dart';
 import 'package:thereandback/features/journey/data/android_lock_screen_channel.dart';
 import 'package:thereandback/features/journey/presentation/lock_screen_controller.dart';
 import 'package:thereandback/features/journey/presentation/lock_screen_state.dart';
@@ -947,4 +948,62 @@ void main() {
       );
     },
   );
+
+  testWidgets(
+    'the friends-on-map toggle renders off by default — this task\'s own '
+    'requirement',
+    (tester) async {
+      await tester.pumpWidget(_wrap(const SettingsTab()));
+      await tester.pump();
+
+      await tester.dragUntilVisible(
+        find.text('Показывать друзей на карте'),
+        find.byType(ListView),
+        const Offset(0, -300),
+      );
+
+      final tile = tester.widget<SwitchListTile>(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is SwitchListTile &&
+              widget.title is Text &&
+              (widget.title! as Text).data == 'Показывать друзей на карте',
+        ),
+      );
+      expect(tile.value, isFalse);
+    },
+  );
+
+  testWidgets('tapping the friends-on-map toggle flips showFriendsOnMap '
+      'Provider on, tapping again flips it back off', (tester) async {
+    await tester.pumpWidget(_wrap(const SettingsTab()));
+    await tester.pump();
+
+    final friendsToggle = find.byWidgetPredicate(
+      (widget) =>
+          widget is SwitchListTile &&
+          widget.title is Text &&
+          (widget.title! as Text).data == 'Показывать друзей на карте',
+    );
+    await tester.dragUntilVisible(
+      friendsToggle,
+      find.byType(ListView),
+      const Offset(0, -300),
+    );
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(SettingsTab)),
+    );
+    expect(container.read(showFriendsOnMapProvider), isFalse);
+
+    await tester.tap(friendsToggle);
+    await tester.pump();
+
+    expect(container.read(showFriendsOnMapProvider), isTrue);
+    expect(tester.widget<SwitchListTile>(friendsToggle).value, isTrue);
+
+    await tester.tap(friendsToggle);
+    await tester.pump();
+
+    expect(container.read(showFriendsOnMapProvider), isFalse);
+  });
 }

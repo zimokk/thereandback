@@ -441,3 +441,105 @@ abstract class _$FriendsController extends $Notifier<void> {
     return element.handleCreate(ref, build);
   }
 }
+
+/// Settings-page preference (§6.5, user request): whether accepted friends'
+/// positions render on the Путь and Карта tabs — a colored figure with
+/// their nickname on Путь (`journey_path_view.dart`'s `_FriendMarker`/
+/// `_FriendNicknameLabel`), a colored helmet on Карта
+/// (`quest_map_view.dart`'s `_RouteOverlayPainter`; the nickname *there* is
+/// a separate map-local legend toggle, not this preference — see that
+/// file's `_legendVisible`). Off by default — nothing about rendering a
+/// friend's already-shared progress needs a permission (§7), but every
+/// display preference added since the lock-screen toggle (background
+/// music, the theme override) starts off, and this follows the same
+/// convention rather than surprising the user with friends suddenly
+/// appearing on a screen they haven't asked for.
+///
+/// In-memory only, like `AppThemeOverride`/`AppLocale` — resets to off on
+/// the next cold start, the same accepted gap every other un-persisted
+/// Настройки toggle has today.
+
+@ProviderFor(ShowFriendsOnMap)
+final showFriendsOnMapProvider = ShowFriendsOnMapProvider._();
+
+/// Settings-page preference (§6.5, user request): whether accepted friends'
+/// positions render on the Путь and Карта tabs — a colored figure with
+/// their nickname on Путь (`journey_path_view.dart`'s `_FriendMarker`/
+/// `_FriendNicknameLabel`), a colored helmet on Карта
+/// (`quest_map_view.dart`'s `_RouteOverlayPainter`; the nickname *there* is
+/// a separate map-local legend toggle, not this preference — see that
+/// file's `_legendVisible`). Off by default — nothing about rendering a
+/// friend's already-shared progress needs a permission (§7), but every
+/// display preference added since the lock-screen toggle (background
+/// music, the theme override) starts off, and this follows the same
+/// convention rather than surprising the user with friends suddenly
+/// appearing on a screen they haven't asked for.
+///
+/// In-memory only, like `AppThemeOverride`/`AppLocale` — resets to off on
+/// the next cold start, the same accepted gap every other un-persisted
+/// Настройки toggle has today.
+final class ShowFriendsOnMapProvider
+    extends $NotifierProvider<ShowFriendsOnMap, bool> {
+  /// Settings-page preference (§6.5, user request): whether accepted friends'
+  /// positions render on the Путь and Карта tabs — a colored figure with
+  /// their nickname on Путь (`journey_path_view.dart`'s `_FriendMarker`/
+  /// `_FriendNicknameLabel`), a colored helmet on Карта
+  /// (`quest_map_view.dart`'s `_RouteOverlayPainter`; the nickname *there* is
+  /// a separate map-local legend toggle, not this preference — see that
+  /// file's `_legendVisible`). Off by default — nothing about rendering a
+  /// friend's already-shared progress needs a permission (§7), but every
+  /// display preference added since the lock-screen toggle (background
+  /// music, the theme override) starts off, and this follows the same
+  /// convention rather than surprising the user with friends suddenly
+  /// appearing on a screen they haven't asked for.
+  ///
+  /// In-memory only, like `AppThemeOverride`/`AppLocale` — resets to off on
+  /// the next cold start, the same accepted gap every other un-persisted
+  /// Настройки toggle has today.
+  ShowFriendsOnMapProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'showFriendsOnMapProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$showFriendsOnMapHash();
+
+  @$internal
+  @override
+  ShowFriendsOnMap create() => ShowFriendsOnMap();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$showFriendsOnMapHash() =>
+    r'9c2e4a7f1b6d8e35a0c7f4b19e6d3a8c5f2b7e94';
+
+abstract class _$ShowFriendsOnMap extends $Notifier<bool> {
+  bool build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<bool, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}

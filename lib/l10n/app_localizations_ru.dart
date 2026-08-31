@@ -368,6 +368,23 @@ class AppLocalizationsRu extends AppLocalizations {
       'Не удалось включить музыку. Попробуйте ещё раз.';
 
   @override
+  String get settingsFriendsOnMapSectionTitle => 'Друзья на карте';
+
+  @override
+  String get settingsFriendsOnMapToggleTitle => 'Показывать друзей на карте';
+
+  @override
+  String get settingsFriendsOnMapToggleSubtitle =>
+      'Показывает друзей на вкладках «Путь» и «Карта»: цветной человечек с '
+      'ником и цветной шлем.';
+
+  @override
+  String get questMapLegendShowLabel => 'Показать легенду карты';
+
+  @override
+  String get questMapLegendHideLabel => 'Скрыть легенду карты';
+
+  @override
   String get lockScreenPermissionExplainTitle => 'Прогресс всегда на виду';
 
   @override
