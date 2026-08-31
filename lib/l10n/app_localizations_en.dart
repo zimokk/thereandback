@@ -69,6 +69,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journeyReturnToYouButton => 'You';
 
   @override
+  String get journeyBackToCatalogButton => 'Choose a quest';
+
+  @override
   String get stepsPermissionExplainTitle => 'Let your steps move you';
 
   @override
@@ -123,9 +126,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get questStatsEtaLabel => 'Estimated Arrival';
-
-  @override
-  String get questMapSectionTitle => 'Route map';
 
   @override
   String get questMapYouAreHere => 'Your position on the route';
@@ -240,6 +240,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get achievementUnlockDatesSheetTitle => 'Dates reached';
+
+  @override
+  String achievementLongestStreakLabel(int days) {
+    return 'Longest streak: $days days';
+  }
 
   @override
   String get settingsTitle => 'Settings';

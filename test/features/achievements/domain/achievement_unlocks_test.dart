@@ -153,4 +153,63 @@ void main() {
       );
     });
   });
+
+  group(
+    'currentStreak / longestStreak (this task\'s requirement — "стрик")',
+    () {
+      test('never unlocked is a streak of 0, both current and longest', () {
+        expect(currentStreak(const []), 0);
+        expect(longestStreak(const []), 0);
+      });
+
+      test('a single unlocked day is a streak of 1', () {
+        expect(currentStreak([DateTime(2026, 3, 10)]), 1);
+        expect(longestStreak([DateTime(2026, 3, 10)]), 1);
+      });
+
+      test('three unlocked days in a row is a current and longest streak of '
+          '3', () {
+        final dates = [
+          DateTime(2026, 3, 10),
+          DateTime(2026, 3, 11),
+          DateTime(2026, 3, 12),
+        ];
+        expect(currentStreak(dates), 3);
+        expect(longestStreak(dates), 3);
+      });
+
+      test('a gap breaks the streak — currentStreak only counts the run ending '
+          'at the most recent date, longestStreak still finds the earlier, '
+          'longer run', () {
+        final dates = [
+          DateTime(2026, 3, 1),
+          DateTime(2026, 3, 2),
+          DateTime(2026, 3, 3),
+          // Gap — 3/4 and 3/5 never unlocked.
+          DateTime(2026, 3, 6),
+        ];
+        expect(currentStreak(dates), 1);
+        expect(longestStreak(dates), 3);
+      });
+
+      test('unsorted input is handled the same as sorted input', () {
+        final dates = [
+          DateTime(2026, 3, 12),
+          DateTime(2026, 3, 10),
+          DateTime(2026, 3, 11),
+        ];
+        expect(currentStreak(dates), 3);
+        expect(longestStreak(dates), 3);
+      });
+
+      test(
+        'a date with a time-of-day component still compares by calendar day, '
+        'not by exact instant',
+        () {
+          final dates = [DateTime(2026, 3, 10, 23), DateTime(2026, 3, 11, 1)];
+          expect(currentStreak(dates), 2);
+        },
+      );
+    },
+  );
 }

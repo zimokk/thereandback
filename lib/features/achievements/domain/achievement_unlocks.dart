@@ -68,3 +68,57 @@ Map<String, List<DateTime>> computeDailyAchievementUnlockDates({
   }
   return unlocks;
 }
+
+/// Length of every run of consecutive calendar days in [unlockedDates] —
+/// e.g. three unlock dates in a row, then a gap, then one more, is `[3, 1]`.
+/// Shared by [currentStreak] (the last run) and [longestStreak] (the
+/// longest run) so there is exactly one place deciding what "consecutive"
+/// means (this task's requirement — "стрик"/"самый долгий стрик").
+///
+/// [unlockedDates] need not be sorted or pre-normalized — this is the one
+/// place both happen, so [currentStreak]/[longestStreak] can hand it
+/// whatever `DailyAchievementState.unlockedDates` already is.
+List<int> _streakRuns(List<DateTime> unlockedDates) {
+  if (unlockedDates.isEmpty) return const [];
+  final sorted = [for (final date in unlockedDates) calendarDate(date)]..sort();
+
+  final runs = <int>[1];
+  for (var i = 1; i < sorted.length; i++) {
+    final gap = sorted[i].difference(sorted[i - 1]).inDays;
+    // A repeated date shouldn't happen (`computeDailyAchievementUnlockDates`
+    // builds this list from a map's keys, which are already distinct days)
+    // but is handled defensively as "still the same day", not a new one —
+    // only a real gap (`gap > 1`) starts a new run.
+    if (gap == 0) continue;
+    if (gap == 1) {
+      runs[runs.length - 1]++;
+    } else {
+      runs.add(1);
+    }
+  }
+  return runs;
+}
+
+/// How many calendar days in a row [unlockedDates] were unlocked on, ending
+/// at the most recent one (this task's requirement — "сколько дней подряд
+/// достижение открыто"). `0` for a never-unlocked achievement, `1` for one
+/// earned on a single day with no earlier day immediately before it.
+///
+/// Doesn't take "today" into account — an unlock three weeks ago that was
+/// itself the tail of a 5-day run still reads as a streak of 5, not 0, the
+/// same way the rest of this file derives everything from the persisted
+/// unlock record rather than from the live clock (§5.2's "derive, don't
+/// duplicate" rule).
+int currentStreak(List<DateTime> unlockedDates) {
+  final runs = _streakRuns(unlockedDates);
+  return runs.isEmpty ? 0 : runs.last;
+}
+
+/// The longest run of consecutive calendar days anywhere in [unlockedDates]
+/// — not just the most recent one (see [currentStreak] for that) — shown
+/// in the achievement details sheet alongside the plain unlock-dates list
+/// (this task's requirement — "показывать... самый долгий стрик").
+int longestStreak(List<DateTime> unlockedDates) {
+  final runs = _streakRuns(unlockedDates);
+  return runs.isEmpty ? 0 : runs.reduce((a, b) => a > b ? a : b);
+}

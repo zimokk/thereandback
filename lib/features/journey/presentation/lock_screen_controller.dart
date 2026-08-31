@@ -133,6 +133,39 @@ class LockScreenController extends _$LockScreenController {
         .read(lockScreenPreferenceRepositoryProvider)
         .loadEnabled(localOwnerId);
     await refreshStatus(restoredEnabled: persistedEnabled);
+    // Gated on the just-loaded `persistedEnabled`, not the ambient
+    // `state.enabled` — a concurrent explicit `enable()` call (e.g. a test,
+    // or a very fast user tap) can itself flip `state.enabled` to `true`
+    // while this method is still awaiting the line above; reading
+    // `state.enabled` here would fire this cold-start catch-up for a
+    // session this method never actually found persisted as on, double-
+    // showing the quest alongside `enable()`'s own call. `persistedEnabled`
+    // is a local value from *this* call's own read, immune to that race.
+    // `refreshStatus`'s own permission check can still turn a persisted
+    // `true` into a real `false` (revoked access) — `state.enabled` is
+    // checked too, so a revoke isn't followed by a show.
+    if (!ref.mounted || !persistedEnabled || !state.enabled) return;
+
+    // Bug fix: a cold restart with the feature already on used to leave the
+    // notification missing even though `state.enabled` came back `true` and
+    // every permission still held. `refreshStatus()` only reconciles
+    // permission/enabled state, it never (re)posts the notification —
+    // that's `enable()`'s job, and `enable()` only ever runs from an
+    // explicit user tap. The one other place that could show it,
+    // `_onQuestChanged` (via the `ref.listen` in `build()`, firing once
+    // `SelectedJourney`'s own independent restore resolves), guards on
+    // `state.enabled` too — and that restore races this one: if
+    // `SelectedJourney` finishes first, `_onQuestChanged` reads
+    // `state.enabled` as still the pre-restore `false` and silently returns,
+    // so neither path ever calls `_showQuest`. Explicitly showing here,
+    // after both restores are known to have finished, closes that gap
+    // regardless of which one actually won the race — `_showQuest`'s own
+    // `activeJourneyId` check/write (kept synchronous, no `await` between
+    // them) means it's harmless even if `_onQuestChanged` *also* fires for
+    // the same quest around the same time.
+    await ref.read(selectedJourneyProvider.notifier).ensureRestored();
+    if (!ref.mounted) return;
+    await _showCurrentQuestIfActive();
   }
 
   /// Re-reads both permissions from the platform and reconciles the toggle
@@ -440,11 +473,22 @@ class LockScreenController extends _$LockScreenController {
     );
     final channel = ref.read(lockScreenChannelProvider);
 
-    if (state.activeJourneyId == quest.journeyId) {
-      await channel.update(snapshot);
-    } else {
+    // `_onQuestChanged` (the `selectedJourneyProvider` listener) and
+    // `_restoreThenRefresh`'s own cold-start catch-up call can both end up
+    // calling this for the same quest right after a restore — checking
+    // `state.activeJourneyId` and writing it back are kept in the same
+    // synchronous stretch (no `await` between them) so the second caller
+    // always sees the first one's write and falls into `update()`, not a
+    // second `start()`. Splitting the write to *after* `channel.start()`
+    // used to leave a real gap there — an `await` on the plugin call — for
+    // exactly that race to slip through.
+    final isNewJourney = state.activeJourneyId != quest.journeyId;
+    if (isNewJourney) state = state.copyWith(activeJourneyId: quest.journeyId);
+
+    if (isNewJourney) {
       await channel.start(snapshot);
-      state = state.copyWith(activeJourneyId: quest.journeyId);
+    } else {
+      await channel.update(snapshot);
     }
   }
 

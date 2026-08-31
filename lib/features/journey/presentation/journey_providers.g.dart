@@ -328,3 +328,226 @@ final class RecentMeteredIntervalsProvider
 
 String _$recentMeteredIntervalsHash() =>
     r'cce3357ac381a9f3f6fe919edcc1c42638a94254';
+
+/// Whether the Путь tab is showing the quest catalog (`QuestPickerView`)
+/// even though a quest is already active (this task's requirement: "кнопка
+/// возврата к выбору других маршрутов") — distinct from `selectedJourneyProvider
+/// == null`, which means no quest has ever been started. Browsing never
+/// touches the active quest itself; picking a *different* journey from the
+/// catalog still goes through the ordinary `SelectedJourney.start()` (§6.4:
+/// only one quest active at a time), which itself exits browsing mode.
+///
+/// In-memory only, same placeholder-until-Phase-3 caveat as
+/// `locale_provider.dart`'s `AppLocale` — this is UI navigation state, not
+/// anything worth persisting across a restart.
+
+@ProviderFor(BrowsingCatalog)
+final browsingCatalogProvider = BrowsingCatalogProvider._();
+
+/// Whether the Путь tab is showing the quest catalog (`QuestPickerView`)
+/// even though a quest is already active (this task's requirement: "кнопка
+/// возврата к выбору других маршрутов") — distinct from `selectedJourneyProvider
+/// == null`, which means no quest has ever been started. Browsing never
+/// touches the active quest itself; picking a *different* journey from the
+/// catalog still goes through the ordinary `SelectedJourney.start()` (§6.4:
+/// only one quest active at a time), which itself exits browsing mode.
+///
+/// In-memory only, same placeholder-until-Phase-3 caveat as
+/// `locale_provider.dart`'s `AppLocale` — this is UI navigation state, not
+/// anything worth persisting across a restart.
+final class BrowsingCatalogProvider
+    extends $NotifierProvider<BrowsingCatalog, bool> {
+  /// Whether the Путь tab is showing the quest catalog (`QuestPickerView`)
+  /// even though a quest is already active (this task's requirement: "кнопка
+  /// возврата к выбору других маршрутов") — distinct from `selectedJourneyProvider
+  /// == null`, which means no quest has ever been started. Browsing never
+  /// touches the active quest itself; picking a *different* journey from the
+  /// catalog still goes through the ordinary `SelectedJourney.start()` (§6.4:
+  /// only one quest active at a time), which itself exits browsing mode.
+  ///
+  /// In-memory only, same placeholder-until-Phase-3 caveat as
+  /// `locale_provider.dart`'s `AppLocale` — this is UI navigation state, not
+  /// anything worth persisting across a restart.
+  BrowsingCatalogProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'browsingCatalogProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$browsingCatalogHash();
+
+  @$internal
+  @override
+  BrowsingCatalog create() => BrowsingCatalog();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$browsingCatalogHash() => r'd05289a64c1524e2644c2a48427e8201d494de9a';
+
+/// Whether the Путь tab is showing the quest catalog (`QuestPickerView`)
+/// even though a quest is already active (this task's requirement: "кнопка
+/// возврата к выбору других маршрутов") — distinct from `selectedJourneyProvider
+/// == null`, which means no quest has ever been started. Browsing never
+/// touches the active quest itself; picking a *different* journey from the
+/// catalog still goes through the ordinary `SelectedJourney.start()` (§6.4:
+/// only one quest active at a time), which itself exits browsing mode.
+///
+/// In-memory only, same placeholder-until-Phase-3 caveat as
+/// `locale_provider.dart`'s `AppLocale` — this is UI navigation state, not
+/// anything worth persisting across a restart.
+
+abstract class _$BrowsingCatalog extends $Notifier<bool> {
+  bool build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<bool, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<bool, bool>,
+              bool,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
+/// How far along [journeyId] the local device's own step history already
+/// is, in `[0.0, 1.0]` (this task's requirement: "показывай процент
+/// пройденного пути для каждого маршрута" on the catalog cards) — derived
+/// straight from `StepIntervalRecords` via `StepSampleRepository
+/// .totalResolvedMeters()`, the same ground truth `StepsSyncEngine.sync()`
+/// itself trusts (§5.2 "derive, don't duplicate"), not from
+/// `selectedJourneyProvider` — that only ever holds the *one* currently
+/// active quest, but every catalog card needs its own answer, including
+/// ones the user isn't on right now. A journey never started reads `0.0`,
+/// same as [progressFraction]'s own `0`-meters case.
+
+@ProviderFor(journeyProgressFraction)
+final journeyProgressFractionProvider = JourneyProgressFractionFamily._();
+
+/// How far along [journeyId] the local device's own step history already
+/// is, in `[0.0, 1.0]` (this task's requirement: "показывай процент
+/// пройденного пути для каждого маршрута" on the catalog cards) — derived
+/// straight from `StepIntervalRecords` via `StepSampleRepository
+/// .totalResolvedMeters()`, the same ground truth `StepsSyncEngine.sync()`
+/// itself trusts (§5.2 "derive, don't duplicate"), not from
+/// `selectedJourneyProvider` — that only ever holds the *one* currently
+/// active quest, but every catalog card needs its own answer, including
+/// ones the user isn't on right now. A journey never started reads `0.0`,
+/// same as [progressFraction]'s own `0`-meters case.
+
+final class JourneyProgressFractionProvider
+    extends $FunctionalProvider<AsyncValue<double>, double, FutureOr<double>>
+    with $FutureModifier<double>, $FutureProvider<double> {
+  /// How far along [journeyId] the local device's own step history already
+  /// is, in `[0.0, 1.0]` (this task's requirement: "показывай процент
+  /// пройденного пути для каждого маршрута" on the catalog cards) — derived
+  /// straight from `StepIntervalRecords` via `StepSampleRepository
+  /// .totalResolvedMeters()`, the same ground truth `StepsSyncEngine.sync()`
+  /// itself trusts (§5.2 "derive, don't duplicate"), not from
+  /// `selectedJourneyProvider` — that only ever holds the *one* currently
+  /// active quest, but every catalog card needs its own answer, including
+  /// ones the user isn't on right now. A journey never started reads `0.0`,
+  /// same as [progressFraction]'s own `0`-meters case.
+  JourneyProgressFractionProvider._({
+    required JourneyProgressFractionFamily super.from,
+    required String super.argument,
+  }) : super(
+         retry: null,
+         name: r'journeyProgressFractionProvider',
+         isAutoDispose: true,
+         dependencies: null,
+         $allTransitiveDependencies: null,
+       );
+
+  @override
+  String debugGetCreateSourceHash() => _$journeyProgressFractionHash();
+
+  @override
+  String toString() {
+    return r'journeyProgressFractionProvider'
+        ''
+        '($argument)';
+  }
+
+  @$internal
+  @override
+  $FutureProviderElement<double> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<double> create(Ref ref) {
+    final argument = this.argument as String;
+    return journeyProgressFraction(ref, argument);
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return other is JourneyProgressFractionProvider &&
+        other.argument == argument;
+  }
+
+  @override
+  int get hashCode {
+    return argument.hashCode;
+  }
+}
+
+String _$journeyProgressFractionHash() =>
+    r'c1bb26b9c761d35973dae07d63ee846e2f5812da';
+
+/// How far along [journeyId] the local device's own step history already
+/// is, in `[0.0, 1.0]` (this task's requirement: "показывай процент
+/// пройденного пути для каждого маршрута" on the catalog cards) — derived
+/// straight from `StepIntervalRecords` via `StepSampleRepository
+/// .totalResolvedMeters()`, the same ground truth `StepsSyncEngine.sync()`
+/// itself trusts (§5.2 "derive, don't duplicate"), not from
+/// `selectedJourneyProvider` — that only ever holds the *one* currently
+/// active quest, but every catalog card needs its own answer, including
+/// ones the user isn't on right now. A journey never started reads `0.0`,
+/// same as [progressFraction]'s own `0`-meters case.
+
+final class JourneyProgressFractionFamily extends $Family
+    with $FunctionalFamilyOverride<FutureOr<double>, String> {
+  JourneyProgressFractionFamily._()
+    : super(
+        retry: null,
+        name: r'journeyProgressFractionProvider',
+        dependencies: null,
+        $allTransitiveDependencies: null,
+        isAutoDispose: true,
+      );
+
+  /// How far along [journeyId] the local device's own step history already
+  /// is, in `[0.0, 1.0]` (this task's requirement: "показывай процент
+  /// пройденного пути для каждого маршрута" on the catalog cards) — derived
+  /// straight from `StepIntervalRecords` via `StepSampleRepository
+  /// .totalResolvedMeters()`, the same ground truth `StepsSyncEngine.sync()`
+  /// itself trusts (§5.2 "derive, don't duplicate"), not from
+  /// `selectedJourneyProvider` — that only ever holds the *one* currently
+  /// active quest, but every catalog card needs its own answer, including
+  /// ones the user isn't on right now. A journey never started reads `0.0`,
+  /// same as [progressFraction]'s own `0`-meters case.
+
+  JourneyProgressFractionProvider call(String journeyId) =>
+      JourneyProgressFractionProvider._(argument: journeyId, from: this);
+
+  @override
+  String toString() => r'journeyProgressFractionProvider';
+}

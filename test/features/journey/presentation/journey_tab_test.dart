@@ -3,9 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:thereandback/app/database_provider.dart';
 import 'package:thereandback/app/theme.dart';
+import 'package:thereandback/core/local_owner.dart';
 import 'package:thereandback/data/drift/database.dart';
 import 'package:thereandback/features/journey/presentation/journey_providers.dart';
 import 'package:thereandback/features/journey/presentation/journey_tab.dart';
+import 'package:thereandback/features/steps/data/step_sample_repository.dart';
 import 'package:thereandback/features/steps/presentation/steps_providers.dart';
 import 'package:thereandback/features/steps/presentation/steps_sync_state.dart';
 import 'package:thereandback/l10n/app_localizations.dart';
@@ -80,6 +82,91 @@ void main() {
     expect(find.text('Troy → Ithaca'), findsOneWidget);
     expect(find.text('Day 1'), findsOneWidget);
   });
+
+  testWidgets(
+    "the quest catalog shows each route's own percent-complete badge (this "
+    'task\'s requirement — "показывай процент пройденного пути для каждого '
+    'маршрута"), derived from the steps database rather than the currently '
+    'active quest',
+    (tester) async {
+      final db = AppDatabase.forTesting();
+      addTearDown(db.close);
+      // 10% of the Odyssey's 2 850 000 m route — recorded directly, with no
+      // quest ever "selected" in this test, proving the badge doesn't rely
+      // on `selectedJourneyProvider`.
+      await DriftStepSampleRepository(db).recordInterval(
+        ownerId: localOwnerId,
+        journeyId: 'odyssey-ithaca',
+        intervalStart: DateTime(2026, 1, 1),
+        intervalEnd: DateTime(2026, 1, 2),
+        steps: 1000,
+        resolvedMeters: 285000,
+        flaggedPace: false,
+        syncedAt: DateTime(2026, 1, 2),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [appDatabaseProvider.overrideWithValue(db)],
+          child: _app(const JourneyTab()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('10%'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the top-left "choose a quest" button returns to the catalog without '
+    'clearing the active quest, and starting a quest from there lands back '
+    'on the path scene — this task\'s requirement: "кнопка возврата к '
+    'выбору других маршрутов"',
+    (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+            stepsSyncProvider.overrideWith(
+              () => _FixedStepsSync(
+                const StepsSyncState(
+                  permissionStatus: StepsPermissionStatus.granted,
+                ),
+              ),
+            ),
+          ],
+          child: _app(const JourneyTab()),
+        ),
+      );
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(JourneyTab)),
+      );
+      container
+          .read(selectedJourneyProvider.notifier)
+          .start('odyssey-ithaca', now: DateTime.now());
+      await tester.pump();
+      expect(find.text('Troy → Ithaca'), findsOneWidget);
+
+      await tester.tap(find.bySemanticsLabel('Choose a quest'));
+      await tester.pump();
+
+      // Back on the catalog — but the quest itself is still selected, not
+      // cleared (browsing is separate from `selectedJourneyProvider`).
+      expect(find.text('Choose your quest'), findsOneWidget);
+      expect(
+        container.read(selectedJourneyProvider)?.journeyId,
+        'odyssey-ithaca',
+      );
+
+      await tester.tap(find.text('Start quest'));
+      await tester.pump();
+
+      // Picking (the same) quest again is the way back to the path scene.
+      expect(find.text('Choose your quest'), findsNothing);
+      expect(find.text('Troy → Ithaca'), findsOneWidget);
+    },
+  );
 
   testWidgets('permission-denied state renders the gate, not a blank screen', (
     tester,

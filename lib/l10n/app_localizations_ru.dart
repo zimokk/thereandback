@@ -73,6 +73,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get journeyReturnToYouButton => 'Вы';
 
   @override
+  String get journeyBackToCatalogButton => 'Выбрать поход';
+
+  @override
   String get stepsPermissionExplainTitle => 'Пусть шаги двигают вас';
 
   @override
@@ -127,9 +130,6 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get questStatsEtaLabel => 'Ожидаемое прибытие';
-
-  @override
-  String get questMapSectionTitle => 'Карта маршрута';
 
   @override
   String get questMapYouAreHere => 'Ваша позиция на маршруте';
@@ -244,6 +244,11 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get achievementUnlockDatesSheetTitle => 'Даты получения';
+
+  @override
+  String achievementLongestStreakLabel(int days) {
+    return 'Самый долгий стрик: $days дней';
+  }
 
   @override
   String get settingsTitle => 'Настройки';

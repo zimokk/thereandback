@@ -8,6 +8,7 @@ import 'package:thereandback/core/local_owner.dart';
 import 'package:thereandback/data/drift/database.dart';
 import 'package:thereandback/features/journey/data/android_lock_screen_channel.dart';
 import 'package:thereandback/features/journey/data/lock_screen_preference_repository.dart';
+import 'package:thereandback/features/journey/data/progress_repository.dart';
 import 'package:thereandback/features/journey/domain/lock_screen_snapshot.dart';
 import 'package:thereandback/features/journey/presentation/journey_providers.dart';
 import 'package:thereandback/features/journey/presentation/lock_screen_controller.dart';
@@ -500,5 +501,40 @@ void main() {
     expect(restarted.read(lockScreenControllerProvider).enabled, isTrue);
     verifyNever(() => backgroundSync.cancel());
     verifyNever(() => channel.end());
+  });
+
+  test('build() restores a persisted enabled=true with an already-active quest '
+      'and actually shows the notification — regression: a cold restart used '
+      'to restore `enabled` without ever calling channel.start(), so the '
+      'display stayed missing even though the permission and the toggle were '
+      "both genuinely on (this task's report: \"есть разрешение... но ничего "
+      'не показано")', () async {
+    final db = AppDatabase.forTesting();
+    addTearDown(db.close);
+    await DriftLockScreenPreferenceRepository(db)
+        .saveEnabled(localOwnerId, true);
+    // A quest already active before this "restart" — same as a real app
+    // that was closed mid-quest, not a fresh install.
+    await DriftProgressRepository(db).startQuest(
+      localOwnerId,
+      journeyId: 'odyssey-ithaca',
+      startedAt: DateTime.now(),
+    );
+
+    final restarted = ProviderContainer(
+      overrides: [
+        androidLockScreenChannelProvider.overrideWithValue(channel),
+        androidBackgroundSyncProvider.overrideWithValue(backgroundSync),
+        stepCountingServiceProvider.overrideWithValue(stepCountingService),
+        appDatabaseProvider.overrideWithValue(db),
+      ],
+    );
+    addTearDown(restarted.dispose);
+
+    restarted.read(lockScreenControllerProvider);
+    await pumpEventQueue();
+
+    expect(restarted.read(lockScreenControllerProvider).enabled, isTrue);
+    verify(() => channel.start(any())).called(1);
   });
 }

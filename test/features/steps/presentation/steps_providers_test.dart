@@ -157,8 +157,11 @@ void main() {
   });
 
   test('a genuinely duplicate interval (same intervalStart already recorded) '
-      'is not credited a second time by sync() itself, not just the '
-      'repository it calls', () async {
+      "is not credited a second time by sync() itself, not just the "
+      "repository it calls — and the result reflects the database's real "
+      "total (75), not the stale in-memory progressMeters (0) sync() started "
+      'from, per this task\'s fix ("если в базе данных шагов больше — '
+      'выбираем большее значение")', () async {
     when(() => adapter.fetchDelta(any(), any()))
         .thenAnswer((_) async => const StepsDelta(steps: 100));
 
@@ -187,9 +190,11 @@ void main() {
 
     await container.read(stepsSyncProvider.notifier).sync();
 
-    // No new credit — the interval was already recorded, so sync()'s
-    // own `isNewInterval` branch must not add another 75 m on top.
-    expect(container.read(selectedJourneyProvider)!.progressMeters, 0);
+    // No *new* credit — the interval was already recorded, so sync()'s
+    // own `isNewInterval` branch must not add another 75 m on top — but
+    // the database already had 75 m from it, and that's what comes back,
+    // not the stale 0 the in-memory state started this call with.
+    expect(container.read(selectedJourneyProvider)!.progressMeters, 75);
   });
 
   group('sync() progress push (§8, Phase 8) — foreground only', () {

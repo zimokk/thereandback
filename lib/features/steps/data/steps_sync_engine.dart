@@ -89,14 +89,6 @@ class StepsSyncEngine {
       syncedAt: now,
     );
 
-    final progressMeters = isNewInterval
-        ? clampNonDecreasing(
-            quest.progressMeters,
-            quest.progressMeters + deltaMeters,
-          )
-        : quest.progressMeters; // already credited — advance the sync
-    // window only, per the idempotency guard above.
-
     // Only worth recomputing when the history this reads actually changed —
     // a replayed/duplicate interval (isNewInterval == false) leaves it
     // identical to the last run's answer.
@@ -106,6 +98,24 @@ class StepsSyncEngine {
         journeyId: quest.journeyId,
       );
     }
+
+    // Re-derived from the steps database itself, not computed as
+    // `quest.progressMeters + deltaMeters` — `quest` is caller-supplied
+    // (the foreground path passes whatever's currently in
+    // `selectedJourneyProvider`'s in-memory state) and can be stale
+    // relative to what's actually recorded, e.g. right after the Android
+    // background-sync task (`android_background_sync.dart`) wrote new
+    // intervals directly to the database while this app process wasn't
+    // running to see them. `clampNonDecreasing` against the caller's own
+    // `quest.progressMeters` is still the final word — never *less* than
+    // what the caller already believed — but the database's fresh total
+    // wins whenever it's the bigger of the two (this task's requirement:
+    // "если в базе данных шагов больше — выбираем большее значение").
+    final dbTotal = await stepSampleRepository.totalResolvedMeters(
+      ownerId: localOwnerId,
+      journeyId: quest.journeyId,
+    );
+    final progressMeters = clampNonDecreasing(quest.progressMeters, dbTotal);
 
     return StepsSyncResult(
       progressMeters: progressMeters,

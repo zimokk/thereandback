@@ -22,6 +22,15 @@ abstract class StepSampleRepository {
     required bool flaggedPace,
     required DateTime syncedAt,
   });
+
+  /// The ground-truth progress total for `(ownerId, journeyId)`: the sum of
+  /// every recorded interval's [resolvedMeters] — §5.2's "derive, don't
+  /// duplicate" rule applied to progress itself, not just idempotency.
+  /// `0` if nothing has been recorded yet.
+  Future<int> totalResolvedMeters({
+    required String ownerId,
+    required String journeyId,
+  });
 }
 
 class DriftStepSampleRepository implements StepSampleRepository {
@@ -58,5 +67,21 @@ class DriftStepSampleRepository implements StepSampleRepository {
           mode: InsertMode.insertOrIgnore,
         );
     return inserted != null;
+  }
+
+  @override
+  Future<int> totalResolvedMeters({
+    required String ownerId,
+    required String journeyId,
+  }) async {
+    final intervals = _db.stepIntervalRecords;
+    final sumQuery = _db.selectOnly(intervals)
+      ..addColumns([intervals.resolvedMeters.sum()])
+      ..where(
+        intervals.ownerId.equals(ownerId) &
+            intervals.journeyId.equals(journeyId),
+      );
+    return (await sumQuery.getSingle()).read(intervals.resolvedMeters.sum()) ??
+        0;
   }
 }

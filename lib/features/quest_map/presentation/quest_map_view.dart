@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -9,8 +7,6 @@ import '../../../design/components/distance_text.dart';
 import '../../../design/spacing.dart';
 import '../../../design/typography.dart';
 import '../../../l10n/app_localizations.dart';
-import '../../achievements/data/achievement_catalog.dart';
-import '../../achievements/domain/achievement.dart';
 import '../../journey/domain/quest_time_service.dart';
 import '../data/quest_map_repository.dart';
 import '../domain/route_mapping.dart';
@@ -22,19 +18,16 @@ import 'quest_map_providers.dart';
 /// The continuous route line itself is never drawn — the traveler moves
 /// along it invisibly, so the only thing marking where they are is the
 /// helmet itself, not a line leading up to it. Landmarks are marked the
-/// same way. Trophies (§6.3's achievements, evaluated here against
-/// [progressMeters]) are the one exception: each sits just above its own
-/// route point, connected to it by a short, faint dotted guide — locked
-/// ones muted and small, unlocked ones gold and visibly bigger
-/// (`_RouteOverlayPainter._paintTrophy`) — but that guide only ever spans
-/// the gap between one trophy and its own point, never the route between
-/// two trophies or landmarks. Tapping the traveler or a landmark shows a
-/// small tooltip with its stats (§6.2's "interactive hotspots"); tapping
-/// empty space, or the same marker again, dismisses it — trophies are
-/// display-only here, the Трофеи tab (§6.3) is where their own detail
-/// lives. Pan and zoom come from [InteractiveViewer]; nothing here touches
-/// the network, the map is a bundled asset and the screen works fully
-/// offline (§6.2, §8).
+/// same way. Trophies (§6.3's achievements) are **not** shown here (styling
+/// fix — this screen used to also paint each one above the route with a
+/// dotted guide line down to it; that cluttered the drawn map without
+/// adding anything the Трофеи tab's own grid, `achievements_tab.dart`,
+/// doesn't already show better — that tab is the only place a trophy's own
+/// detail lives now). Tapping the traveler or a landmark shows a small
+/// tooltip with its stats (§6.2's "interactive hotspots"); tapping empty
+/// space, or the same marker again, dismisses it. Pan and zoom come from
+/// [InteractiveViewer]; nothing here touches the network, the map is a
+/// bundled asset and the screen works fully offline (§6.2, §8).
 class QuestMapView extends ConsumerWidget {
   const QuestMapView({
     super.key,
@@ -159,18 +152,6 @@ class _LoadedMapState extends State<_LoadedMap> {
     final upcoming = nextLandmark(map, widget.progressMeters);
     final travelerPoint = metersToPoint(map.polyline, widget.progressMeters);
     final l10n = widget.l10n;
-    // Every achievement is a distance along this same route (§6.3's
-    // `AchievementKind` — both variants use `thresholdMeters` as a route
-    // position), so each one has a real point on the drawn map via the
-    // same `metersToPoint` the traveler and landmarks use — the guide-line
-    // painter below relies on that. The `<= map.totalMeters` guard mirrors
-    // `journey_path_view.dart`'s own filter: a future quest with a
-    // shorter route should never render a trophy for a distance it
-    // doesn't have.
-    final trophyStates = evaluateAchievements(
-      progressMeters: widget.progressMeters,
-      catalog: achievementCatalog,
-    ).where((state) => state.def.thresholdMeters <= map.totalMeters).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -212,7 +193,6 @@ class _LoadedMapState extends State<_LoadedMap> {
                           painter: _RouteOverlayPainter(
                             polyline: map.polyline,
                             landmarks: map.landmarks,
-                            trophyStates: trophyStates,
                             progressMeters: widget.progressMeters,
                           ),
                         ),
@@ -460,45 +440,21 @@ const double _landmarkHaloRadius = 11;
 /// units, this is what that gets scaled to.
 const double _travelerIconHeight = 20;
 
-/// Font size of a locked trophy's icon, in logical pixels.
-const double _trophyLockedSize = 16;
-
-/// Font size of an unlocked trophy's icon — visibly bigger than
-/// [_trophyLockedSize], not only a different color (§6.3: "получен —
-/// должен быть чуть крупнее").
-const double _trophyUnlockedSize = 20;
-
-/// Vertical distance from a trophy's icon down to its route point, in
-/// logical pixels — how far "above the line" the trophy sits (§6.2).
-const double _trophyLineHeight = 26;
-
-/// Dash length of a trophy's guide line, in logical pixels.
-const double _trophyDashLength = 3;
-
-/// Gap length between dashes of a trophy's guide line, in logical pixels.
-const double _trophyDashGap = 3;
-
-/// Paints the traveler's position, every landmark, and every trophy's guide
-/// line on the drawn map — **not** the route between them (§6.2: the path
-/// is deliberately invisible; the traveler moves along it, nothing draws
-/// it). Marker positions still come straight from the same route math
-/// ([metersToPoint]) either way, so hiding the line changes nothing about
-/// where the markers land.
+/// Paints the traveler's position and every landmark on the drawn map —
+/// **not** the route between them (§6.2: the path is deliberately
+/// invisible; the traveler moves along it, nothing draws it). Marker
+/// positions still come straight from the same route math ([metersToPoint])
+/// either way, so hiding the line changes nothing about where the markers
+/// land.
 class _RouteOverlayPainter extends CustomPainter {
   const _RouteOverlayPainter({
     required this.polyline,
     required this.landmarks,
-    required this.trophyStates,
     required this.progressMeters,
   });
 
   final RoutePolyline polyline;
   final List<MapLandmark> landmarks;
-
-  /// Every achievement whose route position fits this map, evaluated
-  /// against [progressMeters] — `_LoadedMapState.build`'s own filter and
-  /// evaluator (§6.3), not recomputed here.
-  final List<AchievementState> trophyStates;
   final int progressMeters;
 
   @override
@@ -511,14 +467,6 @@ class _RouteOverlayPainter extends CustomPainter {
         canvas,
         toOffset(MapPoint(x: landmark.x, y: landmark.y)),
         landmark,
-      );
-    }
-
-    for (final state in trophyStates) {
-      _paintTrophy(
-        canvas,
-        toOffset(metersToPoint(polyline, state.def.thresholdMeters)),
-        state,
       );
     }
 
@@ -546,73 +494,6 @@ class _RouteOverlayPainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     )..layout();
     painter.paint(canvas, at - Offset(painter.width / 2, painter.height / 2));
-  }
-
-  /// Paints one trophy above its route position, plus the faint dotted
-  /// guide line down to the exact point on the route it belongs to (§6.2:
-  /// "от каждого трофея сверху... вниз до самой линии") — [at] is that
-  /// route point, already converted to screen space by [paint]; the
-  /// trophy icon itself sits [_trophyLineHeight] px above it.
-  ///
-  /// Unlocked trophies (§6.3, same rule `achievements_tab.dart` and
-  /// `journey_path_view.dart`'s markers use) render gold and
-  /// [_trophyUnlockedSize] — visibly bigger than a locked one's muted,
-  /// smaller [_trophyLockedSize] — rather than only a color swap.
-  void _paintTrophy(Canvas canvas, Offset at, AchievementState state) {
-    final above = at - const Offset(0, _trophyLineHeight);
-    _paintDottedLine(canvas, above, at);
-
-    final size = state.unlocked ? _trophyUnlockedSize : _trophyLockedSize;
-    final color = state.unlocked ? AppColors.gold : AppColors.textSecondary;
-    final icon = state.unlocked
-        ? Icons.emoji_events
-        : Icons.emoji_events_outlined;
-
-    canvas.drawCircle(
-      above,
-      size / 2 + 3,
-      Paint()..color = AppColors.background.withValues(alpha: 0.55),
-    );
-    final painter = TextPainter(
-      text: TextSpan(
-        text: String.fromCharCode(icon.codePoint),
-        style: TextStyle(
-          fontSize: size,
-          fontFamily: icon.fontFamily,
-          package: icon.fontPackage,
-          color: color,
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    )..layout();
-    painter.paint(
-      canvas,
-      above - Offset(painter.width / 2, painter.height / 2),
-    );
-  }
-
-  /// A faint, dim dotted stroke from [from] to [to] — deliberately unlike
-  /// every other line this painter draws (all solid), so a trophy's guide
-  /// reads as a pointer, not as part of the route itself (§6.2: the route
-  /// line is still never drawn).
-  void _paintDottedLine(Canvas canvas, Offset from, Offset to) {
-    final paint = Paint()
-      ..color = AppColors.textSecondary.withValues(alpha: 0.35)
-      ..strokeWidth = 1;
-    final total = (to - from).distance;
-    if (total <= 0) return;
-    final direction = (to - from) / total;
-
-    var traveled = 0.0;
-    while (traveled < total) {
-      final segmentEnd = math.min(traveled + _trophyDashLength, total);
-      canvas.drawLine(
-        from + direction * traveled,
-        from + direction * segmentEnd,
-        paint,
-      );
-      traveled += _trophyDashLength + _trophyDashGap;
-    }
   }
 
   /// Paints the traveler's position as a small gold Corinthian-helmet
@@ -646,13 +527,7 @@ class _RouteOverlayPainter extends CustomPainter {
       // landmarks comes from the same immutable QuestMap.landmarks list for
       // the life of a loaded map — reference inequality is enough to catch
       // the one case that matters, a freshly (re)loaded map.
-      !identical(oldDelegate.landmarks, landmarks) ||
-      // trophyStates is recomputed by `_LoadedMapState.build` on every
-      // build (it depends on progressMeters, already covered above, so
-      // this only catches a rebuild where progress didn't change but the
-      // list identity still did — cheap, and correct either way since
-      // AchievementState is a value type).
-      !identical(oldDelegate.trophyStates, trophyStates);
+      !identical(oldDelegate.landmarks, landmarks);
 }
 
 /// The helmet's dome + T-slit, in a local coordinate box (front view, eyes

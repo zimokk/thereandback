@@ -15,6 +15,11 @@ import '../l10n/app_localizations.dart';
 /// gates on [friendsUnlockedProvider].
 const int _friendsTabIndex = 3;
 
+/// Index of the Путь branch — the one tab whose achievement-marker popup
+/// (`journey_path_view.dart`'s `_showAchievementDetails`) needs closing on
+/// the way out (styling fix regression, see that function's doc comment).
+const int _journeyTabIndex = 0;
+
 /// Compact bottom-nav height (styling fix — the stock `BottomNavigationBar`
 /// read as visually heavy). Includes the row itself, not the `SafeArea`
 /// inset below it.
@@ -98,6 +103,21 @@ class AppShell extends ConsumerWidget {
                         if (index == _friendsTabIndex && !friendsUnlocked) {
                           showAppSnackBar(context, l10n.friendsLockedBody);
                           return;
+                        }
+                        // Closes an open achievement-marker popup before
+                        // leaving the Путь tab (styling fix regression) — it
+                        // lives on the root Navigator (see that popup's own
+                        // doc comment for why), so popping it here, rather
+                        // than relying on the tab switch itself, is the only
+                        // way it actually closes instead of staying stacked
+                        // over whichever tab the user switches to.
+                        if (navigationShell.currentIndex == _journeyTabIndex &&
+                            index != _journeyTabIndex) {
+                          final rootNavigator = Navigator.of(
+                            context,
+                            rootNavigator: true,
+                          );
+                          if (rootNavigator.canPop()) rootNavigator.pop();
                         }
                         navigationShell.goBranch(
                           index,

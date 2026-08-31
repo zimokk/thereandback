@@ -367,7 +367,64 @@ class _JourneyPathViewState extends ConsumerState<JourneyPathView>
             ),
           ],
         ),
+        // Always on top of the scene, top-left (this task's requirement —
+        // "кнопка возврата к выбору других маршрутов") — browsing the
+        // catalog is `browsingCatalogProvider.enter()`, not clearing the
+        // active quest, so it's safe to show unconditionally here: this
+        // whole view only ever renders while a quest *is* active
+        // (`journey_tab.dart`'s own branch).
+        Positioned(
+          top: AppSpacing.md,
+          left: AppSpacing.md,
+          child: _BackToCatalogButton(
+            label: l10n.journeyBackToCatalogButton,
+            onTap: () => ref.read(browsingCatalogProvider.notifier).enter(),
+          ),
+        ),
       ],
+    );
+  }
+}
+
+/// Size of [_BackToCatalogButton], in logical pixels — same shape as
+/// [_ReturnToYouButton] (a round gold-bordered "map control", not a text
+/// pill), so the two anchors this scene has read as one family.
+const double _backToCatalogButtonSize = 36;
+
+/// Icon size inside [_BackToCatalogButton], in logical pixels.
+const double _backToCatalogIconSize = 18;
+
+/// The top-left "browse other quests" button (this task's requirement).
+class _BackToCatalogButton extends StatelessWidget {
+  const _BackToCatalogButton({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        color: AppColors.surface.withValues(alpha: 0.9),
+        shape: const CircleBorder(
+          side: BorderSide(color: AppColors.gold, width: AppStroke.icon),
+        ),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: const SizedBox(
+            width: _backToCatalogButtonSize,
+            height: _backToCatalogButtonSize,
+            child: Icon(
+              Icons.map_outlined,
+              color: AppColors.gold,
+              size: _backToCatalogIconSize,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -611,6 +668,16 @@ const double _markerGuideDashGap = 3;
 /// then status line, dismissible by the sheet's own default swipe-down/
 /// tap-outside gesture — no bespoke close button, since adding one needs a
 /// new l10n key and this change didn't add one.
+///
+/// `useRootNavigator: true` (styling fix — regression): the Путь tab is one
+/// `StatefulShellBranch` of `router.dart`'s `StatefulShellRoute.indexedStack`,
+/// each with its own nested `Navigator`. The default `useRootNavigator:
+/// false` attaches the sheet to *that* nested Navigator, whose branch stays
+/// mounted (just not painted) when another tab is selected — so the sheet
+/// never got told to close on a tab switch and stayed up over whatever tab
+/// the user switched to. Pinning it to the single shared root Navigator
+/// instead lets `AppShell`'s bottom-nav tap handler close it explicitly by
+/// popping that same Navigator (`app_shell.dart`).
 void _showAchievementDetails(
   BuildContext context,
   AppLocalizations l10n,
@@ -618,6 +685,7 @@ void _showAchievementDetails(
 ) {
   showModalBottomSheet<void>(
     context: context,
+    useRootNavigator: true,
     backgroundColor: AppColors.surface,
     builder: (context) => Padding(
       padding: const EdgeInsets.all(AppSpacing.lg),
