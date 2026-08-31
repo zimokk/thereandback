@@ -21,3 +21,16 @@ AchievementRepository achievementRepository(Ref ref) =>
 @riverpod
 Future<Map<String, List<DateTime>>> achievementUnlocks(Ref ref) =>
     ref.watch(achievementRepositoryProvider).loadUnlocks(localOwnerId);
+
+/// Today's total distance across every quest — the live number a daily
+/// trophy's progress line needs (this task's requirement: "для ежедневных —
+/// прогресс за сегодняшний день"), as opposed to [achievementUnlocksProvider]'s
+/// forever-cumulative unlock history. autoDispose default, same as
+/// [achievementUnlocksProvider]: leaving the Трофеи tab drops the cached
+/// read, so the next visit re-queries current data. `steps_providers.dart`'s
+/// `StepsSync.sync()` invalidates this alongside [achievementUnlocksProvider]
+/// for the one case autoDispose doesn't cover on its own — the tab open and
+/// watching while a sync lands.
+@riverpod
+Future<int> todayAllQuestsMeters(Ref ref) =>
+    ref.watch(achievementRepositoryProvider).todayTotalMeters(localOwnerId);

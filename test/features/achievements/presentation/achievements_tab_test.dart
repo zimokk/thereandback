@@ -50,6 +50,29 @@ Future<void> _seedUnlock(
       );
 }
 
+/// Seeds a raw step interval directly — what `todayAllQuestsMetersProvider`
+/// reads for a daily tile's "today" progress line, independent of
+/// `selectedJourneyProvider`'s in-memory state.
+Future<void> _seedStepInterval(
+  AppDatabase db, {
+  required DateTime end,
+  required int meters,
+}) {
+  return db
+      .into(db.stepIntervalRecords)
+      .insert(
+        StepIntervalRecordsCompanion.insert(
+          ownerId: localOwnerId,
+          journeyId: 'odyssey-ithaca',
+          intervalStart: end.subtract(const Duration(hours: 1)),
+          intervalEnd: end,
+          steps: 0,
+          resolvedMeters: meters,
+          syncedAt: end,
+        ),
+      );
+}
+
 void main() {
   testWidgets('with no quest selected, the whole quest catalog renders '
       'locked', (tester) async {
@@ -183,4 +206,75 @@ void main() {
     expect(find.textContaining('×'), findsNothing);
     await db.close();
   });
+
+  testWidgets(
+    'a locked quest tile shows a percent-complete progress line that '
+    'disappears once unlocked',
+    (tester) async {
+      await tester.pumpWidget(_wrap(const AchievementsTab()));
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(AchievementsTab)),
+      );
+      container
+          .read(selectedJourneyProvider.notifier)
+          .start('odyssey-ithaca', now: DateTime.now());
+      // 'first-steps' thresholds at 1000 m — 500 m in is 50%.
+      container
+          .read(selectedJourneyProvider.notifier)
+          .applySyncedProgress(progressMeters: 500, syncedAt: DateTime.now());
+      await tester.pump();
+
+      expect(find.text('50%'), findsOneWidget);
+
+      container
+          .read(selectedJourneyProvider.notifier)
+          .applySyncedProgress(
+            progressMeters: 1000,
+            syncedAt: DateTime.now(),
+          );
+      await tester.pump();
+
+      expect(find.text('Unlocked'), findsOneWidget); // First Steps only
+      expect(find.text('50%'), findsNothing);
+      expect(find.text('100%'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    "a daily trophy's progress line shows today's total, not its "
+    'forever-unlocked history',
+    (tester) async {
+      final db = AppDatabase.forTesting();
+      // Earned once, days ago — should not affect today's own percentage.
+      await _seedUnlock(
+        db,
+        achievementId: 'daily-1km',
+        localDate: DateTime.now().subtract(const Duration(days: 5)),
+      );
+      // 'daily-1km' thresholds at 1000 m — 500 m walked today is 50%.
+      await _seedStepInterval(db, end: DateTime.now(), meters: 500);
+      await tester.pumpWidget(_wrap(const AchievementsTab(), database: db));
+      await tester.tap(find.text('Daily'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('50%'), findsOneWidget);
+      await db.close();
+    },
+  );
+
+  testWidgets(
+    "a daily trophy's percent label disappears once today alone crosses "
+    'its threshold',
+    (tester) async {
+      final db = AppDatabase.forTesting();
+      await _seedStepInterval(db, end: DateTime.now(), meters: 1000);
+      await tester.pumpWidget(_wrap(const AchievementsTab(), database: db));
+      await tester.tap(find.text('Daily'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('100%'), findsNothing);
+      await db.close();
+    },
+  );
 }
