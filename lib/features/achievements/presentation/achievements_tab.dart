@@ -177,29 +177,50 @@ class _AchievementTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: _trophyTileDecoration(unlocked: unlocked),
+        // Styling fix: the icon/title/status block used to sit in a single
+        // centered `Column`, so a tile with a short one-line title left the
+        // progress bar higher up than a tile whose title wrapped to two
+        // lines — the bar (and its "N%" label) landed at a different height
+        // on every card. Centering the variable-height block inside
+        // `Expanded` and keeping the bar as a fixed sibling below it pins
+        // the bar to the same spot on every tile regardless of title length.
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.emoji_events_outlined, size: 40, color: iconColor),
-            const SizedBox(height: AppSpacing.sm),
-            _AchievementTitleRow(
-              def: state.def,
-              theme: theme,
-              l10n: l10n,
-              color: unlocked ? AppColors.textPrimary : AppColors.textSecondary,
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              unlocked
-                  ? l10n.achievementUnlockedLabel
-                  : l10n.achievementRemainingLabel(
-                      localizedDistanceInline(
-                        l10n,
-                        formatDistance(state.remainingMeters),
-                      ),
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.emoji_events_outlined,
+                      size: 40,
+                      color: iconColor,
                     ),
-              style: AppTypography.bodySecondary,
-              textAlign: TextAlign.center,
+                    const SizedBox(height: AppSpacing.sm),
+                    _AchievementTitleRow(
+                      def: state.def,
+                      theme: theme,
+                      l10n: l10n,
+                      color: unlocked
+                          ? AppColors.textPrimary
+                          : AppColors.textSecondary,
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      unlocked
+                          ? l10n.achievementUnlockedLabel
+                          : l10n.achievementRemainingLabel(
+                              localizedDistanceInline(
+                                l10n,
+                                formatDistance(state.remainingMeters),
+                              ),
+                            ),
+                      style: AppTypography.bodySecondary,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: AppSpacing.sm),
             _AchievementProgressBar(
@@ -246,6 +267,15 @@ class _AchievementTitleRow extends StatelessWidget {
             achievementTitle(l10n, def),
             style: AppTypography.body.copyWith(color: color),
             textAlign: TextAlign.center,
+            // Styling fix: an unbounded title (e.g. "Миновал Сциллу и
+            // Харибду") wrapped to 3 lines, growing this row's height past
+            // what the fixed-aspect-ratio grid tile has room for — which
+            // pushed `_AchievementProgressBar` down by a different amount on
+            // every tile ("все проценты в разных местах") and clipped it
+            // off the bottom on the worst offenders. Two lines with an
+            // ellipsis keeps every tile's title block the same height cap.
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],
@@ -294,7 +324,13 @@ class _AchievementProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const lineHeight = 3.0;
+    // Styling fix: at 3px tall, `AppColors.cardBorder`'s ~15%-opacity gold
+    // tint ("не видно линий прогресса") read as indistinguishable from the
+    // near-black card behind it. `AppColors.divider`'s ~20%-opacity warm
+    // white gives the unfilled track enough contrast to read as a line even
+    // at 0% — the same token `journey_path_view.dart` already leans on for
+    // low-contrast hairlines against this same background.
+    const lineHeight = 4.0;
     const labelHeight = 14.0;
 
     return SizedBox(
@@ -314,7 +350,7 @@ class _AchievementProgressBar extends StatelessWidget {
                 height: lineHeight,
                 child: Stack(
                   children: [
-                    const ColoredBox(color: AppColors.cardBorder),
+                    const ColoredBox(color: AppColors.divider),
                     FractionallySizedBox(
                       widthFactor: fraction,
                       child: const ColoredBox(color: AppColors.gold),
@@ -477,26 +513,42 @@ class _DailyAchievementTile extends StatelessWidget {
         decoration: _trophyTileDecoration(unlocked: unlocked),
         child: Stack(
           children: [
+            // Same fixed-position-bar fix as `_AchievementTile` above: the
+            // variable-height icon/title/status block is centered inside
+            // `Expanded`, so the bar below it lands at the same height on
+            // every tile regardless of how many lines the title wrapped to.
             Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.emoji_events_outlined, size: 40, color: iconColor),
-                const SizedBox(height: AppSpacing.sm),
-                _AchievementTitleRow(
-                  def: state.def,
-                  theme: theme,
-                  l10n: l10n,
-                  color: unlocked
-                      ? AppColors.textPrimary
-                      : AppColors.textSecondary,
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  unlocked
-                      ? l10n.achievementUnlockedLabel
-                      : l10n.achievementNeverUnlockedLabel,
-                  style: AppTypography.bodySecondary,
-                  textAlign: TextAlign.center,
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.emoji_events_outlined,
+                          size: 40,
+                          color: iconColor,
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        _AchievementTitleRow(
+                          def: state.def,
+                          theme: theme,
+                          l10n: l10n,
+                          color: unlocked
+                              ? AppColors.textPrimary
+                              : AppColors.textSecondary,
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(
+                          unlocked
+                              ? l10n.achievementUnlockedLabel
+                              : l10n.achievementNeverUnlockedLabel,
+                          style: AppTypography.bodySecondary,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 _AchievementProgressBar(
