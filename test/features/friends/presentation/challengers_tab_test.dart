@@ -264,6 +264,90 @@ void main() {
     expect(find.text('No friends yet'), findsNothing);
   });
 
+  testWidgets(
+    'tapping the × on a friend row asks for confirmation first and does '
+    'not remove the friend until it is confirmed',
+    (tester) async {
+      when(() => friendshipRepository.watchMyFriendships('me')).thenAnswer(
+        (_) => Stream.value([
+          _friendship(
+            a: 'me',
+            b: 'bob',
+            status: FriendshipStatus.accepted,
+            initiatorUid: 'me',
+          ),
+        ]),
+      );
+      when(() => userProfileRepository.watchProfile('bob')).thenAnswer(
+        (_) => Stream.value(
+          const FriendProfile(
+            uid: 'bob',
+            nickname: 'Bob',
+            avatarPresetIndex: 1,
+          ),
+        ),
+      );
+      when(
+        () => progressSyncRepository.watchFriendProgress(
+          'bob',
+          'odyssey-ithaca',
+        ),
+      ).thenAnswer((_) => Stream.value(9000));
+      when(
+        () => friendshipRepository.removeOrDecline(pairIdFor('me', 'bob')),
+      ).thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        _wrap(
+          friendshipRepository: friendshipRepository,
+          userProfileRepository: userProfileRepository,
+          progressSyncRepository: progressSyncRepository,
+          googleAuthService: googleAuthService,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+
+      // The dialog is up, and nothing has been removed yet.
+      expect(find.text('Remove friend?'), findsOneWidget);
+      expect(
+        find.text(
+          "Bob will no longer see your progress, and you won't see "
+          'theirs. You can add them again later.',
+        ),
+        findsOneWidget,
+      );
+      verifyNever(
+        () => friendshipRepository.removeOrDecline(pairIdFor('me', 'bob')),
+      );
+
+      // Cancel dismisses the dialog without removing anyone.
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Remove friend?'), findsNothing);
+      verifyNever(
+        () => friendshipRepository.removeOrDecline(pairIdFor('me', 'bob')),
+      );
+      expect(find.text('Bob'), findsOneWidget);
+
+      // Re-opening and confirming this time does remove the friend.
+      await tester.tap(find.byIcon(Icons.close));
+      await tester.pumpAndSettle();
+      // 'Remove' also labels the row's own remove-button tooltip elsewhere,
+      // but that's not rendered as visible Text — only the dialog's action
+      // is.
+      await tester.tap(find.text('Remove'));
+      await tester.pumpAndSettle();
+
+      verify(
+        () => friendshipRepository.removeOrDecline(pairIdFor('me', 'bob')),
+      ).called(1);
+    },
+  );
+
   testWidgets('an incoming request shows accept/decline, and accept calls the '
       'repository', (tester) async {
     when(() => friendshipRepository.watchMyFriendships('me')).thenAnswer(
