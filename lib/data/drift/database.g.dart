@@ -1137,6 +1137,415 @@ class LockScreenPreferenceRowsCompanion
   }
 }
 
+class $UserPreferenceRowsTable extends UserPreferenceRows
+    with TableInfo<$UserPreferenceRowsTable, UserPreferenceRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $UserPreferenceRowsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _ownerIdMeta = const VerificationMeta(
+    'ownerId',
+  );
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+    'owner_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _localeCodeMeta = const VerificationMeta(
+    'localeCode',
+  );
+  @override
+  late final GeneratedColumn<String> localeCode = GeneratedColumn<String>(
+    'locale_code',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _themeOverrideMeta = const VerificationMeta(
+    'themeOverride',
+  );
+  @override
+  late final GeneratedColumn<String> themeOverride = GeneratedColumn<String>(
+    'theme_override',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _backgroundMusicEnabledMeta =
+      const VerificationMeta('backgroundMusicEnabled');
+  @override
+  late final GeneratedColumn<bool> backgroundMusicEnabled =
+      GeneratedColumn<bool>(
+        'background_music_enabled',
+        aliasedName,
+        false,
+        type: DriftSqlType.bool,
+        requiredDuringInsert: false,
+        defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("background_music_enabled" IN (0, 1))',
+        ),
+        defaultValue: const Constant(false),
+      );
+  static const VerificationMeta _showFriendsOnMapMeta = const VerificationMeta(
+    'showFriendsOnMap',
+  );
+  @override
+  late final GeneratedColumn<bool> showFriendsOnMap = GeneratedColumn<bool>(
+    'show_friends_on_map',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("show_friends_on_map" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    ownerId,
+    localeCode,
+    themeOverride,
+    backgroundMusicEnabled,
+    showFriendsOnMap,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'user_preference_rows';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<UserPreferenceRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('owner_id')) {
+      context.handle(
+        _ownerIdMeta,
+        ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ownerIdMeta);
+    }
+    if (data.containsKey('locale_code')) {
+      context.handle(
+        _localeCodeMeta,
+        localeCode.isAcceptableOrUnknown(
+          data['locale_code']!,
+          _localeCodeMeta,
+        ),
+      );
+    }
+    if (data.containsKey('theme_override')) {
+      context.handle(
+        _themeOverrideMeta,
+        themeOverride.isAcceptableOrUnknown(
+          data['theme_override']!,
+          _themeOverrideMeta,
+        ),
+      );
+    }
+    if (data.containsKey('background_music_enabled')) {
+      context.handle(
+        _backgroundMusicEnabledMeta,
+        backgroundMusicEnabled.isAcceptableOrUnknown(
+          data['background_music_enabled']!,
+          _backgroundMusicEnabledMeta,
+        ),
+      );
+    }
+    if (data.containsKey('show_friends_on_map')) {
+      context.handle(
+        _showFriendsOnMapMeta,
+        showFriendsOnMap.isAcceptableOrUnknown(
+          data['show_friends_on_map']!,
+          _showFriendsOnMapMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {ownerId};
+  @override
+  UserPreferenceRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return UserPreferenceRow(
+      ownerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_id'],
+      )!,
+      localeCode: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}locale_code'],
+      ),
+      themeOverride: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}theme_override'],
+      ),
+      backgroundMusicEnabled: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}background_music_enabled'],
+      )!,
+      showFriendsOnMap: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}show_friends_on_map'],
+      )!,
+    );
+  }
+
+  @override
+  $UserPreferenceRowsTable createAlias(String alias) {
+    return $UserPreferenceRowsTable(attachedDatabase, alias);
+  }
+}
+
+class UserPreferenceRow extends DataClass
+    implements Insertable<UserPreferenceRow> {
+  final String ownerId;
+  final String? localeCode;
+  final String? themeOverride;
+  final bool backgroundMusicEnabled;
+  final bool showFriendsOnMap;
+  const UserPreferenceRow({
+    required this.ownerId,
+    this.localeCode,
+    this.themeOverride,
+    required this.backgroundMusicEnabled,
+    required this.showFriendsOnMap,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['owner_id'] = Variable<String>(ownerId);
+    if (!nullToAbsent || localeCode != null) {
+      map['locale_code'] = Variable<String>(localeCode);
+    }
+    if (!nullToAbsent || themeOverride != null) {
+      map['theme_override'] = Variable<String>(themeOverride);
+    }
+    map['background_music_enabled'] = Variable<bool>(backgroundMusicEnabled);
+    map['show_friends_on_map'] = Variable<bool>(showFriendsOnMap);
+    return map;
+  }
+
+  UserPreferenceRowsCompanion toCompanion(bool nullToAbsent) {
+    return UserPreferenceRowsCompanion(
+      ownerId: Value(ownerId),
+      localeCode: localeCode == null && nullToAbsent
+          ? const Value.absent()
+          : Value(localeCode),
+      themeOverride: themeOverride == null && nullToAbsent
+          ? const Value.absent()
+          : Value(themeOverride),
+      backgroundMusicEnabled: Value(backgroundMusicEnabled),
+      showFriendsOnMap: Value(showFriendsOnMap),
+    );
+  }
+
+  factory UserPreferenceRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return UserPreferenceRow(
+      ownerId: serializer.fromJson<String>(json['ownerId']),
+      localeCode: serializer.fromJson<String?>(json['localeCode']),
+      themeOverride: serializer.fromJson<String?>(json['themeOverride']),
+      backgroundMusicEnabled: serializer.fromJson<bool>(
+        json['backgroundMusicEnabled'],
+      ),
+      showFriendsOnMap: serializer.fromJson<bool>(json['showFriendsOnMap']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'ownerId': serializer.toJson<String>(ownerId),
+      'localeCode': serializer.toJson<String?>(localeCode),
+      'themeOverride': serializer.toJson<String?>(themeOverride),
+      'backgroundMusicEnabled': serializer.toJson<bool>(
+        backgroundMusicEnabled,
+      ),
+      'showFriendsOnMap': serializer.toJson<bool>(showFriendsOnMap),
+    };
+  }
+
+  UserPreferenceRow copyWith({
+    String? ownerId,
+    Value<String?> localeCode = const Value.absent(),
+    Value<String?> themeOverride = const Value.absent(),
+    bool? backgroundMusicEnabled,
+    bool? showFriendsOnMap,
+  }) => UserPreferenceRow(
+    ownerId: ownerId ?? this.ownerId,
+    localeCode: localeCode.present ? localeCode.value : this.localeCode,
+    themeOverride: themeOverride.present
+        ? themeOverride.value
+        : this.themeOverride,
+    backgroundMusicEnabled:
+        backgroundMusicEnabled ?? this.backgroundMusicEnabled,
+    showFriendsOnMap: showFriendsOnMap ?? this.showFriendsOnMap,
+  );
+  UserPreferenceRow copyWithCompanion(UserPreferenceRowsCompanion data) {
+    return UserPreferenceRow(
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      localeCode: data.localeCode.present
+          ? data.localeCode.value
+          : this.localeCode,
+      themeOverride: data.themeOverride.present
+          ? data.themeOverride.value
+          : this.themeOverride,
+      backgroundMusicEnabled: data.backgroundMusicEnabled.present
+          ? data.backgroundMusicEnabled.value
+          : this.backgroundMusicEnabled,
+      showFriendsOnMap: data.showFriendsOnMap.present
+          ? data.showFriendsOnMap.value
+          : this.showFriendsOnMap,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserPreferenceRow(')
+          ..write('ownerId: $ownerId, ')
+          ..write('localeCode: $localeCode, ')
+          ..write('themeOverride: $themeOverride, ')
+          ..write('backgroundMusicEnabled: $backgroundMusicEnabled, ')
+          ..write('showFriendsOnMap: $showFriendsOnMap')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    ownerId,
+    localeCode,
+    themeOverride,
+    backgroundMusicEnabled,
+    showFriendsOnMap,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is UserPreferenceRow &&
+          other.ownerId == this.ownerId &&
+          other.localeCode == this.localeCode &&
+          other.themeOverride == this.themeOverride &&
+          other.backgroundMusicEnabled == this.backgroundMusicEnabled &&
+          other.showFriendsOnMap == this.showFriendsOnMap);
+}
+
+class UserPreferenceRowsCompanion extends UpdateCompanion<UserPreferenceRow> {
+  final Value<String> ownerId;
+  final Value<String?> localeCode;
+  final Value<String?> themeOverride;
+  final Value<bool> backgroundMusicEnabled;
+  final Value<bool> showFriendsOnMap;
+  final Value<int> rowid;
+  const UserPreferenceRowsCompanion({
+    this.ownerId = const Value.absent(),
+    this.localeCode = const Value.absent(),
+    this.themeOverride = const Value.absent(),
+    this.backgroundMusicEnabled = const Value.absent(),
+    this.showFriendsOnMap = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  UserPreferenceRowsCompanion.insert({
+    required String ownerId,
+    this.localeCode = const Value.absent(),
+    this.themeOverride = const Value.absent(),
+    this.backgroundMusicEnabled = const Value.absent(),
+    this.showFriendsOnMap = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : ownerId = Value(ownerId);
+  static Insertable<UserPreferenceRow> custom({
+    Expression<String>? ownerId,
+    Expression<String>? localeCode,
+    Expression<String>? themeOverride,
+    Expression<bool>? backgroundMusicEnabled,
+    Expression<bool>? showFriendsOnMap,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (ownerId != null) 'owner_id': ownerId,
+      if (localeCode != null) 'locale_code': localeCode,
+      if (themeOverride != null) 'theme_override': themeOverride,
+      if (backgroundMusicEnabled != null)
+        'background_music_enabled': backgroundMusicEnabled,
+      if (showFriendsOnMap != null) 'show_friends_on_map': showFriendsOnMap,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  UserPreferenceRowsCompanion copyWith({
+    Value<String>? ownerId,
+    Value<String?>? localeCode,
+    Value<String?>? themeOverride,
+    Value<bool>? backgroundMusicEnabled,
+    Value<bool>? showFriendsOnMap,
+    Value<int>? rowid,
+  }) {
+    return UserPreferenceRowsCompanion(
+      ownerId: ownerId ?? this.ownerId,
+      localeCode: localeCode ?? this.localeCode,
+      themeOverride: themeOverride ?? this.themeOverride,
+      backgroundMusicEnabled:
+          backgroundMusicEnabled ?? this.backgroundMusicEnabled,
+      showFriendsOnMap: showFriendsOnMap ?? this.showFriendsOnMap,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (localeCode.present) {
+      map['locale_code'] = Variable<String>(localeCode.value);
+    }
+    if (themeOverride.present) {
+      map['theme_override'] = Variable<String>(themeOverride.value);
+    }
+    if (backgroundMusicEnabled.present) {
+      map['background_music_enabled'] = Variable<bool>(
+        backgroundMusicEnabled.value,
+      );
+    }
+    if (showFriendsOnMap.present) {
+      map['show_friends_on_map'] = Variable<bool>(showFriendsOnMap.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('UserPreferenceRowsCompanion(')
+          ..write('ownerId: $ownerId, ')
+          ..write('localeCode: $localeCode, ')
+          ..write('themeOverride: $themeOverride, ')
+          ..write('backgroundMusicEnabled: $backgroundMusicEnabled, ')
+          ..write('showFriendsOnMap: $showFriendsOnMap, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $AchievementUnlockRowsTable extends AchievementUnlockRows
     with TableInfo<$AchievementUnlockRowsTable, AchievementUnlockRow> {
   @override
@@ -1440,6 +1849,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $LockScreenPreferenceRowsTable(this);
   late final $AchievementUnlockRowsTable achievementUnlockRows =
       $AchievementUnlockRowsTable(this);
+  late final $UserPreferenceRowsTable userPreferenceRows =
+      $UserPreferenceRowsTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1449,6 +1860,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     stepIntervalRecords,
     lockScreenPreferenceRows,
     achievementUnlockRows,
+    userPreferenceRows,
   ];
   @override
   DriftDatabaseOptions get options =>

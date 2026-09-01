@@ -1,3 +1,4 @@
+import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:drift_dev/api/migrations_native.dart';
 import 'package:test/test.dart';
@@ -6,6 +7,7 @@ import 'package:thereandback/data/drift/database.dart';
 import '../../generated_migrations/schema.dart';
 import '../../generated_migrations/schema_v1.dart' as v1;
 import '../../generated_migrations/schema_v2.dart' as v2;
+import '../../generated_migrations/schema_v3.dart' as v3;
 
 /// The real drift schema migration test `app_database_test.dart` promised
 /// would land once `schemaVersion` moved past 1 (§12, Phase 3's "drift
@@ -186,6 +188,74 @@ void main() {
       db.achievementUnlockRows,
     )..where((t) => t.ownerId.equals('owner-1'))).getSingle();
     expect(row.achievementId, 'first-steps');
+    await db.close();
+  });
+
+  test(
+    'v3 → v4 preserves existing data and the new UserPreferenceRows table '
+    'works — §14, persisted Настройки toggles',
+    () => verifier.testWithDataIntegrity<v3.DatabaseAtV3, AppDatabase>(
+      createOld: v3.DatabaseAtV3.new,
+      createNew: AppDatabase.new,
+      openTestedDatabase: AppDatabase.new,
+      createItems: (batch, oldDb) => batch.insert(
+        oldDb.lockScreenPreferenceRows,
+        v3.LockScreenPreferenceRowsCompanion.insert(
+          ownerId: 'owner-1',
+          enabled: 1,
+        ),
+      ),
+      validateItems: (newDb) async {
+        // The table that already existed at v3 — the migration must have
+        // left it untouched.
+        final rows = await newDb.select(newDb.lockScreenPreferenceRows).get();
+        expect(rows, hasLength(1));
+        expect(rows.single.enabled, isTrue);
+
+        // The new table exists and is usable post-migration — the actual
+        // point of adding it.
+        await newDb
+            .into(newDb.userPreferenceRows)
+            .insertOnConflictUpdate(
+              UserPreferenceRowsCompanion.insert(
+                ownerId: 'owner-1',
+                localeCode: const Value('en'),
+                backgroundMusicEnabled: const Value(true),
+              ),
+            );
+        final preference = await (newDb.select(
+          newDb.userPreferenceRows,
+        )..where((t) => t.ownerId.equals('owner-1'))).getSingle();
+        expect(preference.localeCode, 'en');
+        expect(preference.themeOverride, isNull);
+        expect(preference.backgroundMusicEnabled, isTrue);
+        expect(preference.showFriendsOnMap, isFalse);
+      },
+      oldVersion: 3,
+      newVersion: 4,
+      options: const ValidationOptions(validateColumnConstraints: false),
+    ),
+  );
+
+  test('a fresh (never-migrated) database has UserPreferenceRows available '
+      'immediately', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    await db
+        .into(db.userPreferenceRows)
+        .insertOnConflictUpdate(
+          UserPreferenceRowsCompanion.insert(
+            ownerId: 'owner-1',
+            showFriendsOnMap: const Value(true),
+          ),
+        );
+    final row = await (db.select(
+      db.userPreferenceRows,
+    )..where((t) => t.ownerId.equals('owner-1'))).getSingle();
+    expect(row.showFriendsOnMap, isTrue);
+    // Untouched columns keep their own defaults, same as a fresh install
+    // that never wrote this row at all.
+    expect(row.backgroundMusicEnabled, isFalse);
+    expect(row.localeCode, isNull);
     await db.close();
   });
 }

@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:thereandback/app/auth_provider.dart';
+import 'package:thereandback/app/database_provider.dart';
 import 'package:thereandback/app/theme.dart';
 import 'package:thereandback/core/app_theme_id.dart';
+import 'package:thereandback/data/drift/database.dart';
 import 'package:thereandback/data/firebase/google_sign_in_service.dart';
 import 'package:thereandback/data/firestore/firestore_providers.dart';
 import 'package:thereandback/data/firestore/friendship_repository.dart';
@@ -120,6 +122,13 @@ Widget _wrap({
         appThemeOverrideProvider.overrideWith(
           () => _FixedThemeOverride(themeOverride),
         ),
+      // `testing` skill: never a real (file-backed) drift database in a
+      // test — `AppThemeOverride.build()` (watched here via
+      // `effectiveThemeProvider`, `_EmptyState`) now reads
+      // `userPreferenceRepositoryProvider` (§14 — persisted Настройки
+      // toggles), which depends on `appDatabaseProvider` transitively even
+      // when `themeOverride` above isn't set.
+      appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
     ],
     child: MaterialApp(
       theme: buildAppTheme(),

@@ -12,8 +12,12 @@ part of 'theme_provider.dart';
 /// quest's own theme — the default this task asked for ("по умолчанию —
 /// тема текущего похода").
 ///
-/// In-memory only today — same placeholder-until-Phase-3 caveat as
-/// `locale_provider.dart`'s `AppLocale` (`docs/screens/settings.md`).
+/// Durable since §14 ("сохраняй настройки пользователя..."): [build] fires
+/// the same "async check from a sync build()" idiom
+/// `journey_providers.dart`'s `SelectedJourney.build()` uses, and
+/// [setOverride] writes through `UserPreferenceRepository` on every change
+/// — including back to `null` ("follow the active quest" is itself a
+/// choice worth persisting, not just the two named themes).
 
 @ProviderFor(AppThemeOverride)
 final appThemeOverrideProvider = AppThemeOverrideProvider._();
@@ -22,16 +26,24 @@ final appThemeOverrideProvider = AppThemeOverrideProvider._();
 /// quest's own theme — the default this task asked for ("по умолчанию —
 /// тема текущего похода").
 ///
-/// In-memory only today — same placeholder-until-Phase-3 caveat as
-/// `locale_provider.dart`'s `AppLocale` (`docs/screens/settings.md`).
+/// Durable since §14 ("сохраняй настройки пользователя..."): [build] fires
+/// the same "async check from a sync build()" idiom
+/// `journey_providers.dart`'s `SelectedJourney.build()` uses, and
+/// [setOverride] writes through `UserPreferenceRepository` on every change
+/// — including back to `null` ("follow the active quest" is itself a
+/// choice worth persisting, not just the two named themes).
 final class AppThemeOverrideProvider
     extends $NotifierProvider<AppThemeOverride, AppThemeId?> {
   /// The user's explicit theme pin (§6.5, §14), or `null` to follow the active
   /// quest's own theme — the default this task asked for ("по умолчанию —
   /// тема текущего похода").
   ///
-  /// In-memory only today — same placeholder-until-Phase-3 caveat as
-  /// `locale_provider.dart`'s `AppLocale` (`docs/screens/settings.md`).
+  /// Durable since §14 ("сохраняй настройки пользователя..."): [build]
+  /// fires the same "async check from a sync build()" idiom
+  /// `journey_providers.dart`'s `SelectedJourney.build()` uses, and
+  /// [setOverride] writes through `UserPreferenceRepository` on every
+  /// change — including back to `null` ("follow the active quest" is
+  /// itself a choice worth persisting, not just the two named themes).
   AppThemeOverrideProvider._()
     : super(
         from: null,
@@ -65,8 +77,12 @@ String _$appThemeOverrideHash() => r'196c95744bba352afd1c11e7ab019e96ed9723d0';
 /// quest's own theme — the default this task asked for ("по умолчанию —
 /// тема текущего похода").
 ///
-/// In-memory only today — same placeholder-until-Phase-3 caveat as
-/// `locale_provider.dart`'s `AppLocale` (`docs/screens/settings.md`).
+/// Durable since §14 ("сохраняй настройки пользователя..."): [build] fires
+/// the same "async check from a sync build()" idiom
+/// `journey_providers.dart`'s `SelectedJourney.build()` uses, and
+/// [setOverride] writes through `UserPreferenceRepository` on every change
+/// — including back to `null` ("follow the active quest" is itself a
+/// choice worth persisting, not just the two named themes).
 
 abstract class _$AppThemeOverride extends $Notifier<AppThemeId?> {
   AppThemeId? build();

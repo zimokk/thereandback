@@ -1,6 +1,11 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../app/auth_provider.dart';
+import '../../../app/user_preference_repository_provider.dart';
+import '../../../core/local_owner.dart';
 import '../../../data/firestore/firestore_providers.dart';
 import '../../../data/firestore/user_profile_repository.dart';
 import '../../journey/presentation/journey_providers.dart';
@@ -334,9 +339,11 @@ class FriendsController extends _$FriendsController {
 /// convention rather than surprising the user with friends suddenly
 /// appearing on a screen they haven't asked for.
 ///
-/// In-memory only, like `AppThemeOverride`/`AppLocale` — resets to off on
-/// the next cold start, the same accepted gap every other un-persisted
-/// Настройки toggle has today.
+/// Durable since §14 ("сохраняй настройки пользователя..."), like
+/// `AppThemeOverride`/`AppLocale`/`BackgroundMusicController`: [build] fires
+/// the same "async check from a sync build()" idiom
+/// `journey_providers.dart`'s `SelectedJourney.build()` uses, and
+/// [setEnabled] writes through `UserPreferenceRepository` on every change.
 ///
 /// `keepAlive: true` — found the hard way (a widget test caught it, real
 /// bug, not just a test artifact): plain `@riverpod`'s default autoDispose
@@ -353,7 +360,32 @@ class FriendsController extends _$FriendsController {
 @Riverpod(keepAlive: true)
 class ShowFriendsOnMap extends _$ShowFriendsOnMap {
   @override
-  bool build() => false;
+  bool build() {
+    unawaited(_restore());
+    return false;
+  }
 
-  void setEnabled(bool value) => state = value;
+  Future<void> _restore() async {
+    final enabled = await ref
+        .read(userPreferenceRepositoryProvider)
+        .loadShowFriendsOnMap(localOwnerId);
+    if (enabled) state = enabled;
+  }
+
+  void setEnabled(bool value) {
+    state = value;
+    // Fire-and-forget, like every other Настройки toggle's persistence
+    // write (`locale_provider.dart`, `theme_provider.dart`,
+    // `background_music_provider.dart`) — the toggle itself already took
+    // effect in [state] above; a failure to persist it only affects the
+    // next cold start.
+    unawaited(
+      ref
+          .read(userPreferenceRepositoryProvider)
+          .saveShowFriendsOnMap(localOwnerId, value)
+          .catchError((Object error) {
+            debugPrint('Failed to persist friends-on-map: $error');
+          }),
+    );
+  }
 }

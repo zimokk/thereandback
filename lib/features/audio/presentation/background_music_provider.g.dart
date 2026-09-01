@@ -84,12 +84,13 @@ String _$backgroundMusicPlayerHash() =>
 /// see `app_shell.dart`'s eager `ref.watch`, same reasoning as
 /// `LockScreenController`.
 ///
-/// In-memory only, like `AppThemeOverride`/`AppLocale` (`theme_provider
-/// .dart`, `locale_provider.dart`) — resets to off on the next cold start
-/// rather than persisting. Matches every other Настройки toggle that isn't
-/// already backed by drift; promoting it to a persisted preference (the
-/// `LockScreenPreferenceRepository` shape) is a follow-up, not something
-/// this task asked for.
+/// Durable since §14 ("сохраняй настройки пользователя..."): [build] fires
+/// the same "async check from a sync build()" idiom
+/// `journey_providers.dart`'s `SelectedJourney.build()` uses — if the track
+/// was on when the app was last closed, [_restore] resumes it through
+/// [setEnabled] itself, so a restart gets the same guarantee a manual
+/// toggle already has (state only reads "on" once playback actually
+/// started).
 
 @ProviderFor(BackgroundMusicController)
 final backgroundMusicControllerProvider = BackgroundMusicControllerProvider._();
@@ -108,12 +109,13 @@ final backgroundMusicControllerProvider = BackgroundMusicControllerProvider._();
 /// see `app_shell.dart`'s eager `ref.watch`, same reasoning as
 /// `LockScreenController`.
 ///
-/// In-memory only, like `AppThemeOverride`/`AppLocale` (`theme_provider
-/// .dart`, `locale_provider.dart`) — resets to off on the next cold start
-/// rather than persisting. Matches every other Настройки toggle that isn't
-/// already backed by drift; promoting it to a persisted preference (the
-/// `LockScreenPreferenceRepository` shape) is a follow-up, not something
-/// this task asked for.
+/// Durable since §14 ("сохраняй настройки пользователя..."): [build] fires
+/// the same "async check from a sync build()" idiom
+/// `journey_providers.dart`'s `SelectedJourney.build()` uses — if the track
+/// was on when the app was last closed, [_restore] resumes it through
+/// [setEnabled] itself, so a restart gets the same guarantee a manual
+/// toggle already has (state only reads "on" once playback actually
+/// started).
 final class BackgroundMusicControllerProvider
     extends $NotifierProvider<BackgroundMusicController, bool> {
   /// Whether the app's one background track (§6.5) is on. **Off by
@@ -130,12 +132,13 @@ final class BackgroundMusicControllerProvider
   /// see `app_shell.dart`'s eager `ref.watch`, same reasoning as
   /// `LockScreenController`.
   ///
-  /// In-memory only, like `AppThemeOverride`/`AppLocale` (`theme_provider
-  /// .dart`, `locale_provider.dart`) — resets to off on the next cold start
-  /// rather than persisting. Matches every other Настройки toggle that isn't
-  /// already backed by drift; promoting it to a persisted preference (the
-  /// `LockScreenPreferenceRepository` shape) is a follow-up, not something
-  /// this task asked for.
+  /// Durable since §14 ("сохраняй настройки пользователя..."): [build]
+  /// fires the same "async check from a sync build()" idiom
+  /// `journey_providers.dart`'s `SelectedJourney.build()` uses — if the
+  /// track was on when the app was last closed, [_restore] resumes it
+  /// through [setEnabled] itself, so a restart gets the same guarantee a
+  /// manual toggle already has (state only reads "on" once playback
+  /// actually started).
   BackgroundMusicControllerProvider._()
     : super(
         from: null,
@@ -180,12 +183,13 @@ String _$backgroundMusicControllerHash() =>
 /// see `app_shell.dart`'s eager `ref.watch`, same reasoning as
 /// `LockScreenController`.
 ///
-/// In-memory only, like `AppThemeOverride`/`AppLocale` (`theme_provider
-/// .dart`, `locale_provider.dart`) — resets to off on the next cold start
-/// rather than persisting. Matches every other Настройки toggle that isn't
-/// already backed by drift; promoting it to a persisted preference (the
-/// `LockScreenPreferenceRepository` shape) is a follow-up, not something
-/// this task asked for.
+/// Durable since §14 ("сохраняй настройки пользователя..."): [build] fires
+/// the same "async check from a sync build()" idiom
+/// `journey_providers.dart`'s `SelectedJourney.build()` uses — if the track
+/// was on when the app was last closed, [_restore] resumes it through
+/// [setEnabled] itself, so a restart gets the same guarantee a manual
+/// toggle already has (state only reads "on" once playback actually
+/// started).
 
 abstract class _$BackgroundMusicController extends $Notifier<bool> {
   bool build();

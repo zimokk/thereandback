@@ -11,8 +11,12 @@ part of 'locale_provider.dart';
 /// The app's current display language (§6.5). Defaults to Russian, this
 /// repo's primary language (§11); switching is immediate, no restart.
 ///
-/// In-memory only today — same placeholder-until-Phase-3 caveat as
-/// `journey_providers.dart`'s selected quest (`docs/screens/settings.md`).
+/// Durable since §14 ("сохраняй настройки пользователя..."): [build] fires
+/// the same "async check from a sync build()" idiom
+/// `journey_providers.dart`'s `SelectedJourney.build()` uses — the widget
+/// renders the `'ru'` default for one frame until the persisted value (if
+/// any) resolves — and [setLocale] writes through
+/// `UserPreferenceRepository` on every change.
 
 @ProviderFor(AppLocale)
 final appLocaleProvider = AppLocaleProvider._();
@@ -20,14 +24,22 @@ final appLocaleProvider = AppLocaleProvider._();
 /// The app's current display language (§6.5). Defaults to Russian, this
 /// repo's primary language (§11); switching is immediate, no restart.
 ///
-/// In-memory only today — same placeholder-until-Phase-3 caveat as
-/// `journey_providers.dart`'s selected quest (`docs/screens/settings.md`).
+/// Durable since §14 ("сохраняй настройки пользователя..."): [build] fires
+/// the same "async check from a sync build()" idiom
+/// `journey_providers.dart`'s `SelectedJourney.build()` uses — the widget
+/// renders the `'ru'` default for one frame until the persisted value (if
+/// any) resolves — and [setLocale] writes through
+/// `UserPreferenceRepository` on every change.
 final class AppLocaleProvider extends $NotifierProvider<AppLocale, Locale> {
   /// The app's current display language (§6.5). Defaults to Russian, this
   /// repo's primary language (§11); switching is immediate, no restart.
   ///
-  /// In-memory only today — same placeholder-until-Phase-3 caveat as
-  /// `journey_providers.dart`'s selected quest (`docs/screens/settings.md`).
+  /// Durable since §14 ("сохраняй настройки пользователя..."): [build]
+  /// fires the same "async check from a sync build()" idiom
+  /// `journey_providers.dart`'s `SelectedJourney.build()` uses — the widget
+  /// renders the `'ru'` default for one frame until the persisted value
+  /// (if any) resolves — and [setLocale] writes through
+  /// `UserPreferenceRepository` on every change.
   AppLocaleProvider._()
     : super(
         from: null,
@@ -60,8 +72,12 @@ String _$appLocaleHash() => r'd4ec2a0abd214741f9b33dfcb20cbaa12eb560e2';
 /// The app's current display language (§6.5). Defaults to Russian, this
 /// repo's primary language (§11); switching is immediate, no restart.
 ///
-/// In-memory only today — same placeholder-until-Phase-3 caveat as
-/// `journey_providers.dart`'s selected quest (`docs/screens/settings.md`).
+/// Durable since §14 ("сохраняй настройки пользователя..."): [build] fires
+/// the same "async check from a sync build()" idiom
+/// `journey_providers.dart`'s `SelectedJourney.build()` uses — the widget
+/// renders the `'ru'` default for one frame until the persisted value (if
+/// any) resolves — and [setLocale] writes through
+/// `UserPreferenceRepository` on every change.
 
 abstract class _$AppLocale extends $Notifier<Locale> {
   Locale build();
