@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:thereandback/app/auth_provider.dart';
+import 'package:thereandback/app/database_provider.dart';
+import 'package:thereandback/data/drift/database.dart';
 import 'package:thereandback/data/firebase/google_sign_in_service.dart';
 import 'package:thereandback/data/firestore/firestore_providers.dart';
 import 'package:thereandback/data/firestore/friendship_repository.dart';
@@ -489,6 +491,57 @@ void main() {
       await container.read(myProfileProvider.future);
 
       expect(container.read(friendsUnlockedProvider), isTrue);
+    });
+  });
+
+  group('ShowFriendsOnMap', () {
+    // `keepAlive: true` (see the provider's own doc comment) — unlike
+    // `AppLocale`/`AppThemeOverride` (autoDispose), a bare
+    // `container.read(...)` here is enough to keep the in-flight
+    // `_restore()` alive; `journey_providers_test.dart`'s
+    // `container.listen(...)` workaround is only needed for the
+    // autoDispose providers.
+    test('starts off when nothing was ever saved for localOwnerId', () async {
+      final db = AppDatabase.forTesting();
+      addTearDown(db.close);
+      final container = ProviderContainer(
+        overrides: [appDatabaseProvider.overrideWithValue(db)],
+      );
+      addTearDown(container.dispose);
+
+      container.read(showFriendsOnMapProvider);
+      await pumpEventQueue();
+
+      expect(container.read(showFriendsOnMapProvider), isFalse);
+    });
+
+    test('setEnabled(true) persists the toggle, and a fresh container reading '
+        'the same database restores it on build() — this task\'s own '
+        'requirement: settings survive a restart (§14)', () async {
+      final db = AppDatabase.forTesting();
+      addTearDown(db.close);
+      final container = ProviderContainer(
+        overrides: [appDatabaseProvider.overrideWithValue(db)],
+      );
+      addTearDown(container.dispose);
+
+      container.read(showFriendsOnMapProvider.notifier).setEnabled(true);
+      // setEnabled()'s own persistence write is fire-and-forget — give it
+      // a turn to land before simulating the restart below.
+      await pumpEventQueue();
+
+      // A brand-new provider container wired to the *same* database
+      // instance — this is the restart: fresh Riverpod graph, same disk
+      // (`journey_providers_test.dart`'s own restart-simulation shape).
+      final restartedContainer = ProviderContainer(
+        overrides: [appDatabaseProvider.overrideWithValue(db)],
+      );
+      addTearDown(restartedContainer.dispose);
+
+      restartedContainer.read(showFriendsOnMapProvider);
+      await pumpEventQueue();
+
+      expect(restartedContainer.read(showFriendsOnMapProvider), isTrue);
     });
   });
 }

@@ -455,9 +455,11 @@ abstract class _$FriendsController extends $Notifier<void> {
 /// convention rather than surprising the user with friends suddenly
 /// appearing on a screen they haven't asked for.
 ///
-/// In-memory only, like `AppThemeOverride`/`AppLocale` — resets to off on
-/// the next cold start, the same accepted gap every other un-persisted
-/// Настройки toggle has today.
+/// Durable since §14 ("сохраняй настройки пользователя..."), like
+/// `AppThemeOverride`/`AppLocale`/`BackgroundMusicController`: [build] fires
+/// the same "async check from a sync build()" idiom
+/// `journey_providers.dart`'s `SelectedJourney.build()` uses, and
+/// [setEnabled] writes through `UserPreferenceRepository` on every change.
 ///
 /// `keepAlive: true` — found the hard way (a widget test caught it, real
 /// bug, not just a test artifact): plain `@riverpod`'s default autoDispose
@@ -488,9 +490,11 @@ final showFriendsOnMapProvider = ShowFriendsOnMapProvider._();
 /// convention rather than surprising the user with friends suddenly
 /// appearing on a screen they haven't asked for.
 ///
-/// In-memory only, like `AppThemeOverride`/`AppLocale` — resets to off on
-/// the next cold start, the same accepted gap every other un-persisted
-/// Настройки toggle has today.
+/// Durable since §14 ("сохраняй настройки пользователя..."), like
+/// `AppThemeOverride`/`AppLocale`/`BackgroundMusicController`: [build] fires
+/// the same "async check from a sync build()" idiom
+/// `journey_providers.dart`'s `SelectedJourney.build()` uses, and
+/// [setEnabled] writes through `UserPreferenceRepository` on every change.
 ///
 /// `keepAlive: true` — found the hard way (a widget test caught it, real
 /// bug, not just a test artifact): plain `@riverpod`'s default autoDispose
@@ -519,9 +523,11 @@ final class ShowFriendsOnMapProvider
   /// convention rather than surprising the user with friends suddenly
   /// appearing on a screen they haven't asked for.
   ///
-  /// In-memory only, like `AppThemeOverride`/`AppLocale` — resets to off on
-  /// the next cold start, the same accepted gap every other un-persisted
-  /// Настройки toggle has today.
+  /// Durable since §14 ("сохраняй настройки пользователя..."), like
+  /// `AppThemeOverride`/`AppLocale`/`BackgroundMusicController`: [build] fires
+  /// the same "async check from a sync build()" idiom
+  /// `journey_providers.dart`'s `SelectedJourney.build()` uses, and
+  /// [setEnabled] writes through `UserPreferenceRepository` on every change.
   ///
   /// `keepAlive: true` — found the hard way (a widget test caught it, real
   /// bug, not just a test artifact): plain `@riverpod`'s default autoDispose
@@ -562,7 +568,7 @@ final class ShowFriendsOnMapProvider
   }
 }
 
-String _$showFriendsOnMapHash() => r'4168dcc5fb8ea56aef24cc91a28971fe91b944df';
+String _$showFriendsOnMapHash() => r'4ae81ff033bf43b077203b89e0cc968059f0be49';
 
 /// Settings-page preference (§6.5, user request): whether accepted friends'
 /// positions render on the Путь and Карта tabs — a colored figure with
@@ -577,9 +583,11 @@ String _$showFriendsOnMapHash() => r'4168dcc5fb8ea56aef24cc91a28971fe91b944df';
 /// convention rather than surprising the user with friends suddenly
 /// appearing on a screen they haven't asked for.
 ///
-/// In-memory only, like `AppThemeOverride`/`AppLocale` — resets to off on
-/// the next cold start, the same accepted gap every other un-persisted
-/// Настройки toggle has today.
+/// Durable since §14 ("сохраняй настройки пользователя..."), like
+/// `AppThemeOverride`/`AppLocale`/`BackgroundMusicController`: [build] fires
+/// the same "async check from a sync build()" idiom
+/// `journey_providers.dart`'s `SelectedJourney.build()` uses, and
+/// [setEnabled] writes through `UserPreferenceRepository` on every change.
 ///
 /// `keepAlive: true` — found the hard way (a widget test caught it, real
 /// bug, not just a test artifact): plain `@riverpod`'s default autoDispose

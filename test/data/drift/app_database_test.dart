@@ -15,9 +15,9 @@ void main() {
   setUp(() => db = AppDatabase.forTesting());
   tearDown(() => db.close());
 
-  test('schemaVersion is 3 — AchievementUnlockRows added on top of the '
-      'v2 baseline (see migration_test.dart)', () {
-    expect(db.schemaVersion, 3);
+  test('schemaVersion is 4 — UserPreferenceRows added on top of the v3 '
+      'baseline (see migration_test.dart)', () {
+    expect(db.schemaVersion, 4);
   });
 
   test('selectedQuestRows round-trips a row, keyed on ownerId', () async {
@@ -137,5 +137,33 @@ void main() {
       db.achievementUnlockRows,
     )..where((t) => t.ownerId.equals('owner-1'))).get();
     expect(rows, hasLength(2));
+  });
+
+  test('userPreferenceRows round-trips a row, keyed on ownerId, and a '
+      'second write for the same owner overwrites rather than adding a '
+      'row (§14 — persisted Настройки toggles)', () async {
+    await db
+        .into(db.userPreferenceRows)
+        .insertOnConflictUpdate(
+          UserPreferenceRowsCompanion.insert(
+            ownerId: 'owner-1',
+            localeCode: const Value('en'),
+            backgroundMusicEnabled: const Value(true),
+          ),
+        );
+    await db
+        .into(db.userPreferenceRows)
+        .insertOnConflictUpdate(
+          UserPreferenceRowsCompanion.insert(
+            ownerId: 'owner-1',
+            localeCode: const Value('ru'),
+            backgroundMusicEnabled: const Value(false),
+          ),
+        );
+
+    final rows = await db.select(db.userPreferenceRows).get();
+    expect(rows, hasLength(1));
+    expect(rows.single.localeCode, 'ru');
+    expect(rows.single.backgroundMusicEnabled, isFalse);
   });
 }

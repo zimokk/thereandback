@@ -1009,6 +1009,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t complete that — please try again.'**
   String get friendsOutcomeError;
+
+  /// Title of the confirmation dialog shown when tapping the close (×) icon on a friend row, before the friendship is actually removed (§6.4)
+  ///
+  /// In en, this message translates to:
+  /// **'Remove friend?'**
+  String get friendsRemoveConfirmTitle;
+
+  /// Body of the remove-friend confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'{nickname} will no longer see your progress, and you won\'t see theirs. You can add them again later.'**
+  String friendsRemoveConfirmBody(String nickname);
+
+  /// Confirms removal in the remove-friend confirmation dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get friendsRemoveConfirmButton;
+
+  /// Dismisses the remove-friend confirmation dialog without removing anyone
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get friendsRemoveConfirmCancel;
 }
 
 class _AppLocalizationsDelegate

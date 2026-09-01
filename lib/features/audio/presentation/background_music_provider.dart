@@ -1,9 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/widgets.dart' show AppLifecycleState;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../app/app_lifecycle.dart';
+import '../../../app/user_preference_repository_provider.dart';
+import '../../../core/local_owner.dart';
 import '../data/background_music_player.dart';
 
 part 'background_music_provider.g.dart';
@@ -33,12 +36,13 @@ BackgroundMusicPlayer backgroundMusicPlayer(Ref ref) {
 /// see `app_shell.dart`'s eager `ref.watch`, same reasoning as
 /// `LockScreenController`.
 ///
-/// In-memory only, like `AppThemeOverride`/`AppLocale` (`theme_provider
-/// .dart`, `locale_provider.dart`) — resets to off on the next cold start
-/// rather than persisting. Matches every other Настройки toggle that isn't
-/// already backed by drift; promoting it to a persisted preference (the
-/// `LockScreenPreferenceRepository` shape) is a follow-up, not something
-/// this task asked for.
+/// Durable since §14 ("сохраняй настройки пользователя..."): [build] fires
+/// the same "async check from a sync build()" idiom
+/// `journey_providers.dart`'s `SelectedJourney.build()` uses — if the track
+/// was on when the app was last closed, [_restore] resumes it through
+/// [setEnabled] itself, so a restart gets the same guarantee a manual
+/// toggle already has (state only reads "on" once playback actually
+/// started).
 @Riverpod(keepAlive: true)
 class BackgroundMusicController extends _$BackgroundMusicController {
   @override
@@ -52,7 +56,26 @@ class BackgroundMusicController extends _$BackgroundMusicController {
     ref.onDispose(() {
       unawaited(player.stop());
     });
+    unawaited(_restore());
     return false;
+  }
+
+  Future<void> _restore() async {
+    final enabled = await ref
+        .read(userPreferenceRepositoryProvider)
+        .loadBackgroundMusicEnabled(localOwnerId);
+    if (!enabled) return;
+    try {
+      await setEnabled(true);
+    } catch (error) {
+      // A restart-time resume failing (e.g. the bundled asset went
+      // missing) must not crash the app — a manual toggle tap would surface
+      // this through the Настройки screen's own try/catch (§7), but there
+      // is no user action here to attach that feedback to, so this just
+      // leaves the toggle off (setEnabled never flipped [state] on a
+      // failed start) and logs it.
+      debugPrint('Failed to resume background music on restore: $error');
+    }
   }
 
   /// Turns the track on or off. A failure starting playback (e.g. the
@@ -70,6 +93,9 @@ class BackgroundMusicController extends _$BackgroundMusicController {
       await player.stop();
     }
     state = enabled;
+    await ref
+        .read(userPreferenceRepositoryProvider)
+        .saveBackgroundMusicEnabled(localOwnerId, enabled);
   }
 
   void _onLifecycleChanged(

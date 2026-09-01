@@ -541,4 +541,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get friendsOutcomeError =>
       'Couldn\'t complete that — please try again.';
+
+  @override
+  String get friendsRemoveConfirmTitle => 'Remove friend?';
+
+  @override
+  String friendsRemoveConfirmBody(String nickname) {
+    return '$nickname will no longer see your progress, and you won\'t see theirs. You can add them again later.';
+  }
+
+  @override
+  String get friendsRemoveConfirmButton => 'Remove';
+
+  @override
+  String get friendsRemoveConfirmCancel => 'Cancel';
 }

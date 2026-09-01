@@ -91,6 +91,42 @@ class LockScreenPreferenceRows extends Table {
   Set<Column> get primaryKey => {ownerId};
 }
 
+/// Durable store for the handful of Настройки toggles that used to reset to
+/// their in-memory default on every cold start (§6.5, §14 — "сохраняй
+/// настройки пользователя... чтобы при перезапуске приложения всё
+/// загружалось как было настроено"): language, theme pin, background music,
+/// friends-on-map. One row per local owner, same shape as
+/// [LockScreenPreferenceRows] — just with four independent columns instead
+/// of one, since these are four independent Настройки toggles that happen
+/// to be cheap enough to share a single row rather than four single-column
+/// tables.
+///
+/// Every column is nullable/defaulted to exactly the value its provider's
+/// own in-memory default already was — `false` for the two toggles,
+/// `null` (→ "use the caller's own default") for the two text columns — so
+/// a device that has never written this row (fresh install, or one that
+/// upgraded from before this table existed) behaves exactly as it did
+/// before this table existed.
+///
+/// [localeCode] stores [Locale.languageCode] (`'ru'`/`'en'`, §11 — only
+/// those two); [themeOverride] stores [AppThemeId.name] or `null` for
+/// "follow the active quest" (§6.5, §14 "themes") — both are read back
+/// through `UserPreferenceRepository`'s own parsing, never raw here, so an
+/// unrecognized value from a future downgrade/rollback falls back to the
+/// same default as "never set" instead of crashing.
+class UserPreferenceRows extends Table {
+  TextColumn get ownerId => text()();
+  TextColumn get localeCode => text().nullable()();
+  TextColumn get themeOverride => text().nullable()();
+  BoolColumn get backgroundMusicEnabled =>
+      boolean().withDefault(const Constant(false))();
+  BoolColumn get showFriendsOnMap =>
+      boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {ownerId};
+}
+
 /// One durable "this trophy was earned" event (§6.3, extended by the daily-
 /// trophies task: trophies persisted in the DB, not only derived live from
 /// current progress every time the Трофеи tab opens). `achievementId` is
@@ -135,6 +171,7 @@ class AchievementUnlockRows extends Table {
     StepIntervalRecords,
     LockScreenPreferenceRows,
     AchievementUnlockRows,
+    UserPreferenceRows,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -145,11 +182,12 @@ class AppDatabase extends _$AppDatabase {
   factory AppDatabase.forTesting() => AppDatabase(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   // v1 → v2: added LockScreenPreferenceRows (see its doc comment).
-  // v2 → v3: added AchievementUnlockRows (see its doc comment). Both are
-  // purely additive migrations — existing rows in every earlier table are
+  // v2 → v3: added AchievementUnlockRows (see its doc comment).
+  // v3 → v4: added UserPreferenceRows (see its doc comment). All purely
+  // additive migrations — existing rows in every earlier table are
   // untouched; a device upgrading from an older version just gets the new
   // table(s) created empty, same as a fresh install.
   @override
@@ -160,6 +198,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 3) {
         await m.createTable(achievementUnlockRows);
+      }
+      if (from < 4) {
+        await m.createTable(userPreferenceRows);
       }
     },
   );

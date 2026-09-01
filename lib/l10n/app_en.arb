@@ -360,5 +360,13 @@
   "friendsOutcomeUpgradeCancelled": "Adding friends needs a Google account — sign-in was cancelled.",
   "@friendsOutcomeUpgradeCancelled": {"description": "Shown for AddFriendOutcome.googleUpgradeCancelled — the user closed the Google account picker"},
   "friendsOutcomeError": "Couldn't complete that — please try again.",
-  "@friendsOutcomeError": {"description": "Generic fallback shown when a friend action (add/accept/decline/cancel/remove) throws something other than its own known outcome enum — firestore.rules denying the write, no network, etc."}
+  "@friendsOutcomeError": {"description": "Generic fallback shown when a friend action (add/accept/decline/cancel/remove) throws something other than its own known outcome enum — firestore.rules denying the write, no network, etc."},
+  "friendsRemoveConfirmTitle": "Remove friend?",
+  "@friendsRemoveConfirmTitle": {"description": "Title of the confirmation dialog shown when tapping the close (×) icon on a friend row, before the friendship is actually removed (§6.4)"},
+  "friendsRemoveConfirmBody": "{nickname} will no longer see your progress, and you won't see theirs. You can add them again later.",
+  "@friendsRemoveConfirmBody": {"description": "Body of the remove-friend confirmation dialog", "placeholders": {"nickname": {"type": "String"}}},
+  "friendsRemoveConfirmButton": "Remove",
+  "@friendsRemoveConfirmButton": {"description": "Confirms removal in the remove-friend confirmation dialog"},
+  "friendsRemoveConfirmCancel": "Cancel",
+  "@friendsRemoveConfirmCancel": {"description": "Dismisses the remove-friend confirmation dialog without removing anyone"}
 }
