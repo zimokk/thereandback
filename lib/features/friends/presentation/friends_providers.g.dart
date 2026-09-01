@@ -524,11 +524,10 @@ final class ShowFriendsOnMapProvider
   /// appearing on a screen they haven't asked for.
   ///
   /// Durable since §14 ("сохраняй настройки пользователя..."), like
-  /// `AppThemeOverride`/`AppLocale`/`BackgroundMusicController`: [build]
-  /// fires the same "async check from a sync build()" idiom
+  /// `AppThemeOverride`/`AppLocale`/`BackgroundMusicController`: [build] fires
+  /// the same "async check from a sync build()" idiom
   /// `journey_providers.dart`'s `SelectedJourney.build()` uses, and
-  /// [setEnabled] writes through `UserPreferenceRepository` on every
-  /// change.
+  /// [setEnabled] writes through `UserPreferenceRepository` on every change.
   ///
   /// `keepAlive: true` — found the hard way (a widget test caught it, real
   /// bug, not just a test artifact): plain `@riverpod`'s default autoDispose
@@ -569,7 +568,7 @@ final class ShowFriendsOnMapProvider
   }
 }
 
-String _$showFriendsOnMapHash() => r'4168dcc5fb8ea56aef24cc91a28971fe91b944df';
+String _$showFriendsOnMapHash() => r'4ae81ff033bf43b077203b89e0cc968059f0be49';
 
 /// Settings-page preference (§6.5, user request): whether accepted friends'
 /// positions render on the Путь and Карта tabs — a colored figure with

@@ -297,14 +297,11 @@ void main() {
         ),
       );
       when(
-        () => progressSyncRepository.watchFriendProgress(
-          'bob',
-          'odyssey-ithaca',
-        ),
+        () =>
+            progressSyncRepository.watchFriendProgress('bob', 'odyssey-ithaca'),
       ).thenAnswer((_) => Stream.value(9000));
-      when(
-        () => friendshipRepository.removeOrDecline(pairIdFor('me', 'bob')),
-      ).thenAnswer((_) async {});
+      when(() => friendshipRepository.removeOrDecline(pairIdFor('me', 'bob')))
+          .thenAnswer((_) async {});
 
       await tester.pumpWidget(
         _wrap(
@@ -351,9 +348,8 @@ void main() {
       await tester.tap(find.text('Remove'));
       await tester.pumpAndSettle();
 
-      verify(
-        () => friendshipRepository.removeOrDecline(pairIdFor('me', 'bob')),
-      ).called(1);
+      verify(() => friendshipRepository.removeOrDecline(pairIdFor('me', 'bob')))
+          .called(1);
     },
   );
 

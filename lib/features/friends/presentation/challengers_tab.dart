@@ -246,10 +246,7 @@ void _confirmRemoveFriend(
     context: context,
     builder: (dialogContext) => AlertDialog(
       backgroundColor: AppColors.surface,
-      title: Text(
-        l10n.friendsRemoveConfirmTitle,
-        style: AppTypography.heading,
-      ),
+      title: Text(l10n.friendsRemoveConfirmTitle, style: AppTypography.heading),
       content: Text(
         l10n.friendsRemoveConfirmBody(row.nickname),
         style: AppTypography.body,

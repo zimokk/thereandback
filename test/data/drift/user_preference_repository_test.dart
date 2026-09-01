@@ -1,4 +1,4 @@
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:test/test.dart';
 import 'package:thereandback/core/app_theme_id.dart';
 import 'package:thereandback/data/drift/database.dart';
@@ -21,10 +21,13 @@ void main() {
       expect(await repository.loadLocaleCode('owner-1'), isNull);
     });
 
-    test('saveLocaleCode() then loadLocaleCode() round-trips the value', () async {
-      await repository.saveLocaleCode('owner-1', 'en');
-      expect(await repository.loadLocaleCode('owner-1'), 'en');
-    });
+    test(
+      'saveLocaleCode() then loadLocaleCode() round-trips the value',
+      () async {
+        await repository.saveLocaleCode('owner-1', 'en');
+        expect(await repository.loadLocaleCode('owner-1'), 'en');
+      },
+    );
 
     test('a later saveLocaleCode() overwrites, not adds', () async {
       await repository.saveLocaleCode('owner-1', 'en');
@@ -43,10 +46,7 @@ void main() {
     test('saveThemeOverride() then loadThemeOverride() round-trips the '
         'value', () async {
       await repository.saveThemeOverride('owner-1', AppThemeId.odyssey);
-      expect(
-        await repository.loadThemeOverride('owner-1'),
-        AppThemeId.odyssey,
-      );
+      expect(await repository.loadThemeOverride('owner-1'), AppThemeId.odyssey);
     });
 
     test('saveThemeOverride(null) persists "follow the active quest" '
@@ -77,11 +77,13 @@ void main() {
   });
 
   group('backgroundMusicEnabled', () {
-    test('loadBackgroundMusicEnabled() is false for an owner nothing was '
-        'ever saved for — same default as BackgroundMusicController.build()',
-        () async {
-      expect(await repository.loadBackgroundMusicEnabled('owner-1'), isFalse);
-    });
+    test(
+      'loadBackgroundMusicEnabled() is false for an owner nothing was '
+      'ever saved for — same default as BackgroundMusicController.build()',
+      () async {
+        expect(await repository.loadBackgroundMusicEnabled('owner-1'), isFalse);
+      },
+    );
 
     test('saveBackgroundMusicEnabled() round-trips true', () async {
       await repository.saveBackgroundMusicEnabled('owner-1', true);
@@ -113,10 +115,7 @@ void main() {
     await repository.saveShowFriendsOnMap('owner-1', true);
 
     expect(await repository.loadLocaleCode('owner-1'), 'en');
-    expect(
-      await repository.loadThemeOverride('owner-1'),
-      AppThemeId.odyssey,
-    );
+    expect(await repository.loadThemeOverride('owner-1'), AppThemeId.odyssey);
     expect(await repository.loadBackgroundMusicEnabled('owner-1'), isTrue);
     expect(await repository.loadShowFriendsOnMap('owner-1'), isTrue);
   });

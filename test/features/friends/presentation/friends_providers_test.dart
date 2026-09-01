@@ -515,37 +515,34 @@ void main() {
       expect(container.read(showFriendsOnMapProvider), isFalse);
     });
 
-    test(
-      'setEnabled(true) persists the toggle, and a fresh container reading '
-      'the same database restores it on build() — this task\'s own '
-      'requirement: settings survive a restart (§14)',
-      () async {
-        final db = AppDatabase.forTesting();
-        addTearDown(db.close);
-        final container = ProviderContainer(
-          overrides: [appDatabaseProvider.overrideWithValue(db)],
-        );
-        addTearDown(container.dispose);
+    test('setEnabled(true) persists the toggle, and a fresh container reading '
+        'the same database restores it on build() — this task\'s own '
+        'requirement: settings survive a restart (§14)', () async {
+      final db = AppDatabase.forTesting();
+      addTearDown(db.close);
+      final container = ProviderContainer(
+        overrides: [appDatabaseProvider.overrideWithValue(db)],
+      );
+      addTearDown(container.dispose);
 
-        container.read(showFriendsOnMapProvider.notifier).setEnabled(true);
-        // setEnabled()'s own persistence write is fire-and-forget — give it
-        // a turn to land before simulating the restart below.
-        await pumpEventQueue();
+      container.read(showFriendsOnMapProvider.notifier).setEnabled(true);
+      // setEnabled()'s own persistence write is fire-and-forget — give it
+      // a turn to land before simulating the restart below.
+      await pumpEventQueue();
 
-        // A brand-new provider container wired to the *same* database
-        // instance — this is the restart: fresh Riverpod graph, same disk
-        // (`journey_providers_test.dart`'s own restart-simulation shape).
-        final restartedContainer = ProviderContainer(
-          overrides: [appDatabaseProvider.overrideWithValue(db)],
-        );
-        addTearDown(restartedContainer.dispose);
+      // A brand-new provider container wired to the *same* database
+      // instance — this is the restart: fresh Riverpod graph, same disk
+      // (`journey_providers_test.dart`'s own restart-simulation shape).
+      final restartedContainer = ProviderContainer(
+        overrides: [appDatabaseProvider.overrideWithValue(db)],
+      );
+      addTearDown(restartedContainer.dispose);
 
-        restartedContainer.read(showFriendsOnMapProvider);
-        await pumpEventQueue();
+      restartedContainer.read(showFriendsOnMapProvider);
+      await pumpEventQueue();
 
-        expect(restartedContainer.read(showFriendsOnMapProvider), isTrue);
-      },
-    );
+      expect(restartedContainer.read(showFriendsOnMapProvider), isTrue);
+    });
   });
 }
 

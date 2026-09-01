@@ -27,50 +27,41 @@ void main() {
     expect(container.read(appLocaleProvider), const Locale('ru'));
   });
 
-  test(
-    'setLocale(en) persists the choice, and a fresh container reading the '
-    'same database restores it on build() — this task\'s own requirement: '
-    'settings survive a restart (§14)',
-    () async {
-      final db = AppDatabase.forTesting();
-      addTearDown(db.close);
-      final container = ProviderContainer(
-        overrides: [appDatabaseProvider.overrideWithValue(db)],
-      );
-      addTearDown(container.dispose);
+  test('setLocale(en) persists the choice, and a fresh container reading the '
+      'same database restores it on build() — this task\'s own requirement: '
+      'settings survive a restart (§14)', () async {
+    final db = AppDatabase.forTesting();
+    addTearDown(db.close);
+    final container = ProviderContainer(
+      overrides: [appDatabaseProvider.overrideWithValue(db)],
+    );
+    addTearDown(container.dispose);
 
-      container
-          .read(appLocaleProvider.notifier)
-          .setLocale(const Locale('en'));
-      // setLocale()'s own persistence write is fire-and-forget — give it a
-      // turn to land before simulating the restart below.
-      await pumpEventQueue();
+    container.read(appLocaleProvider.notifier).setLocale(const Locale('en'));
+    // setLocale()'s own persistence write is fire-and-forget — give it a
+    // turn to land before simulating the restart below.
+    await pumpEventQueue();
 
-      // A brand-new provider container wired to the *same* database
-      // instance — this is the restart: fresh Riverpod graph, same disk
-      // (`journey_providers_test.dart`'s own restart-simulation shape).
-      final restartedContainer = ProviderContainer(
-        overrides: [appDatabaseProvider.overrideWithValue(db)],
-      );
-      addTearDown(restartedContainer.dispose);
-      restartedContainer.listen(appLocaleProvider, (_, _) {});
+    // A brand-new provider container wired to the *same* database
+    // instance — this is the restart: fresh Riverpod graph, same disk
+    // (`journey_providers_test.dart`'s own restart-simulation shape).
+    final restartedContainer = ProviderContainer(
+      overrides: [appDatabaseProvider.overrideWithValue(db)],
+    );
+    addTearDown(restartedContainer.dispose);
+    restartedContainer.listen(appLocaleProvider, (_, _) {});
 
-      await pumpEventQueue();
+    await pumpEventQueue();
 
-      expect(
-        restartedContainer.read(appLocaleProvider),
-        const Locale('en'),
-      );
-    },
-  );
+    expect(restartedContainer.read(appLocaleProvider), const Locale('en'));
+  });
 
   test('a previously saved locale for a different owner never leaks into '
       'localOwnerId\'s restore (§8, §13)', () async {
     final db = AppDatabase.forTesting();
     addTearDown(db.close);
-    await DriftUserPreferenceRepository(
-      db,
-    ).saveLocaleCode('some-other-owner', 'en');
+    await DriftUserPreferenceRepository(db)
+        .saveLocaleCode('some-other-owner', 'en');
 
     final container = ProviderContainer(
       overrides: [appDatabaseProvider.overrideWithValue(db)],

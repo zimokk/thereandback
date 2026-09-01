@@ -18,8 +18,7 @@ part of 'user_preference_repository_provider.dart';
 /// skill: never a real drift database in a test).
 
 @ProviderFor(userPreferenceRepository)
-final userPreferenceRepositoryProvider =
-    UserPreferenceRepositoryProvider._();
+final userPreferenceRepositoryProvider = UserPreferenceRepositoryProvider._();
 
 /// The drift-backed store for the Настройки toggles that persist across a
 /// restart (§6.5, §14 — language, theme pin, background music, friends on
@@ -81,4 +80,4 @@ final class UserPreferenceRepositoryProvider
 }
 
 String _$userPreferenceRepositoryHash() =>
-    r'1534a5489acd0ea71a614d43569ba1f0af3f3465';
+    r'ebf4282cfc2357fa45a7818864876cbc2d0258de';

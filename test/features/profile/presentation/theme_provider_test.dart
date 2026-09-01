@@ -26,70 +26,70 @@ void main() {
     expect(container.read(appThemeOverrideProvider), isNull);
   });
 
-  test(
-    'setOverride(classic) persists the pin, and a fresh container reading '
-    'the same database restores it on build() — this task\'s own '
-    'requirement: settings survive a restart (§14)',
-    () async {
-      final db = AppDatabase.forTesting();
-      addTearDown(db.close);
-      final container = ProviderContainer(
-        overrides: [appDatabaseProvider.overrideWithValue(db)],
-      );
-      addTearDown(container.dispose);
+  test('setOverride(classic) persists the pin, and a fresh container reading '
+      'the same database restores it on build() — this task\'s own '
+      'requirement: settings survive a restart (§14)', () async {
+    final db = AppDatabase.forTesting();
+    addTearDown(db.close);
+    final container = ProviderContainer(
+      overrides: [appDatabaseProvider.overrideWithValue(db)],
+    );
+    addTearDown(container.dispose);
 
-      container
-          .read(appThemeOverrideProvider.notifier)
-          .setOverride(AppThemeId.classic);
-      // setOverride()'s own persistence write is fire-and-forget — give it
-      // a turn to land before simulating the restart below.
-      await pumpEventQueue();
+    container
+        .read(appThemeOverrideProvider.notifier)
+        .setOverride(AppThemeId.classic);
+    // setOverride()'s own persistence write is fire-and-forget — give it
+    // a turn to land before simulating the restart below.
+    await pumpEventQueue();
 
-      // A brand-new provider container wired to the *same* database
-      // instance — this is the restart: fresh Riverpod graph, same disk
-      // (`journey_providers_test.dart`'s own restart-simulation shape).
-      final restartedContainer = ProviderContainer(
-        overrides: [appDatabaseProvider.overrideWithValue(db)],
-      );
-      addTearDown(restartedContainer.dispose);
-      restartedContainer.listen(appThemeOverrideProvider, (_, _) {});
+    // A brand-new provider container wired to the *same* database
+    // instance — this is the restart: fresh Riverpod graph, same disk
+    // (`journey_providers_test.dart`'s own restart-simulation shape).
+    final restartedContainer = ProviderContainer(
+      overrides: [appDatabaseProvider.overrideWithValue(db)],
+    );
+    addTearDown(restartedContainer.dispose);
+    restartedContainer.listen(appThemeOverrideProvider, (_, _) {});
 
-      await pumpEventQueue();
+    await pumpEventQueue();
 
-      expect(
-        restartedContainer.read(appThemeOverrideProvider),
-        AppThemeId.classic,
-      );
-    },
-  );
+    expect(
+      restartedContainer.read(appThemeOverrideProvider),
+      AppThemeId.classic,
+    );
+  });
 
-  test(
-    'setOverride(null) after a previous pin persists "follow the active '
-    'quest" explicitly — a fresh container restores null, not the earlier '
-    'pin',
-    () async {
-      final db = AppDatabase.forTesting();
-      addTearDown(db.close);
-      final container = ProviderContainer(
-        overrides: [appDatabaseProvider.overrideWithValue(db)],
-      );
-      addTearDown(container.dispose);
+  test('setOverride(null) after a previous pin persists "follow the active '
+      'quest" explicitly — a fresh container restores null, not the earlier '
+      'pin', () async {
+    final db = AppDatabase.forTesting();
+    addTearDown(db.close);
+    final container = ProviderContainer(
+      overrides: [appDatabaseProvider.overrideWithValue(db)],
+    );
+    addTearDown(container.dispose);
+    // Without an active listener, autoDispose can tear this element down
+    // between the two setOverride() calls below — the exact pitfall
+    // `friends_providers.dart`'s `ShowFriendsOnMap` doc comment already
+    // documents for the same reason, just for a genuinely autoDispose
+    // provider here instead of a keepAlive one that avoided it.
+    container.listen(appThemeOverrideProvider, (_, _) {});
 
-      final notifier = container.read(appThemeOverrideProvider.notifier);
-      notifier.setOverride(AppThemeId.odyssey);
-      await pumpEventQueue();
-      notifier.setOverride(null);
-      await pumpEventQueue();
+    final notifier = container.read(appThemeOverrideProvider.notifier);
+    notifier.setOverride(AppThemeId.odyssey);
+    await pumpEventQueue();
+    notifier.setOverride(null);
+    await pumpEventQueue();
 
-      final restartedContainer = ProviderContainer(
-        overrides: [appDatabaseProvider.overrideWithValue(db)],
-      );
-      addTearDown(restartedContainer.dispose);
-      restartedContainer.listen(appThemeOverrideProvider, (_, _) {});
+    final restartedContainer = ProviderContainer(
+      overrides: [appDatabaseProvider.overrideWithValue(db)],
+    );
+    addTearDown(restartedContainer.dispose);
+    restartedContainer.listen(appThemeOverrideProvider, (_, _) {});
 
-      await pumpEventQueue();
+    await pumpEventQueue();
 
-      expect(restartedContainer.read(appThemeOverrideProvider), isNull);
-    },
-  );
+    expect(restartedContainer.read(appThemeOverrideProvider), isNull);
+  });
 }

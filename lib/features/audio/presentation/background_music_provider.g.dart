@@ -132,13 +132,13 @@ final class BackgroundMusicControllerProvider
   /// see `app_shell.dart`'s eager `ref.watch`, same reasoning as
   /// `LockScreenController`.
   ///
-  /// Durable since §14 ("сохраняй настройки пользователя..."): [build]
-  /// fires the same "async check from a sync build()" idiom
-  /// `journey_providers.dart`'s `SelectedJourney.build()` uses — if the
-  /// track was on when the app was last closed, [_restore] resumes it
-  /// through [setEnabled] itself, so a restart gets the same guarantee a
-  /// manual toggle already has (state only reads "on" once playback
-  /// actually started).
+  /// Durable since §14 ("сохраняй настройки пользователя..."): [build] fires
+  /// the same "async check from a sync build()" idiom
+  /// `journey_providers.dart`'s `SelectedJourney.build()` uses — if the track
+  /// was on when the app was last closed, [_restore] resumes it through
+  /// [setEnabled] itself, so a restart gets the same guarantee a manual
+  /// toggle already has (state only reads "on" once playback actually
+  /// started).
   BackgroundMusicControllerProvider._()
     : super(
         from: null,
@@ -167,7 +167,7 @@ final class BackgroundMusicControllerProvider
 }
 
 String _$backgroundMusicControllerHash() =>
-    r'18663941843a154806dccff79a649a701dced160';
+    r'bf7db0151523f7fd0047586e24aaf23c58135e97';
 
 /// Whether the app's one background track (§6.5) is on. **Off by
 /// default** — this task's own requirement — turning it on in Настройки

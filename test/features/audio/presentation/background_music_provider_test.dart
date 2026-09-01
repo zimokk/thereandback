@@ -150,54 +150,45 @@ void main() {
     verifyNever(() => player.resume());
   });
 
-  test(
-    'setEnabled(true) persists the toggle, and a fresh controller reading '
-    'the same database restores it on build() — this task\'s own '
-    'requirement: settings survive a restart (§14)',
-    () async {
-      await container
-          .read(backgroundMusicControllerProvider.notifier)
-          .setEnabled(true);
+  test('setEnabled(true) persists the toggle, and a fresh controller reading '
+      'the same database restores it on build() — this task\'s own '
+      'requirement: settings survive a restart (§14)', () async {
+    await container
+        .read(backgroundMusicControllerProvider.notifier)
+        .setEnabled(true);
 
-      // A second, independent container simulates the app cold-starting
-      // again against the same on-disk database — same "restart"
-      // simulation `journey_providers_test.dart` uses for
-      // `SelectedJourney`.
-      final restartedPlayer = _MockPlayer();
-      when(() => restartedPlayer.start()).thenAnswer((_) async {});
-      when(() => restartedPlayer.stop()).thenAnswer((_) async {});
-      when(() => restartedPlayer.pause()).thenAnswer((_) async {});
-      when(() => restartedPlayer.resume()).thenAnswer((_) async {});
-      final restartedContainer = ProviderContainer(
-        overrides: [
-          backgroundMusicPlayerProvider.overrideWithValue(restartedPlayer),
-          appLifecycleProvider.overrideWith(
-            () => _FakeAppLifecycle(AppLifecycleState.resumed),
-          ),
-          appDatabaseProvider.overrideWithValue(db),
-        ],
-      );
-      addTearDown(restartedContainer.dispose);
+    // A second, independent container simulates the app cold-starting
+    // again against the same on-disk database — same "restart"
+    // simulation `journey_providers_test.dart` uses for
+    // `SelectedJourney`.
+    final restartedPlayer = _MockPlayer();
+    when(() => restartedPlayer.start()).thenAnswer((_) async {});
+    when(() => restartedPlayer.stop()).thenAnswer((_) async {});
+    when(() => restartedPlayer.pause()).thenAnswer((_) async {});
+    when(() => restartedPlayer.resume()).thenAnswer((_) async {});
+    final restartedContainer = ProviderContainer(
+      overrides: [
+        backgroundMusicPlayerProvider.overrideWithValue(restartedPlayer),
+        appLifecycleProvider.overrideWith(
+          () => _FakeAppLifecycle(AppLifecycleState.resumed),
+        ),
+        appDatabaseProvider.overrideWithValue(db),
+      ],
+    );
+    addTearDown(restartedContainer.dispose);
 
-      restartedContainer.read(backgroundMusicControllerProvider);
-      await pumpEventQueue();
+    restartedContainer.read(backgroundMusicControllerProvider);
+    await pumpEventQueue();
 
-      expect(
-        restartedContainer.read(backgroundMusicControllerProvider),
-        isTrue,
-      );
-      verify(() => restartedPlayer.start()).called(1);
-    },
-  );
+    expect(restartedContainer.read(backgroundMusicControllerProvider), isTrue);
+    verify(() => restartedPlayer.start()).called(1);
+  });
 
   test(
     'a controller reading an empty database (nothing ever saved for '
     'localOwnerId) stays off — same default as before persistence existed',
     () async {
-      expect(
-        await db.select(db.userPreferenceRows).getSingleOrNull(),
-        isNull,
-      );
+      expect(await db.select(db.userPreferenceRows).getSingleOrNull(), isNull);
 
       container.read(backgroundMusicControllerProvider);
       await pumpEventQueue();

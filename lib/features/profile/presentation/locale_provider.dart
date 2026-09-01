@@ -18,7 +18,21 @@ part 'locale_provider.g.dart';
 /// renders the `'ru'` default for one frame until the persisted value (if
 /// any) resolves — and [setLocale] writes through
 /// `UserPreferenceRepository` on every change.
-@riverpod
+///
+/// `keepAlive: true` — same reason `friends_providers.dart`'s
+/// `ShowFriendsOnMap` needs it (see that doc comment for the mechanism):
+/// [setLocale] is called via `ref.read(...).notifier` from a widget event
+/// handler in `settings_tab.dart`, which also `ref.watch`es this provider
+/// in the very same `build()` — a *read*, not a *watch*, so it doesn't
+/// itself count as a listener. Plain `@riverpod`'s default autoDispose can
+/// tear this element down in the gap between that call and the watching
+/// widget's next build re-establishing its own subscription, discarding
+/// the just-set value (or throwing "Cannot use Ref after disposed" if the
+/// write itself loses the race) — caught by
+/// `theme_provider_test.dart`'s sibling restart test for
+/// `AppThemeOverride`, fixed here the same way before it could bite this
+/// provider too.
+@Riverpod(keepAlive: true)
 class AppLocale extends _$AppLocale {
   @override
   Locale build() {

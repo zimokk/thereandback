@@ -20,7 +20,20 @@ part 'theme_provider.g.dart';
 /// [setOverride] writes through `UserPreferenceRepository` on every change
 /// — including back to `null` ("follow the active quest" is itself a
 /// choice worth persisting, not just the two named themes).
-@riverpod
+///
+/// `keepAlive: true` — same reason `friends_providers.dart`'s
+/// `ShowFriendsOnMap` needs it (see that doc comment for the mechanism):
+/// [setOverride] is called via `ref.read(...).notifier` from a widget
+/// event handler in `settings_tab.dart`'s `_ThemeSection`, which also
+/// `ref.watch`es this provider in the very same `build()` — a *read*, not
+/// a *watch*, so it doesn't itself count as a listener. Plain
+/// `@riverpod`'s default autoDispose can tear this element down in the gap
+/// between that call and the watching widget's next build re-establishing
+/// its own subscription, discarding the just-set value (or throwing
+/// "Cannot use Ref after disposed" if the write itself loses the race) —
+/// found the hard way here too: `theme_provider_test.dart`'s restart test
+/// for `setOverride(null)` after a previous pin hit exactly this.
+@Riverpod(keepAlive: true)
 class AppThemeOverride extends _$AppThemeOverride {
   @override
   AppThemeId? build() {
