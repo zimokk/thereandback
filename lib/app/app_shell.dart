@@ -10,6 +10,7 @@ import '../features/audio/presentation/background_music_provider.dart';
 import '../features/friends/presentation/friends_providers.dart';
 import '../features/journey/presentation/lock_screen_controller.dart';
 import '../l10n/app_localizations.dart';
+import 'active_tab_index.dart';
 
 /// Index of the Друзья branch in [AppShell]'s `items`/the router's
 /// branches (`app/router.dart`) — the one tab this task's requirement
@@ -17,8 +18,11 @@ import '../l10n/app_localizations.dart';
 const int _friendsTabIndex = 3;
 
 /// Index of the Путь branch — the one tab whose achievement-marker popup
-/// (`journey_path_view.dart`'s `_showAchievementDetails`) needs closing on
+/// (`achievement_overlay.dart`'s `_showAchievementDetails`) needs closing on
 /// the way out (styling fix regression, see that function's doc comment).
+/// Same value as `active_tab_index.dart`'s own `journeyTabIndex` — kept as a
+/// separate private constant here since it predates that file and serves
+/// this different concern (closing a stray sheet, not pausing a game loop).
 const int _journeyTabIndex = 0;
 
 /// Compact bottom-nav height (styling fix — the stock `BottomNavigationBar`
@@ -58,6 +62,19 @@ class AppShell extends ConsumerWidget {
     // live for the whole session the moment the app opens, not only once
     // the user happens to visit Настройки and flips the toggle on.
     ref.watch(backgroundMusicControllerProvider);
+
+    // Pushes the currently selected branch into `activeTabIndexProvider`
+    // (`active_tab_index.dart`) so `journey_flame_scene_view.dart` knows
+    // when to pause its Flame game loop — deferred to a post-frame callback
+    // rather than written synchronously here, since Riverpod refuses a
+    // provider write from inside another widget's own `build()`. Cheap to
+    // call on every rebuild: `ActiveTabIndex.set` no-ops once the value
+    // already matches.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(activeTabIndexProvider.notifier)
+          .set(navigationShell.currentIndex);
+    });
 
     final l10n = AppLocalizations.of(context)!;
     // This task's requirement: the Друзья tab stays inactive until the
