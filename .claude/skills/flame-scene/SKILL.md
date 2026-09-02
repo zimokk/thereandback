@@ -9,7 +9,7 @@ The central screen (§6.1). It is a **horizontal ribbon along the whole route**,
 
 ## Behavior contract (§6.1)
 
-- **Free scroll** — the user can rewind to walked ground and peek ahead.
+- **Rewind only** — the user can scroll back to any already-walked position, never past the player's current, real position (2026-08-30 revision, CLAUDE.md §6.1/§14 — there is nothing to look at past it yet).
 - Layers move at different speeds via `ParallaxComponent` `velocityMultiplier`: sky nearly static, far hills slow, foreground fast.
 - Two anchors at the bottom: **`< Start`** (route beginning) and **`You >`** (current position). Both jump **animated**, never instantly.
 - The **traveler figure exists only at `You`**. Scrolling elsewhere shows landscape with no figure — do not render a second traveler.

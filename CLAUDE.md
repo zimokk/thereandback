@@ -1107,6 +1107,41 @@ firebase emulators:start                                    # Firestore + Functi
   настройкой «Друзья на карте» выше: шлемы (свой и друзей) рисуются
   всегда, легенда решает только судьбу подписей/иконок.
 
+Решено 2026-09-02 (§3, §6.1, §13 — Phase 5, по прямому запросу «начни
+Flame-архитектуру сейчас, на плейсхолдер-арте»):
+
+- **Пакет `flame` (^1.38.2) и `flame_test` подключены** — предыдущая
+  задержка («нечем рендерить, пока нет арта», см. `docs/screens/
+  journey.md` до этой правки) осознанно пересмотрена: сцена строится на
+  **процедурной плейсхолдер-графике**, тем же принципом «дёшево заменить
+  на реальный арт потом», что уже применяет `AppSceneBackdrop`. Реальный
+  выбор источника арта (§9.1) по-прежнему открыт — эта правка его не
+  предрешает, только даёт архитектуру, в которую он подставится позже
+  подменой одного слоя, а не переписыванием сцены.
+- **`journey_path_view.dart` (`CustomPaint`-заглушка) удалён**, заменён
+  `journey_flame_scene_view.dart` (`FlameGame` + `CameraComponent`) —
+  `lib/features/journey/presentation/{journey_scene.dart, journey_scene_
+  controller.dart, terrain_layer.dart, traveler_component.dart, friend_
+  component.dart, environment_layer.dart, sky_gradient.dart, achievement_
+  overlay.dart}`. Полное описание архитектуры и границ (что осталось
+  Flutter-виджетами, что стало Flame-компонентами, почему) —
+  `docs/screens/journey.md`.
+- **Новое против самой заглушки** — то, что уже требовал §6.1, но
+  заглушка не реализовывала: плавная интерполяция позиции `You` при
+  приходе новых шагов (`domain/traveler_interpolation.dart`'s
+  `interpolatedTravelerMeters`, чистая функция с тестами).
+- **Пауза игрового цикла вне вкладки** (§6.1/§12) потребовала нового
+  сигнала — `lib/app/active_tab_index.dart`'s `journeySceneActiveProvider`:
+  `StatefulShellRoute.indexedStack` держит неактивные вкладки
+  смонтированными, но непрокрашенными, так что сама вкладка не подсказывает,
+  видна ли она; `AppShell` пушит `navigationShell.currentIndex` в
+  `ActiveTabIndex` на каждой перестройке (`post-frame callback`, Riverpod не
+  даёт менять провайдер синхронно из чужого `build()`).
+- **Не реализовано в этой правке** (см. `docs/screens/journey.md`'s
+  Phase 5-раздел): якорь `< Start` (есть только `You >`/return-to-you,
+  как и в заглушке) и экран награды при завершении квеста. Оба остаются
+  открытым follow-up.
+
 Остаётся нерешённым:
 
 - [x] Первый квест каталога — «The Odyssey: Troy to Ithaca» на основе

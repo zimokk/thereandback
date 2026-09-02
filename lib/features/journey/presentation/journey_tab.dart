@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../design/colors.dart';
 import '../../steps/presentation/permission_gate.dart';
-import 'journey_path_view.dart';
+import 'journey_flame_scene_view.dart';
 import 'journey_providers.dart';
 import 'quest_picker_view.dart';
 
@@ -28,7 +28,7 @@ class JourneyTab extends ConsumerWidget {
             : const Column(
                 children: [
                   StepsPermissionGate(),
-                  Expanded(child: JourneyPathView()),
+                  Expanded(child: JourneyFlameSceneView()),
                 ],
               ),
       ),
