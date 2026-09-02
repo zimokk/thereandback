@@ -758,9 +758,8 @@ class _DebugSection extends ConsumerWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: OutlinedButton(
-              onPressed: () => unawaited(
-                _forceResyncFromCloud(context, ref, l10n),
-              ),
+              onPressed: () =>
+                  unawaited(_forceResyncFromCloud(context, ref, l10n)),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.gold,
                 side: const BorderSide(color: AppColors.gold),

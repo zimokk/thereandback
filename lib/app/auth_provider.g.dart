@@ -154,7 +154,7 @@ final class AuthControllerProvider
   }
 }
 
-String _$authControllerHash() => r'5b4a5dc61903378a0a87572e7cf8ebf633e72a61';
+String _$authControllerHash() => r'73a0de5fb06ad97834a4ffc264393fe73bb7945d';
 
 /// Bootstraps and owns the current Firebase Auth session (§8): silent
 /// anonymous sign-in on first read, and the interactive Google upgrade

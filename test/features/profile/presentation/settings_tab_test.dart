@@ -1014,131 +1014,136 @@ void main() {
     expect(container.read(showFriendsOnMapProvider), isFalse);
   });
 
-  group(
-    'the debug "resync from cloud" button (kDebugMode-only — always on '
-    'under `flutter test`, so it renders in every widget test run '
-    'regardless of the flag)',
-    () {
-      testWidgets(
-        'force-overwrites local progress with whatever the cloud has, even '
-        'downward — unlike sign-in-time reconciliation '
-        '(auth_provider_test.dart), which only ever keeps the larger total',
-        (tester) async {
-          final progressSyncRepository = _MockProgressSyncRepository();
-          when(() => progressSyncRepository.fetchCurrentProgress('uid-1'))
-              .thenAnswer(
-                (_) async => RemoteQuestProgress(
-                  journeyId: 'odyssey-ithaca',
-                  meters: 500,
-                  startedAt: DateTime.utc(2026, 3, 1),
-                ),
-              );
+  group('the debug "resync from cloud" button (kDebugMode-only — always on '
+      'under `flutter test`, so it renders in every widget test run '
+      'regardless of the flag)', () {
+    testWidgets(
+      'force-overwrites local progress with whatever the cloud has, even '
+      'downward — unlike sign-in-time reconciliation '
+      '(auth_provider_test.dart), which only ever keeps the larger total',
+      (tester) async {
+        final progressSyncRepository = _MockProgressSyncRepository();
+        when(() => progressSyncRepository.fetchCurrentProgress('uid-1'))
+            .thenAnswer(
+              (_) async => RemoteQuestProgress(
+                journeyId: 'odyssey-ithaca',
+                meters: 500,
+                startedAt: DateTime.utc(2026, 3, 1),
+              ),
+            );
 
-          await tester.pumpWidget(
-            _wrap(
-              const SettingsTab(),
-              authState: const AuthState(uid: 'uid-1', isAnonymous: false),
-              progressSyncRepository: progressSyncRepository,
-            ),
-          );
-          await tester.pump();
+        await tester.pumpWidget(
+          _wrap(
+            const SettingsTab(),
+            authState: const AuthState(uid: 'uid-1', isAnonymous: false),
+            progressSyncRepository: progressSyncRepository,
+          ),
+        );
+        await tester.pump();
 
-          final container = ProviderScope.containerOf(
-            tester.element(find.byType(SettingsTab)),
-          );
-          // Local progress starts out bigger than the cloud's 500m — proves
-          // the button really overwrites downward rather than keeping the
-          // larger of the two.
-          container
-              .read(selectedJourneyProvider.notifier)
-              .start('odyssey-ithaca', now: DateTime(2026, 3, 1));
-          container
-              .read(selectedJourneyProvider.notifier)
-              .applySyncedProgress(
-                progressMeters: 90000,
-                syncedAt: DateTime(2026, 3, 15),
-              );
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(SettingsTab)),
+        );
+        // `selectedJourneyProvider` is `@riverpod` (autoDispose) and no
+        // widget in this tree watches it — without an active listener,
+        // `dragUntilVisible`/`pumpAndSettle` below give Riverpod's
+        // autoDispose GC enough frames to tear it down before
+        // `forceResyncFromCloud()`'s own `reload()` lands its
+        // `state = restored;` write (`journey_providers_test.dart` hits the
+        // same thing for the same reason).
+        container.listen(selectedJourneyProvider, (_, _) {});
+        // Local progress starts out bigger than the cloud's 500m — proves
+        // the button really overwrites downward rather than keeping the
+        // larger of the two.
+        container
+            .read(selectedJourneyProvider.notifier)
+            .start('odyssey-ithaca', now: DateTime(2026, 3, 1));
+        container
+            .read(selectedJourneyProvider.notifier)
+            .applySyncedProgress(
+              progressMeters: 90000,
+              syncedAt: DateTime(2026, 3, 15),
+            );
 
-          await tester.dragUntilVisible(
-            find.text('Синхронизировать из облака'),
-            find.byType(ListView),
-            const Offset(0, -300),
-          );
-          await tester.tap(find.text('Синхронизировать из облака'));
-          await tester.pumpAndSettle();
+        await tester.dragUntilVisible(
+          find.text('Синхронизировать из облака'),
+          find.byType(ListView),
+          const Offset(0, -300),
+        );
+        await tester.tap(find.text('Синхронизировать из облака'));
+        await tester.pumpAndSettle();
 
-          expect(container.read(selectedJourneyProvider)!.progressMeters, 500);
-          expect(
-            find.text('Локальный прогресс заменён значением из облака.'),
-            findsOneWidget,
-          );
-        },
-      );
+        expect(container.read(selectedJourneyProvider)!.progressMeters, 500);
+        expect(
+          find.text('Локальный прогресс заменён значением из облака.'),
+          findsOneWidget,
+        );
+      },
+    );
 
-      testWidgets(
-        'nothing ever pushed to the cloud shows that specific message',
-        (tester) async {
-          final progressSyncRepository = _MockProgressSyncRepository();
-          when(() => progressSyncRepository.fetchCurrentProgress('uid-1'))
-              .thenAnswer((_) async => null);
+    testWidgets(
+      'nothing ever pushed to the cloud shows that specific message',
+      (tester) async {
+        final progressSyncRepository = _MockProgressSyncRepository();
+        when(() => progressSyncRepository.fetchCurrentProgress('uid-1'))
+            .thenAnswer((_) async => null);
 
-          await tester.pumpWidget(
-            _wrap(
-              const SettingsTab(),
-              authState: const AuthState(uid: 'uid-1', isAnonymous: false),
-              progressSyncRepository: progressSyncRepository,
-            ),
-          );
-          await tester.pump();
+        await tester.pumpWidget(
+          _wrap(
+            const SettingsTab(),
+            authState: const AuthState(uid: 'uid-1', isAnonymous: false),
+            progressSyncRepository: progressSyncRepository,
+          ),
+        );
+        await tester.pump();
 
-          await tester.dragUntilVisible(
-            find.text('Синхронизировать из облака'),
-            find.byType(ListView),
-            const Offset(0, -300),
-          );
-          await tester.tap(find.text('Синхронизировать из облака'));
-          await tester.pumpAndSettle();
+        await tester.dragUntilVisible(
+          find.text('Синхронизировать из облака'),
+          find.byType(ListView),
+          const Offset(0, -300),
+        );
+        await tester.tap(find.text('Синхронизировать из облака'));
+        await tester.pumpAndSettle();
 
-          expect(
-            find.text('В облаке нет сохранённого прогресса.'),
-            findsOneWidget,
-          );
-        },
-      );
+        expect(
+          find.text('В облаке нет сохранённого прогресса.'),
+          findsOneWidget,
+        );
+      },
+    );
 
-      testWidgets(
-        'a Firestore failure shows an error message rather than a silent '
-        'dead end (§7)',
-        (tester) async {
-          final progressSyncRepository = _MockProgressSyncRepository();
-          when(() => progressSyncRepository.fetchCurrentProgress('uid-1'))
-              .thenThrow(Exception('offline'));
+    testWidgets(
+      'a Firestore failure shows an error message rather than a silent '
+      'dead end (§7)',
+      (tester) async {
+        final progressSyncRepository = _MockProgressSyncRepository();
+        when(() => progressSyncRepository.fetchCurrentProgress('uid-1'))
+            .thenThrow(Exception('offline'));
 
-          await tester.pumpWidget(
-            _wrap(
-              const SettingsTab(),
-              authState: const AuthState(uid: 'uid-1', isAnonymous: false),
-              progressSyncRepository: progressSyncRepository,
-            ),
-          );
-          await tester.pump();
+        await tester.pumpWidget(
+          _wrap(
+            const SettingsTab(),
+            authState: const AuthState(uid: 'uid-1', isAnonymous: false),
+            progressSyncRepository: progressSyncRepository,
+          ),
+        );
+        await tester.pump();
 
-          await tester.dragUntilVisible(
-            find.text('Синхронизировать из облака'),
-            find.byType(ListView),
-            const Offset(0, -300),
-          );
-          await tester.tap(find.text('Синхронизировать из облака'));
-          await tester.pumpAndSettle();
+        await tester.dragUntilVisible(
+          find.text('Синхронизировать из облака'),
+          find.byType(ListView),
+          const Offset(0, -300),
+        );
+        await tester.tap(find.text('Синхронизировать из облака'));
+        await tester.pumpAndSettle();
 
-          expect(
-            find.text(
-              'Не удалось получить прогресс из облака. Попробуйте ещё раз.',
-            ),
-            findsOneWidget,
-          );
-        },
-      );
-    },
-  );
+        expect(
+          find.text(
+            'Не удалось получить прогресс из облака. Попробуйте ещё раз.',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+  });
 }
