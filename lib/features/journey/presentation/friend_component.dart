@@ -105,7 +105,8 @@ class FriendMarkerComponent extends PositionComponent {
     // meters, so the two can never visibly drift apart either way.
     final meters = (row?.progressMeters ?? 0).toDouble();
     final worldX = worldXFor(meters, controller.pixelsPerMeter);
-    _label.position = Vector2(
+    // `.setValues` on the existing Vector2 — no fresh allocation per tick.
+    _label.position.setValues(
       worldX,
       terrainHeightAt(worldX) - travelerIconSize / 2 - friendLabelGap,
     );

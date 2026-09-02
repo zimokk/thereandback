@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flame/game.dart';
 
+import '../../../design/colors.dart';
 import 'environment_layer.dart';
 import 'friend_component.dart';
 import 'journey_scene_controller.dart';
@@ -38,7 +39,7 @@ class JourneyScene extends FlameGame {
     final solidTraveler = TravelerComponent(
       controller: controller,
       metersProvider: () => controller.displayedProgressMeters,
-      color: const Color(0xFFE0AE3F), // AppColors.gold.
+      color: AppColors.gold,
     )..priority = 20;
     await world.add(solidTraveler);
 
@@ -57,6 +58,14 @@ class JourneyScene extends FlameGame {
     // cannot un-pause itself from inside its own body.
     super.update(dt);
 
+    // NOT `.setValues` on the existing Vector2 here, unlike every other
+    // per-tick position update in this scene: `Viewfinder.position`'s
+    // getter returns a value derived from Flame's internal transform, not
+    // a live mutable reference — mutating that snapshot in place is a
+    // silent no-op that never reaches the camera (caught by
+    // `journey_scene_test.dart`'s own linearity assertion, which is
+    // exactly why that test exists). The setter is the only thing that
+    // actually moves the camera.
     camera.viewfinder.position = Vector2(
       worldXFor(controller.panMeters, controller.pixelsPerMeter),
       terrainMidY,

@@ -3,6 +3,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../../../design/colors.dart';
+
 /// Four broad slices of the day the sky's palette moves through (CLAUDE.md
 /// §6.1: "процедурный градиент по реальному времени суток... ночь со
 /// звёздами, рассвет, день, закат"). Boundaries are simple local-hour
@@ -29,10 +31,10 @@ SkyPhase skyPhaseFor(DateTime now) {
 /// blue that would clash with it.
 List<Color> _gradientColorsFor(SkyPhase phase) {
   return switch (phase) {
-    SkyPhase.night => const [Color(0xFF06060A), Color(0xFF15141C)],
-    SkyPhase.dawn => const [Color(0xFF2B2436), Color(0xFF6E4A4A)],
-    SkyPhase.day => const [Color(0xFF2E3446), Color(0xFF4C5568)],
-    SkyPhase.dusk => const [Color(0xFF241A2E), Color(0xFF6B3B3F)],
+    SkyPhase.night => const [AppColors.skyNightTop, AppColors.skyNightBottom],
+    SkyPhase.dawn => const [AppColors.skyDawnTop, AppColors.skyDawnBottom],
+    SkyPhase.day => const [AppColors.skyDayTop, AppColors.skyDayBottom],
+    SkyPhase.dusk => const [AppColors.skyDuskTop, AppColors.skyDuskBottom],
   };
 }
 

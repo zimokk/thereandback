@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flame/components.dart';
 
+import '../../../design/colors.dart';
 import 'journey_scene_controller.dart';
 
 /// Screen-space x for an object that belongs to a parallax layer moving at
@@ -85,7 +86,7 @@ class EnvironmentLayer extends PositionComponent {
         velocityMultiplier: 0.5,
         controller: controller,
         priority: 10,
-        color: const Color(0x8A7A6A4C), // muted gold-bronze, low alpha.
+        color: AppColors.journeySceneEnvironmentBehind,
         baselineFraction: 0.35,
         bucketMeters: 420,
         seed: 1,
@@ -98,7 +99,7 @@ class EnvironmentLayer extends PositionComponent {
         velocityMultiplier: 1.6,
         controller: controller,
         priority: 30,
-        color: const Color(0xCC1B1B1E), // near-silhouette, mostly opaque.
+        color: AppColors.journeySceneEnvironmentFront,
         baselineFraction: 0.85,
         bucketMeters: 260,
         seed: 2,
@@ -122,7 +123,20 @@ class EnvironmentLayer extends PositionComponent {
 
   final Paint _paint;
 
+  /// Cached result of the last [_decorationsFor] call, keyed by the exact
+  /// bucket range it was built for — most frames pan by nothing at all (the
+  /// camera only moves during an active drag/return-to-You animation), so
+  /// this turns "no per-frame allocation" (the `flame-scene` skill's own
+  /// rule) from an aspiration into what actually happens on a still frame:
+  /// [render] reuses this list instead of rebuilding it every tick.
+  List<_Decoration> _cachedDecorations = const [];
+  int? _cachedFirstBucket;
+  int? _cachedLastBucket;
+
   List<_Decoration> _decorationsFor(int firstBucket, int lastBucket) {
+    if (_cachedFirstBucket == firstBucket && _cachedLastBucket == lastBucket) {
+      return _cachedDecorations;
+    }
     final decorations = <_Decoration>[];
     for (var bucket = firstBucket; bucket <= lastBucket; bucket++) {
       final random = math.Random(bucket * 1000003 + seed);
@@ -132,6 +146,9 @@ class EnvironmentLayer extends PositionComponent {
         _Decoration(meters: bucket * bucketMeters + jitter, radius: radius),
       );
     }
+    _cachedFirstBucket = firstBucket;
+    _cachedLastBucket = lastBucket;
+    _cachedDecorations = decorations;
     return decorations;
   }
 

@@ -65,6 +65,31 @@ abstract final class AppColors {
   /// replacement for [background] app-wide.
   static const Color journeySceneBackground = Color(0xFF12100E);
 
+  /// The Путь scene's decorative "behind the characters" parallax layer
+  /// (`environment_layer.dart`'s `EnvironmentLayer.behind`) — a muted
+  /// gold-bronze at low alpha, distant/faded rather than a flat silhouette,
+  /// so it reads as further back than [journeySceneEnvironmentFront].
+  /// Placeholder-era: swaps for real art once §9.1's source is picked.
+  static const Color journeySceneEnvironmentBehind = Color(0x8A7A6A4C);
+
+  /// The Путь scene's "in front of the characters" parallax layer
+  /// (`EnvironmentLayer.front`) — near-opaque near-black, close enough to
+  /// read as a foreground silhouette rather than atmosphere.
+  static const Color journeySceneEnvironmentFront = Color(0xCC1B1B1E);
+
+  /// Top/bottom of the Путь scene's sky gradient (`sky_gradient.dart`) at
+  /// each of the four time-of-day phases (§6.1) — muted, low-saturation
+  /// tones chosen to stay compatible with [journeySceneBackground] rather
+  /// than a bright sky blue that would clash with it.
+  static const Color skyNightTop = Color(0xFF06060A);
+  static const Color skyNightBottom = Color(0xFF15141C);
+  static const Color skyDawnTop = Color(0xFF2B2436);
+  static const Color skyDawnBottom = Color(0xFF6E4A4A);
+  static const Color skyDayTop = Color(0xFF2E3446);
+  static const Color skyDayBottom = Color(0xFF4C5568);
+  static const Color skyDuskTop = Color(0xFF241A2E);
+  static const Color skyDuskBottom = Color(0xFF6B3B3F);
+
   /// Monochrome "engraved ink" tone for landmark markers on the drawn quest
   /// map (§6.2 styling fix) — replaces per-landmark colour emoji, which read
   /// as out of place against the map's ink/parchment illustration style.

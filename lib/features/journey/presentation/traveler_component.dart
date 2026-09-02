@@ -84,7 +84,10 @@ class TravelerComponent extends PositionComponent {
   void update(double dt) {
     super.update(dt);
     final worldX = worldXFor(metersProvider(), controller.pixelsPerMeter);
-    position = Vector2(worldX, terrainHeightAt(worldX));
+    // `.setValues` on the existing `position` Vector2, not a fresh
+    // `Vector2(...)` every tick — `flame-scene`'s own "no per-frame
+    // allocation" rule.
+    position.setValues(worldX, terrainHeightAt(worldX));
   }
 
   @override
@@ -146,7 +149,7 @@ class GhostTravelerComponent extends PositionComponent
 
     final panWorldX = worldXFor(controller.panMeters, pixelsPerMeter);
     final viewportSize = game.camera.viewport.size;
-    position = Vector2(
+    position.setValues(
       viewportSize.x / 2,
       viewportSize.y / 2 + terrainHeightAt(panWorldX),
     );
