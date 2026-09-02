@@ -204,6 +204,26 @@ class LockScreenController extends _$LockScreenController {
         state = state.copyWith(enabled: restoredEnabled);
       }
 
+      // No implementation on iOS yet (`lockScreenSupported` returns
+      // `false` there, so `settings_tab.dart` never shows the toggle and
+      // `enable()` can never have run — `state.enabled` above is always
+      // `false` on iOS). Bail out before touching anything below:
+      // `androidLockScreenChannelProvider` is `AndroidLockScreenChannel`,
+      // which crashes on iOS the moment
+      // `FlutterLocalNotificationsPlugin.initialize` runs without iOS
+      // settings — see `app_shell.dart`'s unconditional
+      // `ref.watch(lockScreenControllerProvider)`, which is what drives
+      // this method on every app start regardless of platform.
+      //
+      // Deliberately `Platform.isIOS`, not `!Platform.isAndroid` — the
+      // widget-test host running this code is Linux, which is neither, and
+      // `lock_screen_controller_test.dart` already exercises the
+      // `AndroidLockScreenChannel` path unconditionally on it (its own doc
+      // comment notes `Platform.isAndroid` reflects the actual host, not a
+      // simulated target). `!Platform.isAndroid` would have silently
+      // changed that suite's behavior on Linux too, not just fixed iOS.
+      if (Platform.isIOS) return;
+
       final stepCountingService = ref.read(stepCountingServiceProvider);
 
       // Checked separately from the permission calls below, and before

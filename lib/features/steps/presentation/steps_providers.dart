@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:flutter/widgets.dart' show AppLifecycleState;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -206,7 +207,28 @@ class StepsSync extends _$StepsSync {
         stepSampleRepository: ref.read(stepSampleRepositoryProvider),
         achievementRepository: ref.read(achievementRepositoryProvider),
       );
-      final result = await engine.sync(quest: selected, now: DateTime.now());
+      final StepsSyncResult result;
+      try {
+        result = await engine.sync(quest: selected, now: DateTime.now());
+      } catch (error) {
+        // §7: a permission grant is never a dead end, and neither is a
+        // transient platform failure — e.g. CMPedometer's
+        // `PlatformException(pedometer_error, ... CMErrorDomain error
+        // 104 ...)` ("not available"), which iOS raises on the Simulator
+        // (no motion coprocessor) and can also raise on a real device
+        // right after permission changes. Previously nothing here caught
+        // this: it escaped `sync()`'s `try/finally` as an unhandled
+        // exception in whichever unawaited call site triggered the sync
+        // (`build()`'s `Future.microtask(refreshStatus)`, the app-lifecycle
+        // resume listener) — no user-visible dead end, but a crash-looking
+        // log and a skipped sync with no retry path beyond "something else
+        // happens to call sync() again". `isSyncing` is still reset by the
+        // `finally` below either way; the next foreground sync (tab open,
+        // pull-to-refresh, resume) simply tries again against the same
+        // never-advanced `lastSyncedAt`, so no delta is lost.
+        debugPrint('StepsSync.sync: step source unavailable ($error)');
+        return;
+      }
 
       ref
           .read(selectedJourneyProvider.notifier)
