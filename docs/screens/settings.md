@@ -59,7 +59,7 @@ distinct snackbar confirms the switch rather than reporting an error.
 
 | Provider | Shape | Notes |
 |---|---|---|
-| `appLocaleProvider` (`locale_provider.dart`) | `Locale` (Notifier) | Default `Locale('ru')` (§11 — Russian is this repo's primary language). **In-memory only** — resets to Russian on app restart, same placeholder-until-Phase-3 caveat as `journey_providers.dart`'s selected quest. |
+| `appLocaleProvider` (`locale_provider.dart`) | `Locale` (Notifier) | Default `Locale('ru')` (§11 — Russian is this repo's primary language). **Durable since §14** — persisted through `UserPreferenceRepository` (`data/drift/user_preference_repository.dart`) the same way `journey_providers.dart`'s selected quest already was; a restart restores whatever was last chosen instead of resetting to Russian. |
 
 ## l10n keys
 

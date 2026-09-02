@@ -546,4 +546,18 @@ class AppLocalizationsRu extends AppLocalizations {
   @override
   String get friendsOutcomeError =>
       'Не удалось выполнить действие — попробуйте ещё раз.';
+
+  @override
+  String get friendsRemoveConfirmTitle => 'Удалить друга?';
+
+  @override
+  String friendsRemoveConfirmBody(String nickname) {
+    return '$nickname больше не увидит ваш прогресс, а вы — его. Позже можно добавить снова.';
+  }
+
+  @override
+  String get friendsRemoveConfirmButton => 'Удалить';
+
+  @override
+  String get friendsRemoveConfirmCancel => 'Отмена';
 }

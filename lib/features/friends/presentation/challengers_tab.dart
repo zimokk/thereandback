@@ -139,13 +139,7 @@ class ChallengersTab extends ConsumerWidget {
                   myMeters: myMeters,
                   onRemove: row.pairId == null
                       ? null
-                      : () => _runFriendAction(
-                          context,
-                          l10n,
-                          () => ref
-                              .read(friendsControllerProvider.notifier)
-                              .removeOrDecline(row.pairId!),
-                        ),
+                      : () => _confirmRemoveFriend(context, ref, l10n, row),
                 ),
           ],
         ),
@@ -230,6 +224,59 @@ void _runFriendAction(
       debugPrint('Friend action failed: $error');
       if (context.mounted) showAppSnackBar(context, l10n.friendsOutcomeError);
     }),
+  );
+}
+
+/// Confirms before removing an existing (accepted) friend — tapping the ×
+/// on a friend row used to remove immediately with nothing but the
+/// snackbar-only `friendsOutcomeError` path as a safety net; this task's
+/// requirement is to gate that write behind an explicit confirmation, the
+/// same shape as `_showAddFriendDialog` below. Only proceeds via
+/// [_runFriendAction] — same error handling as every other friend action —
+/// when the dialog's own destructive action is tapped; dismissing the
+/// dialog any other way (Cancel, tap-outside, back button) leaves the
+/// friendship untouched.
+void _confirmRemoveFriend(
+  BuildContext context,
+  WidgetRef ref,
+  AppLocalizations l10n,
+  FriendProgressRow row,
+) {
+  showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      backgroundColor: AppColors.surface,
+      title: Text(l10n.friendsRemoveConfirmTitle, style: AppTypography.heading),
+      content: Text(
+        l10n.friendsRemoveConfirmBody(row.nickname),
+        style: AppTypography.body,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          child: Text(
+            l10n.friendsRemoveConfirmCancel,
+            style: const TextStyle(color: AppColors.textSecondary),
+          ),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.of(dialogContext).pop();
+            _runFriendAction(
+              context,
+              l10n,
+              () => ref
+                  .read(friendsControllerProvider.notifier)
+                  .removeOrDecline(row.pairId!),
+            );
+          },
+          child: Text(
+            l10n.friendsRemoveConfirmButton,
+            style: const TextStyle(color: AppColors.gold),
+          ),
+        ),
+      ],
+    ),
   );
 }
 

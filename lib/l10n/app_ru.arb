@@ -166,5 +166,9 @@
   "friendsOutcomeAlreadyExists": "Вы уже связаны с этим пользователем.",
   "friendsOutcomeNotSignedIn": "Не удалось войти — попробуйте ещё раз через момент.",
   "friendsOutcomeUpgradeCancelled": "Чтобы добавлять друзей, нужен аккаунт Google — вход отменён.",
-  "friendsOutcomeError": "Не удалось выполнить действие — попробуйте ещё раз."
+  "friendsOutcomeError": "Не удалось выполнить действие — попробуйте ещё раз.",
+  "friendsRemoveConfirmTitle": "Удалить друга?",
+  "friendsRemoveConfirmBody": "{nickname} больше не увидит ваш прогресс, а вы — его. Позже можно добавить снова.",
+  "friendsRemoveConfirmButton": "Удалить",
+  "friendsRemoveConfirmCancel": "Отмена"
 }

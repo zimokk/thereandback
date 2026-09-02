@@ -12,8 +12,25 @@ part of 'theme_provider.dart';
 /// quest's own theme — the default this task asked for ("по умолчанию —
 /// тема текущего похода").
 ///
-/// In-memory only today — same placeholder-until-Phase-3 caveat as
-/// `locale_provider.dart`'s `AppLocale` (`docs/screens/settings.md`).
+/// Durable since §14 ("сохраняй настройки пользователя..."): [build] fires
+/// the same "async check from a sync build()" idiom
+/// `journey_providers.dart`'s `SelectedJourney.build()` uses, and
+/// [setOverride] writes through `UserPreferenceRepository` on every change
+/// — including back to `null` ("follow the active quest" is itself a
+/// choice worth persisting, not just the two named themes).
+///
+/// `keepAlive: true` — same reason `friends_providers.dart`'s
+/// `ShowFriendsOnMap` needs it (see that doc comment for the mechanism):
+/// [setOverride] is called via `ref.read(...).notifier` from a widget
+/// event handler in `settings_tab.dart`'s `_ThemeSection`, which also
+/// `ref.watch`es this provider in the very same `build()` — a *read*, not
+/// a *watch*, so it doesn't itself count as a listener. Plain
+/// `@riverpod`'s default autoDispose can tear this element down in the gap
+/// between that call and the watching widget's next build re-establishing
+/// its own subscription, discarding the just-set value (or throwing
+/// "Cannot use Ref after disposed" if the write itself loses the race) —
+/// found the hard way here too: `theme_provider_test.dart`'s restart test
+/// for `setOverride(null)` after a previous pin hit exactly this.
 
 @ProviderFor(AppThemeOverride)
 final appThemeOverrideProvider = AppThemeOverrideProvider._();
@@ -22,23 +39,57 @@ final appThemeOverrideProvider = AppThemeOverrideProvider._();
 /// quest's own theme — the default this task asked for ("по умолчанию —
 /// тема текущего похода").
 ///
-/// In-memory only today — same placeholder-until-Phase-3 caveat as
-/// `locale_provider.dart`'s `AppLocale` (`docs/screens/settings.md`).
+/// Durable since §14 ("сохраняй настройки пользователя..."): [build] fires
+/// the same "async check from a sync build()" idiom
+/// `journey_providers.dart`'s `SelectedJourney.build()` uses, and
+/// [setOverride] writes through `UserPreferenceRepository` on every change
+/// — including back to `null` ("follow the active quest" is itself a
+/// choice worth persisting, not just the two named themes).
+///
+/// `keepAlive: true` — same reason `friends_providers.dart`'s
+/// `ShowFriendsOnMap` needs it (see that doc comment for the mechanism):
+/// [setOverride] is called via `ref.read(...).notifier` from a widget
+/// event handler in `settings_tab.dart`'s `_ThemeSection`, which also
+/// `ref.watch`es this provider in the very same `build()` — a *read*, not
+/// a *watch*, so it doesn't itself count as a listener. Plain
+/// `@riverpod`'s default autoDispose can tear this element down in the gap
+/// between that call and the watching widget's next build re-establishing
+/// its own subscription, discarding the just-set value (or throwing
+/// "Cannot use Ref after disposed" if the write itself loses the race) —
+/// found the hard way here too: `theme_provider_test.dart`'s restart test
+/// for `setOverride(null)` after a previous pin hit exactly this.
 final class AppThemeOverrideProvider
     extends $NotifierProvider<AppThemeOverride, AppThemeId?> {
   /// The user's explicit theme pin (§6.5, §14), or `null` to follow the active
   /// quest's own theme — the default this task asked for ("по умолчанию —
   /// тема текущего похода").
   ///
-  /// In-memory only today — same placeholder-until-Phase-3 caveat as
-  /// `locale_provider.dart`'s `AppLocale` (`docs/screens/settings.md`).
+  /// Durable since §14 ("сохраняй настройки пользователя..."): [build] fires
+  /// the same "async check from a sync build()" idiom
+  /// `journey_providers.dart`'s `SelectedJourney.build()` uses, and
+  /// [setOverride] writes through `UserPreferenceRepository` on every change
+  /// — including back to `null` ("follow the active quest" is itself a
+  /// choice worth persisting, not just the two named themes).
+  ///
+  /// `keepAlive: true` — same reason `friends_providers.dart`'s
+  /// `ShowFriendsOnMap` needs it (see that doc comment for the mechanism):
+  /// [setOverride] is called via `ref.read(...).notifier` from a widget
+  /// event handler in `settings_tab.dart`'s `_ThemeSection`, which also
+  /// `ref.watch`es this provider in the very same `build()` — a *read*, not
+  /// a *watch*, so it doesn't itself count as a listener. Plain
+  /// `@riverpod`'s default autoDispose can tear this element down in the gap
+  /// between that call and the watching widget's next build re-establishing
+  /// its own subscription, discarding the just-set value (or throwing
+  /// "Cannot use Ref after disposed" if the write itself loses the race) —
+  /// found the hard way here too: `theme_provider_test.dart`'s restart test
+  /// for `setOverride(null)` after a previous pin hit exactly this.
   AppThemeOverrideProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
         name: r'appThemeOverrideProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -59,14 +110,31 @@ final class AppThemeOverrideProvider
   }
 }
 
-String _$appThemeOverrideHash() => r'196c95744bba352afd1c11e7ab019e96ed9723d0';
+String _$appThemeOverrideHash() => r'6d2f6f398bd0fcb96c41b7614110416096f0bac8';
 
 /// The user's explicit theme pin (§6.5, §14), or `null` to follow the active
 /// quest's own theme — the default this task asked for ("по умолчанию —
 /// тема текущего похода").
 ///
-/// In-memory only today — same placeholder-until-Phase-3 caveat as
-/// `locale_provider.dart`'s `AppLocale` (`docs/screens/settings.md`).
+/// Durable since §14 ("сохраняй настройки пользователя..."): [build] fires
+/// the same "async check from a sync build()" idiom
+/// `journey_providers.dart`'s `SelectedJourney.build()` uses, and
+/// [setOverride] writes through `UserPreferenceRepository` on every change
+/// — including back to `null` ("follow the active quest" is itself a
+/// choice worth persisting, not just the two named themes).
+///
+/// `keepAlive: true` — same reason `friends_providers.dart`'s
+/// `ShowFriendsOnMap` needs it (see that doc comment for the mechanism):
+/// [setOverride] is called via `ref.read(...).notifier` from a widget
+/// event handler in `settings_tab.dart`'s `_ThemeSection`, which also
+/// `ref.watch`es this provider in the very same `build()` — a *read*, not
+/// a *watch*, so it doesn't itself count as a listener. Plain
+/// `@riverpod`'s default autoDispose can tear this element down in the gap
+/// between that call and the watching widget's next build re-establishing
+/// its own subscription, discarding the just-set value (or throwing
+/// "Cannot use Ref after disposed" if the write itself loses the race) —
+/// found the hard way here too: `theme_provider_test.dart`'s restart test
+/// for `setOverride(null)` after a previous pin hit exactly this.
 
 abstract class _$AppThemeOverride extends $Notifier<AppThemeId?> {
   AppThemeId? build();
