@@ -55,6 +55,36 @@ keeping whichever total is larger — this device's local one or the
 account's cloud one (`AuthController._reconcileProgressWithCloud`) — and a
 distinct snackbar confirms the switch rather than reporting an error.
 
+## iOS native config for Google Sign-In (fixed 2026-09-02)
+
+`GoogleAuthService.signIn()` (`data/firebase/google_sign_in_service.dart`)
+was failing on iOS with `PlatformException(google_sign_in, No active
+configuration. Make sure GIDClientID is set in Info.plist., ...)` —
+Android already had `android/app/google-services.json`, but the iOS side
+of the same Firebase app (`firebase_options.dart`'s `ios` entry,
+`1:443590986164:ios:8d61d9d67922181ea68ae1`) never had its counterpart
+committed. Fixed by adding three files, all iOS-only, no Dart changes:
+
+- `ios/Runner/GoogleService-Info.plist` — downloaded from Firebase Console
+  for this exact app id; `PluginGoogleAuthService()` is still constructed
+  with no explicit `clientId` (`app/auth_provider.dart`) — Google's iOS SDK
+  reads `CLIENT_ID` from this file automatically once it's bundled, same
+  as the comment in `google_sign_in_service.dart` already assumed.
+- `ios/Runner/Info.plist` — a `CFBundleURLTypes` entry with the file's
+  `REVERSED_CLIENT_ID` as the URL scheme, required separately for the
+  OAuth redirect back into the app (GIDSignIn reading `CLIENT_ID` from the
+  plist and the redirect URL scheme are two independent requirements, both
+  needed).
+- `ios/Runner.xcodeproj/project.pbxproj` — registered the new plist as a
+  `PBXFileReference`/`PBXBuildFile` in the `Runner` target's Resources
+  build phase, by hand, following the existing entries for
+  `AppFrameworkInfo.plist`/`Assets.xcassets` as a template (plain ASCII,
+  no Xcode needed to edit it). **Not verified against a real Xcode build
+  in this sandbox** (no Xcode here, same limitation as the `Podfile`
+  step in `steps-sync.md`) — worth opening the project once in Xcode
+  before the next iOS build to confirm it parses and the file shows up
+  under Target Membership → Runner.
+
 ## State — providers
 
 | Provider | Shape | Notes |

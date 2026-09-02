@@ -36,6 +36,22 @@
 	-->
 	<key>NSMotionUsageDescription</key>
 	<string>There and Back reads your step count to move your traveler along the quest route. It stays on this device except as your total quest progress.</string>
+	<!-- Google Sign-In (§8 anonymous-account upgrade): the redirect URL
+	     scheme Google's iOS SDK needs to hand control back to the app after
+	     the user picks an account. Value is GoogleService-Info.plist's
+	     REVERSED_CLIENT_ID for this Firebase iOS app — keep the two in sync
+	     if the app is ever re-registered in Firebase. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.443590986164-unrn80pvg8dthgkk61913g2utdbac1bu</string>
+			</array>
+		</dict>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
