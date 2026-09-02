@@ -716,6 +716,42 @@ abstract class AppLocalizations {
   /// **'Shows friends on the Путь and Карта tabs: a colored figure with their name, and a colored helmet.'**
   String get settingsFriendsOnMapToggleSubtitle;
 
+  /// Settings section heading for the kDebugMode-only debug tools section
+  ///
+  /// In en, this message translates to:
+  /// **'Debug'**
+  String get settingsDebugSectionTitle;
+
+  /// Explains what the force-resync button does and that it always overwrites local progress, even downward, unlike the regular login-time reconciliation which keeps the larger total
+  ///
+  /// In en, this message translates to:
+  /// **'Force-pulls quest progress from the cloud and replaces the local value with it — including one edited by hand in the Firestore console. Testing only.'**
+  String get settingsDebugForceResyncSubtitle;
+
+  /// Label of the debug button that calls AuthController.forceResyncFromCloud()
+  ///
+  /// In en, this message translates to:
+  /// **'Resync from cloud'**
+  String get settingsDebugForceResyncButton;
+
+  /// Shown after ForceResyncOutcome.restored
+  ///
+  /// In en, this message translates to:
+  /// **'Local progress replaced with the cloud value.'**
+  String get settingsDebugForceResyncSuccessMessage;
+
+  /// Shown after ForceResyncOutcome.nothingToRestore — not signed in, or this uid never pushed any progress
+  ///
+  /// In en, this message translates to:
+  /// **'No progress saved in the cloud yet.'**
+  String get settingsDebugForceResyncNothingMessage;
+
+  /// Shown when forceResyncFromCloud() throws (offline, permission error, etc.) — never a silent dead end, §7
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t fetch progress from the cloud. Try again.'**
+  String get settingsDebugForceResyncErrorMessage;
+
   /// Semantics/tooltip label for the legend toggle button when the legend is currently hidden — tapping it reveals landmark icons and friend nicknames
   ///
   /// In en, this message translates to:

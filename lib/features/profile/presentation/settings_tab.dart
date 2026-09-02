@@ -1,5 +1,6 @@
 import 'dart:async' show unawaited;
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -163,6 +164,10 @@ class SettingsTab extends ConsumerWidget {
             const _ThemeSection(),
             const SizedBox(height: AppSpacing.lg),
             const _BackgroundMusicSection(),
+            if (kDebugMode) ...[
+              const SizedBox(height: AppSpacing.lg),
+              const _DebugSection(),
+            ],
           ],
         ),
       ),
@@ -723,6 +728,80 @@ IconData _themeOptionIcon(AppThemeId? theme) => switch (theme) {
   AppThemeId.classic => Icons.shield_outlined,
   AppThemeId.odyssey => Icons.sailing,
 };
+
+/// Debug-only escape hatch, visible only in `kDebugMode` builds — never
+/// ships to a real user's device. Exists to answer the "прогресс в базе
+/// данных и на устройстве разошлись — что берётся за правду" question by
+/// hand: pulls whatever is currently in `users/{uid}/progress/{journeyId}`
+/// (including a value typed straight into the Firestore console) and
+/// unconditionally overwrites local progress with it — see
+/// [AuthController.forceResyncFromCloud]'s own doc comment for why this is
+/// kept deliberately separate from the regular (max-of-two) reconciliation
+/// path used at sign-in.
+class _DebugSection extends ConsumerWidget {
+  const _DebugSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
+
+    return _SectionCard(
+      title: l10n.settingsDebugSectionTitle,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.settingsDebugForceResyncSubtitle,
+            style: AppTypography.bodySecondary,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton(
+              onPressed: () =>
+                  unawaited(_forceResyncFromCloud(context, ref, l10n)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.gold,
+                side: const BorderSide(color: AppColors.gold),
+              ),
+              child: Text(l10n.settingsDebugForceResyncButton),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Left to throw rather than caught inside [AuthController
+/// .forceResyncFromCloud] itself — this is a standalone user action, not a
+/// step inside a sign-in flow that must not fail, so it follows the same
+/// never-a-silent-dead-end convention as [_signInWithGoogle]/[_toggleMusic]
+/// above (§7): every outcome, success or failure, ends in a message.
+Future<void> _forceResyncFromCloud(
+  BuildContext context,
+  WidgetRef ref,
+  AppLocalizations l10n,
+) async {
+  String message;
+  try {
+    final outcome = await ref
+        .read(authControllerProvider.notifier)
+        .forceResyncFromCloud();
+    message = switch (outcome) {
+      ForceResyncOutcome.restored =>
+        l10n.settingsDebugForceResyncSuccessMessage,
+      ForceResyncOutcome.nothingToRestore =>
+        l10n.settingsDebugForceResyncNothingMessage,
+    };
+  } catch (error) {
+    debugPrint('Force resync from cloud failed: $error');
+    message = l10n.settingsDebugForceResyncErrorMessage;
+  }
+
+  if (!context.mounted) return;
+  showAppSnackBar(context, message);
+}
 
 class _SectionCard extends StatelessWidget {
   const _SectionCard({required this.title, required this.child});
