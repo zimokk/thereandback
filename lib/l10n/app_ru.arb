@@ -115,6 +115,13 @@
   "settingsFriendsOnMapToggleTitle": "Показывать друзей на карте",
   "settingsFriendsOnMapToggleSubtitle": "Показывает друзей на вкладках «Путь» и «Карта»: цветной человечек с ником и цветной шлем.",
 
+  "settingsDebugSectionTitle": "Отладка",
+  "settingsDebugForceResyncSubtitle": "Принудительно подтягивает прогресс похода из облака и заменяет им локальный — включая значение, изменённое вручную в консоли Firestore. Только для тестирования.",
+  "settingsDebugForceResyncButton": "Синхронизировать из облака",
+  "settingsDebugForceResyncSuccessMessage": "Локальный прогресс заменён значением из облака.",
+  "settingsDebugForceResyncNothingMessage": "В облаке нет сохранённого прогресса.",
+  "settingsDebugForceResyncErrorMessage": "Не удалось получить прогресс из облака. Попробуйте ещё раз.",
+
   "questMapLegendShowLabel": "Показать легенду карты",
   "questMapLegendHideLabel": "Скрыть легенду карты",
 

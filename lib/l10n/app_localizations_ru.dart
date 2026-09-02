@@ -378,6 +378,28 @@ class AppLocalizationsRu extends AppLocalizations {
       'Показывает друзей на вкладках «Путь» и «Карта»: цветной человечек с ником и цветной шлем.';
 
   @override
+  String get settingsDebugSectionTitle => 'Отладка';
+
+  @override
+  String get settingsDebugForceResyncSubtitle =>
+      'Принудительно подтягивает прогресс похода из облака и заменяет им локальный — включая значение, изменённое вручную в консоли Firestore. Только для тестирования.';
+
+  @override
+  String get settingsDebugForceResyncButton => 'Синхронизировать из облака';
+
+  @override
+  String get settingsDebugForceResyncSuccessMessage =>
+      'Локальный прогресс заменён значением из облака.';
+
+  @override
+  String get settingsDebugForceResyncNothingMessage =>
+      'В облаке нет сохранённого прогресса.';
+
+  @override
+  String get settingsDebugForceResyncErrorMessage =>
+      'Не удалось получить прогресс из облака. Попробуйте ещё раз.';
+
+  @override
   String get questMapLegendShowLabel => 'Показать легенду карты';
 
   @override

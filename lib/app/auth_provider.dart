@@ -58,6 +58,19 @@ enum GoogleUpgradeOutcome {
   existingAccountRestored,
 }
 
+/// The outcome of [AuthController.forceResyncFromCloud] — every case is
+/// rendered explicitly by its caller (`settings_tab.dart`'s
+/// `_forceResyncFromCloud`), same convention as [GoogleUpgradeOutcome] above.
+enum ForceResyncOutcome {
+  /// Local progress was replaced with whatever `users/{uid}/progress`
+  /// currently holds.
+  restored,
+
+  /// Nothing to pull: either no uid yet, or this uid has never pushed any
+  /// progress for any journey.
+  nothingToRestore,
+}
+
 /// Bootstraps and owns the current Firebase Auth session (§8): silent
 /// anonymous sign-in on first read, and the interactive Google upgrade
 /// triggered when the user goes to add a friend (§8, §14).
@@ -224,6 +237,53 @@ class AuthController extends _$AuthController {
       // the caught error's own message, never meters or a nickname.
       debugPrint('Cloud progress reconciliation failed: $error');
     }
+  }
+
+  /// Debug-only escape hatch (`settings_tab.dart`'s `_DebugSection`, shown
+  /// only under `kDebugMode`): unconditionally overwrites this device's
+  /// local progress with whatever [ProgressSyncRepository.fetchCurrentProgress]
+  /// currently returns for the signed-in uid — including a value edited by
+  /// hand in the Firestore console.
+  ///
+  /// Deliberately **not** [_reconcileProgressWithCloud]'s "keep the larger
+  /// total": that asymmetry is the whole point of this method existing
+  /// separately. "Keep the larger" can never demonstrate that a *smaller*
+  /// value written straight into the database actually reaches the device —
+  /// which is exactly the question this method exists to answer (see the
+  /// "если сейчас значения прогресса в базе данных и на устройстве
+  /// расходятся" conversation this was built for). Unlike that method, this
+  /// one also doesn't swallow its own errors — it's a standalone user
+  /// action (`_forceResyncFromCloud` in `settings_tab.dart`), not a step
+  /// inside a sign-in flow that must not fail, so the usual
+  /// never-a-silent-dead-end convention (§7, e.g. `_signInWithGoogle` in the
+  /// same file) applies: the caller catches and shows a message.
+  ///
+  /// Not wired into any regular (non-debug) sync path, and not meant to be:
+  /// doing that would flip CLAUDE.md §8's "the device is the source of
+  /// truth, Firestore is a sync layer" (`firestore.rules`' own header
+  /// comment: "the app's own math never trusts what it reads back from
+  /// here") into "the cloud can silently overwrite what a person actually
+  /// walked" — a real product decision that needs its own plan (§13), not a
+  /// side effect of a testing tool.
+  Future<ForceResyncOutcome> forceResyncFromCloud() async {
+    final uid = state.uid;
+    if (uid == null) return ForceResyncOutcome.nothingToRestore;
+
+    final progressSync = ref.read(progressSyncRepositoryProvider);
+    final remote = await progressSync.fetchCurrentProgress(uid);
+    if (remote == null) return ForceResyncOutcome.nothingToRestore;
+
+    await ref
+        .read(progressRepositoryProvider)
+        .restoreFromCloud(
+          localOwnerId,
+          journeyId: remote.journeyId,
+          startedAt: remote.startedAt,
+          meters: remote.meters,
+          asOf: DateTime.now(),
+        );
+    await ref.read(selectedJourneyProvider.notifier).reload();
+    return ForceResyncOutcome.restored;
   }
 
   /// Defaults the nickname to the local part of the linked Gmail address

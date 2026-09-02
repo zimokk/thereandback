@@ -374,6 +374,28 @@ class AppLocalizationsEn extends AppLocalizations {
       'Shows friends on the Путь and Карта tabs: a colored figure with their name, and a colored helmet.';
 
   @override
+  String get settingsDebugSectionTitle => 'Debug';
+
+  @override
+  String get settingsDebugForceResyncSubtitle =>
+      'Force-pulls quest progress from the cloud and replaces the local value with it — including one edited by hand in the Firestore console. Testing only.';
+
+  @override
+  String get settingsDebugForceResyncButton => 'Resync from cloud';
+
+  @override
+  String get settingsDebugForceResyncSuccessMessage =>
+      'Local progress replaced with the cloud value.';
+
+  @override
+  String get settingsDebugForceResyncNothingMessage =>
+      'No progress saved in the cloud yet.';
+
+  @override
+  String get settingsDebugForceResyncErrorMessage =>
+      'Couldn\'t fetch progress from the cloud. Try again.';
+
+  @override
   String get questMapLegendShowLabel => 'Show map legend';
 
   @override
