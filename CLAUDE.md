@@ -1156,6 +1156,36 @@ firebase emulators:start                                    # Firestore + Functi
   для Firestore-схемы, разрешений или приватности — ни одно из этого здесь
   не затронуто).
 
+Решено 2026-09-02 (§8, баг-фикс — вход через Google на iOS падал с
+`PlatformException(google_sign_in, No active configuration. Make sure
+GIDClientID is set in Info.plist., ...)`):
+
+- **Причина — отсутствовала нативная iOS-конфигурация Google Sign-In,**
+  не баг в Dart-коде. У Android была своя `android/app/
+  google-services.json`, а iOS-часть того же Firebase-приложения
+  (`firebase_options.dart`'s `ios`, `appId
+  1:443590986164:ios:8d61d9d67922181ea68ae1`) — никогда не была
+  закоммичена: ни `GoogleService-Info.plist`, ни `GIDClientID`/URL-схема
+  в `Info.plist`, ни регистрация файла в Xcode-проекте.
+- **Исправлено тремя файлами, без изменений в Dart:**
+  `ios/Runner/GoogleService-Info.plist` (получен из Firebase Console для
+  этого же `appId`), `CFBundleURLTypes` с его `REVERSED_CLIENT_ID` в
+  `ios/Runner/Info.plist` (нужен отдельно от самого plist'а — это
+  redirect для OAuth), и регистрация нового файла в
+  `ios/Runner.xcodeproj/project.pbxproj` (`PBXFileReference`/
+  `PBXBuildFile` в Resources-фазе таргета `Runner`) — правка руками по
+  образцу уже существующих записей (`AppFrameworkInfo.plist`), это
+  обычный ASCII-текст, Xcode для редактирования не нужен.
+  `PluginGoogleAuthService()` (`app/auth_provider.dart`) как был без
+  явного `clientId`, так и остался — теперь `CLIENT_ID` подхватывается
+  Google-SDK из самого plist'а автоматически, раз он лежит в бандле.
+  Подробности — `docs/screens/settings.md`.
+- **Правка `.pbxproj` не проверена реальной сборкой Xcode в этой
+  песочнице** (нет Xcode, то же ограничение, что и у `Podfile`-шага
+  для `PERMISSION_SENSORS`, §14 выше) — стоит один раз открыть проект в
+  Xcode перед следующей iOS-сборкой и убедиться, что файл появился в
+  Target Membership → Runner.
+
 Остаётся нерешённым:
 
 - [x] Первый квест каталога — «The Odyssey: Troy to Ithaca» на основе
