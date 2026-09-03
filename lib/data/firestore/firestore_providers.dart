@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../app/auth_provider.dart' show currentUidProvider;
 import '../firebase/firebase_providers.dart';
 import 'friendship_repository.dart';
 import 'progress_sync_repository.dart';
@@ -28,3 +29,43 @@ UserProfileRepository userProfileRepository(Ref ref) =>
 @riverpod
 ProgressSyncRepository progressSyncRepository(Ref ref) =>
     FirestoreProgressSyncRepository(ref.watch(firestoreProvider));
+
+/// Best-effort push of a quest's running total to `users/{uid}/progress/
+/// {journeyId}`. Shared by two call sites that would otherwise duplicate
+/// the same uid-gate + swallow-errors idiom: `SelectedJourney.start()`
+/// (`features/journey/presentation/journey_providers.dart`) pushes an
+/// initial `progressMeters: 0` row the instant "Начать квест" is tapped,
+/// so a friend's row/pin and `AuthController`'s repeat-login reconciliation
+/// (§8, §14) see the quest exists in Firestore without waiting on the
+/// first steps sync; `StepsSync.sync()`
+/// (`features/steps/presentation/steps_providers.dart`) pushes the updated
+/// total after every later foreground sync.
+///
+/// Fire-and-forget from the caller's point of view: a Firestore failure
+/// (offline, permission not yet granted, no signed-in uid yet on a very
+/// fresh cold start) must never affect the caller's own result — the local
+/// drift write it follows is already durable regardless of whether this
+/// succeeds (§8's full-offline requirement).
+Future<void> pushProgressBestEffort(
+  Ref ref, {
+  required String journeyId,
+  required DateTime startedAt,
+  required int progressMeters,
+}) async {
+  final uid = ref.read(currentUidProvider);
+  if (uid == null) return;
+
+  try {
+    await ref
+        .read(progressSyncRepositoryProvider)
+        .pushProgress(
+          uid: uid,
+          journeyId: journeyId,
+          meters: progressMeters,
+          startedAt: startedAt,
+          isCurrent: true,
+        );
+  } catch (_) {
+    // See doc comment above — never let this surface to the caller.
+  }
+}

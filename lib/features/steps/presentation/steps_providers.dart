@@ -6,7 +6,6 @@ import 'package:flutter/widgets.dart' show AppLifecycleState;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../app/app_lifecycle.dart';
-import '../../../app/auth_provider.dart';
 import '../../../app/database_provider.dart';
 import '../../../data/firestore/firestore_providers.dart';
 import '../../achievements/presentation/achievements_providers.dart';
@@ -246,8 +245,13 @@ class StepsSync extends _$StepsSync {
       ref.invalidate(achievementUnlocksProvider);
       ref.invalidate(todayAllQuestsMetersProvider);
 
+      // Pushes the just-synced total to Firestore (§8, Phase 8) — shared
+      // with `SelectedJourney.start()`'s own initial push, see
+      // `pushProgressBestEffort`'s doc comment for the fire-and-forget
+      // contract this relies on.
       unawaited(
-        _pushProgress(
+        pushProgressBestEffort(
+          ref,
           journeyId: selected.journeyId,
           startedAt: selected.startedAt,
           progressMeters: result.progressMeters,
@@ -255,35 +259,6 @@ class StepsSync extends _$StepsSync {
       );
     } finally {
       state = state.copyWith(isSyncing: false);
-    }
-  }
-
-  /// Pushes the just-synced total to Firestore (§8, Phase 8) — foreground
-  /// only, fire-and-forget with respect to this method's own caller: a
-  /// Firestore failure (offline, permission not yet granted, no signed-in
-  /// uid yet on a very fresh cold start) must never affect [sync]'s own
-  /// result — the local drift write above already durably credited the
-  /// distance regardless of whether this succeeds.
-  Future<void> _pushProgress({
-    required String journeyId,
-    required DateTime startedAt,
-    required int progressMeters,
-  }) async {
-    final uid = ref.read(currentUidProvider);
-    if (uid == null) return;
-
-    try {
-      await ref
-          .read(progressSyncRepositoryProvider)
-          .pushProgress(
-            uid: uid,
-            journeyId: journeyId,
-            meters: progressMeters,
-            startedAt: startedAt,
-            isCurrent: true,
-          );
-    } catch (_) {
-      // See doc comment above — never let this surface to sync()'s caller.
     }
   }
 }
