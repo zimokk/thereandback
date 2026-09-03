@@ -9,6 +9,7 @@ import 'package:thereandback/features/achievements/data/achievement_catalog.dart
 import 'package:thereandback/features/achievements/presentation/achievement_titles.dart';
 import 'package:thereandback/features/journey/presentation/journey_flame_scene_view.dart';
 import 'package:thereandback/features/journey/presentation/journey_providers.dart';
+import 'package:thereandback/features/journey/presentation/sky_gradient.dart';
 import 'package:thereandback/l10n/app_localizations.dart';
 
 /// The scene's own rendering, isolated from `JourneyTab`'s catalog/gate
@@ -249,6 +250,39 @@ void main() {
         await _pumpFrames(tester, count: 40);
 
         expect(find.text(expectedTitle), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'a fresh Odyssey quest feeds SkyGradient the fictional dawn hour '
+      'Troy departs at (§6.1 — fictional sky, not the real device clock)',
+      (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+            ],
+            child: _app(const JourneyFlameSceneView()),
+          ),
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(JourneyFlameSceneView)),
+        );
+        container
+            .read(selectedJourneyProvider.notifier)
+            .start('odyssey-ithaca', now: DateTime.now());
+        // The segment timings load asynchronously from the real
+        // `locations.json` asset — pump generously past that, the same
+        // margin the achievement-sheet test above gives its own async
+        // settle.
+        await _pumpFrames(tester, count: 40);
+
+        final sky = tester.widget<SkyGradient>(find.byType(SkyGradient));
+        // Fresh quest -> panMeters == progressMeters == 0 -> exactly
+        // `troy-departure`'s departureHour from locations.json (§14
+        // "Решено 2026-09-03": Troy departs at dawn).
+        expect(sky.fictionalHour, 6);
       },
     );
   });
