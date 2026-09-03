@@ -168,6 +168,33 @@ void main() {
     },
   );
 
+  testWidgets('falls back to the quest catalog, not a blank scene, when the '
+      "persisted journeyId doesn't resolve in the current catalog — bug fix "
+      '2026-09-03: a stale/orphaned local `selected` used to satisfy '
+      '`selected != null` alone and commit to the (then-blank) path scene '
+      'instead of recovering to the picker, unlike `quest_stats_tab.dart`\'s '
+      'own `journey == null` guard.', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+        ],
+        child: _app(const JourneyTab()),
+      ),
+    );
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(JourneyTab)),
+    );
+    container
+        .read(selectedJourneyProvider.notifier)
+        .start('a-quest-no-longer-in-the-catalog', now: DateTime.now());
+    await tester.pump();
+
+    expect(find.text('Choose your quest'), findsOneWidget);
+    expect(find.text('Start quest'), findsOneWidget);
+  });
+
   testWidgets('permission-denied state renders the gate, not a blank screen', (
     tester,
   ) async {
