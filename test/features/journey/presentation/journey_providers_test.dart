@@ -107,42 +107,39 @@ void main() {
       ).thenAnswer((_) async {});
     });
 
-    test(
-      'a signed-in uid gets an immediate meters: 0 push, not just after the '
-      'first steps sync',
-      () async {
-        final container = ProviderContainer(
-          overrides: [
-            appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
-            currentUidProvider.overrideWithValue('uid-1'),
-            progressSyncRepositoryProvider.overrideWithValue(
-              progressSyncRepository,
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        final startedAt = DateTime(2026, 3, 10);
-        container
-            .read(selectedJourneyProvider.notifier)
-            .start('odyssey-ithaca', now: startedAt);
-
-        // No pump needed: `unawaited(pushProgressBestEffort(...))` still
-        // synchronously *invokes* `pushProgress()` — evaluating that call
-        // is part of reaching its own `await` — so the mock call is
-        // already registered by the time `start()` returns (same reasoning
-        // as `steps_providers_test.dart`'s equivalent comment).
-        verify(
-          () => progressSyncRepository.pushProgress(
-            uid: 'uid-1',
-            journeyId: 'odyssey-ithaca',
-            meters: 0,
-            startedAt: startedAt,
-            isCurrent: true,
+    test('a signed-in uid gets an immediate meters: 0 push, not just after the '
+        'first steps sync', () async {
+      final container = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+          currentUidProvider.overrideWithValue('uid-1'),
+          progressSyncRepositoryProvider.overrideWithValue(
+            progressSyncRepository,
           ),
-        ).called(1);
-      },
-    );
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final startedAt = DateTime(2026, 3, 10);
+      container
+          .read(selectedJourneyProvider.notifier)
+          .start('odyssey-ithaca', now: startedAt);
+
+      // No pump needed: `unawaited(pushProgressBestEffort(...))` still
+      // synchronously *invokes* `pushProgress()` — evaluating that call
+      // is part of reaching its own `await` — so the mock call is
+      // already registered by the time `start()` returns (same reasoning
+      // as `steps_providers_test.dart`'s equivalent comment).
+      verify(
+        () => progressSyncRepository.pushProgress(
+          uid: 'uid-1',
+          journeyId: 'odyssey-ithaca',
+          meters: 0,
+          startedAt: startedAt,
+          isCurrent: true,
+        ),
+      ).called(1);
+    });
 
     test(
       'no signed-in uid yet is a no-op — the repository is never called',
