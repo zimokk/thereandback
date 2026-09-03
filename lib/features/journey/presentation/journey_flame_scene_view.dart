@@ -14,6 +14,7 @@ import '../../achievements/data/achievement_catalog.dart';
 import '../../achievements/domain/achievement.dart';
 import '../../friends/domain/friend_progress.dart';
 import '../../friends/presentation/friends_providers.dart';
+import '../domain/fictional_time.dart';
 import '../domain/quest_time_service.dart';
 import '../domain/route_scale.dart';
 import '../domain/traveler_interpolation.dart';
@@ -21,6 +22,7 @@ import 'achievement_overlay.dart';
 import 'journey_providers.dart';
 import 'journey_scene.dart';
 import 'journey_scene_controller.dart';
+import 'journey_timing_providers.dart';
 import 'sky_gradient.dart';
 
 /// How long a new `progressMeters` takes to visually catch up to
@@ -191,6 +193,17 @@ class _JourneyFlameSceneViewState extends ConsumerState<JourneyFlameSceneView>
       catalog: achievementCatalog,
     );
 
+    // Sky driven by the in-fiction timeline when the quest defines one
+    // (§6.1) — `_panMeters` is the exact "route position currently centered
+    // on screen" the scene already scrolls by, so rewinding re-derives the
+    // sky the same way it re-derives the terrain/traveler position. `null`
+    // (no timings loaded/shipped yet) falls back to `SkyGradient`'s own
+    // real-clock behavior.
+    final timings = ref.watch(selectedJourneySegmentTimingsProvider).value;
+    final fictionalHour = (timings != null && timings.isNotEmpty)
+        ? fictionalHourFor(timings, _panMeters.round())
+        : null;
+
     final showFriends = ref.watch(showFriendsOnMapProvider);
     final friendRows = showFriends
         ? (ref.watch(friendsViewProvider).value?.rows ??
@@ -217,7 +230,7 @@ class _JourneyFlameSceneViewState extends ConsumerState<JourneyFlameSceneView>
     return Stack(
       children: [
         const Positioned.fill(child: AppSceneBackdrop()),
-        const Positioned.fill(child: SkyGradient()),
+        Positioned.fill(child: SkyGradient(fictionalHour: fictionalHour)),
         Column(
           children: [
             Expanded(

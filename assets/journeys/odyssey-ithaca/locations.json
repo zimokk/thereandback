@@ -1,5 +1,5 @@
 {
-  "$schemaNote": "Draft content for There and Back — Journey catalog. NOT final: map.json pixel coordinates, l10n keys and human narrative polish still pending. See CLAUDE.md §4/§6.2 for target schema. `narrative` is the in-fiction traveler's line (what the app shows); `historicalNote`, present on about half the landmarks, is a short real-world historical/archaeological aside (not shown to the traveler as-is — candidate copy for a future 'about this place' surface) and is added only where a genuine, checkable anchor exists, not on every point.",
+  "$schemaNote": "Draft content for There and Back — Journey catalog. NOT final: map.json pixel coordinates, l10n keys and human narrative polish still pending. See CLAUDE.md §4/§6.2 for target schema. `narrative` is the in-fiction traveler's line (what the app shows); `historicalNote`, present on about half the landmarks, is a short real-world historical/archaeological aside (not shown to the traveler as-is — candidate copy for a future 'about this place' surface) and is added only where a genuine, checkable anchor exists, not on every point. Each segment also carries `departureHour` (0-24, the in-fiction local hour at `fromMeters`) and `durationDays` (in-fiction days elapsed crossing to `toMeters`) — CLAUDE.md §6.1's fictional sky reads these, via `fictionalHourFor`, to show the story's own time of day at the route position the 'Путь' scene is scrolled to. `durationDays` is capped by a pace-safety rule (`journey_timing_repository.dart`): at most 1 in-fiction day per 10 000 real meters of the segment, so an ordinary walk can never flip the sky through several story-days at once — several episodes below (month/year/multi-year mythic stays) are deliberately compressed well under their literal duration for this reason, noted in `timeNote`. `timeNote`, like `historicalNote`, is added only where a genuine textual anchor exists.",
   "journey": {
     "id": "odyssey-ithaca",
     "name": "The Odyssey: Troy to Ithaca",
@@ -16,7 +16,10 @@
       "biome": "ruined_city_coast",
       "fromMeters": 0,
       "toMeters": 71250,
-      "landmarkCount": 3
+      "landmarkCount": 3,
+      "departureHour": 6,
+      "durationDays": 1,
+      "timeNote": "Homer's recurring departure formula — 'rosy-fingered Dawn appeared'"
     },
     {
       "id": "cicones-ismarus",
@@ -24,7 +27,9 @@
       "biome": "raider_coast",
       "fromMeters": 71250,
       "toMeters": 190000,
-      "landmarkCount": 5
+      "landmarkCount": 5,
+      "departureHour": 7,
+      "durationDays": 1
     },
     {
       "id": "storm-cape-malea",
@@ -32,7 +37,10 @@
       "biome": "storm_sea",
       "fromMeters": 190000,
       "toMeters": 261250,
-      "landmarkCount": 3
+      "landmarkCount": 3,
+      "departureHour": 8,
+      "durationDays": 6,
+      "timeNote": "Text: 'nine days was I driven by fell winds'; reduced to 6 to stay under this segment's pace-safety cap"
     },
     {
       "id": "lotus-eaters-shore",
@@ -40,7 +48,9 @@
       "biome": "dreaming_dunes",
       "fromMeters": 261250,
       "toMeters": 356250,
-      "landmarkCount": 4
+      "landmarkCount": 4,
+      "departureHour": 8,
+      "durationDays": 1
     },
     {
       "id": "cyclops-island",
@@ -48,7 +58,9 @@
       "biome": "volcanic_crag",
       "fromMeters": 356250,
       "toMeters": 593750,
-      "landmarkCount": 10
+      "landmarkCount": 10,
+      "departureHour": 9,
+      "durationDays": 6
     },
     {
       "id": "aeolia-isle",
@@ -56,7 +68,10 @@
       "biome": "floating_isle",
       "fromMeters": 593750,
       "toMeters": 736250,
-      "landmarkCount": 6
+      "landmarkCount": 6,
+      "departureHour": 10,
+      "durationDays": 6,
+      "timeNote": "Text: 'a whole month he entertained me' plus a failed return voyage; compressed well below the literal weeks under the pace-safety cap"
     },
     {
       "id": "laestrygonian-fjord",
@@ -64,7 +79,10 @@
       "biome": "giant_fjord",
       "fromMeters": 736250,
       "toMeters": 878750,
-      "landmarkCount": 6
+      "landmarkCount": 6,
+      "departureHour": 6,
+      "durationDays": 8,
+      "timeNote": "Text: 'for seven days...till on the eighth we reached...the Laestrygonian city'"
     },
     {
       "id": "aeaea-circe",
@@ -72,7 +90,10 @@
       "biome": "enchanted_forest",
       "fromMeters": 878750,
       "toMeters": 1116250,
-      "landmarkCount": 10
+      "landmarkCount": 10,
+      "departureHour": 14,
+      "durationDays": 6,
+      "timeNote": "Text: 'you are already a full year here' — compressed well below the literal year under the pace-safety cap"
     },
     {
       "id": "underworld-shore",
@@ -80,7 +101,10 @@
       "biome": "underworld",
       "fromMeters": 1116250,
       "toMeters": 1353750,
-      "landmarkCount": 10
+      "landmarkCount": 10,
+      "departureHour": 21,
+      "durationDays": 0.3,
+      "timeNote": "Land of the Cimmerians, 'the sun never looks on them with his rays' — kept within the night/dusk bands on purpose"
     },
     {
       "id": "aeaea-return",
@@ -88,7 +112,9 @@
       "biome": "enchanted_forest",
       "fromMeters": 1353750,
       "toMeters": 1425000,
-      "landmarkCount": 3
+      "landmarkCount": 3,
+      "departureHour": 6,
+      "durationDays": 1
     },
     {
       "id": "sirens-strait",
@@ -96,7 +122,9 @@
       "biome": "siren_reef",
       "fromMeters": 1425000,
       "toMeters": 1520000,
-      "landmarkCount": 4
+      "landmarkCount": 4,
+      "departureHour": 10,
+      "durationDays": 0.25
     },
     {
       "id": "scylla-charybdis",
@@ -104,7 +132,9 @@
       "biome": "narrow_strait",
       "fromMeters": 1520000,
       "toMeters": 1662500,
-      "landmarkCount": 6
+      "landmarkCount": 6,
+      "departureHour": 14,
+      "durationDays": 0.15
     },
     {
       "id": "thrinacia-pastures",
@@ -112,7 +142,10 @@
       "biome": "sacred_pasture",
       "fromMeters": 1662500,
       "toMeters": 1852500,
-      "landmarkCount": 8
+      "landmarkCount": 8,
+      "departureHour": 16,
+      "durationDays": 6,
+      "timeNote": "Text: 'for a whole month the South wind blew' becalmed — compressed well below the literal month under the pace-safety cap"
     },
     {
       "id": "adrift-alone",
@@ -120,7 +153,10 @@
       "biome": "open_sea",
       "fromMeters": 1852500,
       "toMeters": 1947500,
-      "landmarkCount": 4
+      "landmarkCount": 4,
+      "departureHour": 12,
+      "durationDays": 7,
+      "timeNote": "Text: 'nine days I was carried this way and that...in the night of the tenth' reaches Ogygia; reduced to 7 for margin under this segment's pace-safety cap"
     },
     {
       "id": "ogygia-calypso",
@@ -128,7 +164,10 @@
       "biome": "grotto_isle",
       "fromMeters": 1947500,
       "toMeters": 2137500,
-      "landmarkCount": 8
+      "landmarkCount": 8,
+      "departureHour": 12,
+      "durationDays": 7,
+      "timeNote": "Text: kept there 'seven years' — the longest of this quest's compressed stays, deliberately capped at 7 in-fiction days rather than 2555"
     },
     {
       "id": "raft-storm",
@@ -136,7 +175,10 @@
       "biome": "storm_sea",
       "fromMeters": 2137500,
       "toMeters": 2232500,
-      "landmarkCount": 4
+      "landmarkCount": 4,
+      "departureHour": 6,
+      "durationDays": 6,
+      "timeNote": "Text: about seventeen days' calm sail then Poseidon's storm; compressed under the pace-safety cap"
     },
     {
       "id": "scheria-phaeacia",
@@ -144,7 +186,9 @@
       "biome": "garden_harbor",
       "fromMeters": 2232500,
       "toMeters": 2517500,
-      "landmarkCount": 12
+      "landmarkCount": 12,
+      "departureHour": 12,
+      "durationDays": 3
     },
     {
       "id": "night-passage-home",
@@ -152,7 +196,10 @@
       "biome": "moonlit_sea",
       "fromMeters": 2517500,
       "toMeters": 2565000,
-      "landmarkCount": 2
+      "landmarkCount": 2,
+      "departureHour": 20,
+      "durationDays": 0.4,
+      "timeNote": "Text: a single overnight voyage on the magic Phaeacian ship"
     },
     {
       "id": "ithaca-homecoming",
@@ -160,7 +207,10 @@
       "biome": "homeland_coast",
       "fromMeters": 2565000,
       "toMeters": 2850000,
-      "landmarkCount": 12
+      "landmarkCount": 12,
+      "departureHour": 6,
+      "durationDays": 7,
+      "timeNote": "Recognition, the bow contest and the reckoning span roughly 40 narrated days; compressed under the pace-safety cap"
     }
   ],
   "landmarks": [
