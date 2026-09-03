@@ -62,7 +62,7 @@ final class JourneyTimingBundleProvider
 }
 
 String _$journeyTimingBundleHash() =>
-    r'7c73f1a76c4a55f8f8d1c9e2d1e0a4b8e6c9f2a1';
+    r'fbae98abbeab2b68ff1d977a899fbc31c68722e9';
 
 /// The currently selected quest's in-fiction segment timings (§6.1) —
 /// `null` before a quest is picked, or when that quest ships no
@@ -107,8 +107,7 @@ final class SelectedJourneySegmentTimingsProvider
       );
 
   @override
-  String debugGetCreateSourceHash() =>
-      _$selectedJourneySegmentTimingsHash();
+  String debugGetCreateSourceHash() => _$selectedJourneySegmentTimingsHash();
 
   @$internal
   @override
@@ -123,4 +122,4 @@ final class SelectedJourneySegmentTimingsProvider
 }
 
 String _$selectedJourneySegmentTimingsHash() =>
-    r'9b1e3a2c7d4f6058a1b2c3d4e5f60718293a4b5c';
+    r'62608e2ff5f8b90ab325e7e336b3750786aaa691';

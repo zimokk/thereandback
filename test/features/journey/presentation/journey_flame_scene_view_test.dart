@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:thereandback/app/database_provider.dart';
@@ -9,8 +12,48 @@ import 'package:thereandback/features/achievements/data/achievement_catalog.dart
 import 'package:thereandback/features/achievements/presentation/achievement_titles.dart';
 import 'package:thereandback/features/journey/presentation/journey_flame_scene_view.dart';
 import 'package:thereandback/features/journey/presentation/journey_providers.dart';
+import 'package:thereandback/features/journey/presentation/journey_timing_providers.dart';
 import 'package:thereandback/features/journey/presentation/sky_gradient.dart';
 import 'package:thereandback/l10n/app_localizations.dart';
+
+/// A bundle holding nothing but the one string a test hands it — no real
+/// disk I/O, so it resolves within a pumped widget test's microtask
+/// flushing instead of needing the real event loop
+/// (`quest_map_view_test.dart`'s own `_FakeBundle` is the precedent this
+/// mirrors: real `rootBundle.loadString` reads genuine file I/O that a
+/// `testWidgets` pump loop cannot reliably wait out).
+class _FakeTimingBundle extends CachingAssetBundle {
+  _FakeTimingBundle(this.contents);
+
+  final Map<String, String> contents;
+
+  @override
+  Future<ByteData> load(String key) async {
+    final value = contents[key];
+    if (value == null) throw FlutterError('no asset bundled at $key');
+    return ByteData.sublistView(Uint8List.fromList(utf8.encode(value)));
+  }
+}
+
+/// One segment spanning the whole Odyssey route, departing at dawn (hour
+/// 6) — enough to prove `SkyGradient` receives a fictional hour derived
+/// from real segment-timing content, without depending on the shipped
+/// `locations.json`'s exact 19-segment shape (that content is verified
+/// separately, against the real file, by
+/// `journey_timing_repository_test.dart`).
+const _timingJson = '''
+{
+  "segments": [
+    {
+      "id": "troy-departure",
+      "fromMeters": 0,
+      "toMeters": 2850000,
+      "departureHour": 6,
+      "durationDays": 1
+    }
+  ]
+}
+''';
 
 /// The scene's own rendering, isolated from `JourneyTab`'s catalog/gate
 /// switching (`journey_tab_test.dart` covers that). Unlike the old
@@ -261,6 +304,11 @@ void main() {
           ProviderScope(
             overrides: [
               appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+              journeyTimingBundleProvider.overrideWithValue(
+                _FakeTimingBundle({
+                  'assets/journeys/odyssey-ithaca/locations.json': _timingJson,
+                }),
+              ),
             ],
             child: _app(const JourneyFlameSceneView()),
           ),
@@ -272,16 +320,12 @@ void main() {
         container
             .read(selectedJourneyProvider.notifier)
             .start('odyssey-ithaca', now: DateTime.now());
-        // The segment timings load asynchronously from the real
-        // `locations.json` asset — pump generously past that, the same
-        // margin the achievement-sheet test above gives its own async
-        // settle.
-        await _pumpFrames(tester, count: 40);
+        await _pumpFrames(tester);
 
         final sky = tester.widget<SkyGradient>(find.byType(SkyGradient));
-        // Fresh quest -> panMeters == progressMeters == 0 -> exactly
-        // `troy-departure`'s departureHour from locations.json (§14
-        // "Решено 2026-09-03": Troy departs at dawn).
+        // Fresh quest -> panMeters == progressMeters == 0 -> exactly the
+        // fixture's departureHour (§14 "Решено 2026-09-03": Troy departs
+        // at dawn, per the real content).
         expect(sky.fictionalHour, 6);
       },
     );

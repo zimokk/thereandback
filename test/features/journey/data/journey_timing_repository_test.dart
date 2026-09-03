@@ -6,9 +6,7 @@ import 'package:thereandback/features/journey/data/journey_timing_repository.dar
 import 'package:thereandback/features/journey/domain/fictional_time.dart';
 
 String _json(List<Map<String, Object?>> segments) {
-  return jsonEncode({
-    'segments': segments,
-  });
+  return jsonEncode({'segments': segments});
 }
 
 Map<String, Object?> _segment({
@@ -16,7 +14,10 @@ Map<String, Object?> _segment({
   required int fromMeters,
   required int toMeters,
   double departureHour = 6,
-  double durationDays = 1,
+  // Small enough to stay under the pace-safety cap for every fixture's
+  // segment size below (as low as 900 m) without every test needing to
+  // pick its own — tests that specifically exercise the cap override this.
+  double durationDays = 0.05,
 }) {
   return {
     'id': id,
@@ -43,7 +44,10 @@ void main() {
     });
 
     test('rejects an empty "segments" list', () {
-      expect(() => parseJourneySegmentTimings(_json([])), throwsFormatException);
+      expect(
+        () => parseJourneySegmentTimings(_json([])),
+        throwsFormatException,
+      );
     });
 
     test('rejects a first segment that does not start at 0 m', () {
@@ -82,17 +86,13 @@ void main() {
     test('rejects a departureHour outside [0, 24)', () {
       expect(
         () => parseJourneySegmentTimings(
-          _json([
-            _segment(fromMeters: 0, toMeters: 1000, departureHour: 24),
-          ]),
+          _json([_segment(fromMeters: 0, toMeters: 1000, departureHour: 24)]),
         ),
         throwsFormatException,
       );
       expect(
         () => parseJourneySegmentTimings(
-          _json([
-            _segment(fromMeters: 0, toMeters: 1000, departureHour: -1),
-          ]),
+          _json([_segment(fromMeters: 0, toMeters: 1000, departureHour: -1)]),
         ),
         throwsFormatException,
       );
@@ -101,29 +101,22 @@ void main() {
     test('rejects a negative durationDays', () {
       expect(
         () => parseJourneySegmentTimings(
-          _json([
-            _segment(fromMeters: 0, toMeters: 1000, durationDays: -0.1),
-          ]),
+          _json([_segment(fromMeters: 0, toMeters: 1000, durationDays: -0.1)]),
         ),
         throwsFormatException,
       );
     });
 
-    test(
-      'rejects durationDays above the pace-safety cap '
-      '(1 fictional day per ${minMetersPerFictionalDay ~/ 1000} km)',
-      () {
-        // 10 000 m segment -> cap is exactly 1 day; 1.01 exceeds it.
-        expect(
-          () => parseJourneySegmentTimings(
-            _json([
-              _segment(fromMeters: 0, toMeters: 10000, durationDays: 1.01),
-            ]),
-          ),
-          throwsFormatException,
-        );
-      },
-    );
+    test('rejects durationDays above the pace-safety cap '
+        '(1 fictional day per ${minMetersPerFictionalDay ~/ 1000} km)', () {
+      // 10 000 m segment -> cap is exactly 1 day; 1.01 exceeds it.
+      expect(
+        () => parseJourneySegmentTimings(
+          _json([_segment(fromMeters: 0, toMeters: 10000, durationDays: 1.01)]),
+        ),
+        throwsFormatException,
+      );
+    });
 
     test('accepts durationDays exactly at the pace-safety cap', () {
       final segments = parseJourneySegmentTimings(

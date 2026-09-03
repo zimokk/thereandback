@@ -212,7 +212,7 @@ return $default(_that.id,_that.fromMeters,_that.toMeters,_that.departureHour,_th
 
 class _JourneySegmentTiming implements JourneySegmentTiming {
   const _JourneySegmentTiming({required this.id, required this.fromMeters, required this.toMeters, required this.departureHour, required this.durationDays});
-
+  
 
 @override final  String id;
 @override final  int fromMeters;

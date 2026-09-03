@@ -55,19 +55,16 @@ void main() {
       expect(fictionalHourFor(segments, 0), 6);
     });
 
-    test(
-      'at the exact boundary shared by two segments, belongs to the next '
-      'one — not the previous segment rolled forward to the same meters',
-      () {
-        // meters 1000 is both segment a's toMeters and segment b's
-        // fromMeters. Segment a rolled fully forward (24h added to its own
-        // departureHour 6) would coincidentally also read 6 — a case that
-        // could hide this off-by-one — so segment b's very different
-        // departureHour (20) is the one that actually proves which segment
-        // was picked.
-        expect(fictionalHourFor(segments, 1000), 20);
-      },
-    );
+    test('at the exact boundary shared by two segments, belongs to the next '
+        'one — not the previous segment rolled forward to the same meters', () {
+      // meters 1000 is both segment a's toMeters and segment b's
+      // fromMeters. Segment a rolled fully forward (24h added to its own
+      // departureHour 6) would coincidentally also read 6 — a case that
+      // could hide this off-by-one — so segment b's very different
+      // departureHour (20) is the one that actually proves which segment
+      // was picked.
+      expect(fictionalHourFor(segments, 1000), 20);
+    });
 
     test('mid-segment position interpolates ("something in between")', () {
       // Segment a: 1 day (24h) over 1000 m — halfway is +12h from 6 -> 18.
