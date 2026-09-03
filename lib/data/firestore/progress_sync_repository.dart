@@ -23,11 +23,14 @@ class RemoteQuestProgress {
 /// to derive; the plan deliberately dropped that toggle rather than fake an
 /// imprecise client-side estimate.
 abstract class ProgressSyncRepository {
-  /// Pushes the current running total for [journeyId] (§5.2: called after
-  /// every successful foreground sync, not per pedometer tick — never on
-  /// its own timer). Fire-and-forget from the caller's point of view: a
-  /// failure here must never affect the local, already-durable drift write
-  /// it follows (§8's full-offline requirement).
+  /// Pushes the current running total for [journeyId] (§5.2: called once
+  /// with `meters: 0` the instant a quest starts, and again after every
+  /// successful foreground sync — never per pedometer tick or on its own
+  /// timer; see `data/firestore/firestore_providers.dart`'s
+  /// `pushProgressBestEffort`, the shared caller for both). Fire-and-forget
+  /// from the caller's point of view: a failure here must never affect the
+  /// local, already-durable drift write it follows (§8's full-offline
+  /// requirement).
   Future<void> pushProgress({
     required String uid,
     required String journeyId,

@@ -1,11 +1,18 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:thereandback/app/auth_provider.dart';
 import 'package:thereandback/app/database_provider.dart';
 import 'package:thereandback/core/local_owner.dart';
 import 'package:thereandback/data/drift/database.dart';
+import 'package:thereandback/data/firestore/firestore_providers.dart';
+import 'package:thereandback/data/firestore/progress_sync_repository.dart';
 import 'package:thereandback/features/journey/data/progress_repository.dart';
 import 'package:thereandback/features/journey/presentation/journey_providers.dart';
 import 'package:thereandback/features/steps/data/step_sample_repository.dart';
+
+class _MockProgressSyncRepository extends Mock
+    implements ProgressSyncRepository {}
 
 /// `SelectedJourney.build()`'s restore branch (`if (restored != null) state
 /// = restored;`) is the actual "survives a restart" behavior the drift
@@ -82,6 +89,87 @@ void main() {
     expect(container.read(selectedJourneyProvider), isNull);
     await _pumpMicrotasks();
     expect(container.read(selectedJourneyProvider), isNull);
+  });
+
+  group('start() also pushes an initial progress row to Firestore', () {
+    late _MockProgressSyncRepository progressSyncRepository;
+
+    setUp(() {
+      progressSyncRepository = _MockProgressSyncRepository();
+      when(
+        () => progressSyncRepository.pushProgress(
+          uid: any(named: 'uid'),
+          journeyId: any(named: 'journeyId'),
+          meters: any(named: 'meters'),
+          startedAt: any(named: 'startedAt'),
+          isCurrent: any(named: 'isCurrent'),
+        ),
+      ).thenAnswer((_) async {});
+    });
+
+    test('a signed-in uid gets an immediate meters: 0 push, not just after the '
+        'first steps sync', () async {
+      final container = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+          currentUidProvider.overrideWithValue('uid-1'),
+          progressSyncRepositoryProvider.overrideWithValue(
+            progressSyncRepository,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final startedAt = DateTime(2026, 3, 10);
+      container
+          .read(selectedJourneyProvider.notifier)
+          .start('odyssey-ithaca', now: startedAt);
+
+      // No pump needed: `unawaited(pushProgressBestEffort(...))` still
+      // synchronously *invokes* `pushProgress()` — evaluating that call
+      // is part of reaching its own `await` — so the mock call is
+      // already registered by the time `start()` returns (same reasoning
+      // as `steps_providers_test.dart`'s equivalent comment).
+      verify(
+        () => progressSyncRepository.pushProgress(
+          uid: 'uid-1',
+          journeyId: 'odyssey-ithaca',
+          meters: 0,
+          startedAt: startedAt,
+          isCurrent: true,
+        ),
+      ).called(1);
+    });
+
+    test(
+      'no signed-in uid yet is a no-op — the repository is never called',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+            currentUidProvider.overrideWithValue(null),
+            progressSyncRepositoryProvider.overrideWithValue(
+              progressSyncRepository,
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        container
+            .read(selectedJourneyProvider.notifier)
+            .start('odyssey-ithaca', now: DateTime(2026, 3, 10));
+
+        verifyNever(
+          () => progressSyncRepository.pushProgress(
+            uid: any(named: 'uid'),
+            journeyId: any(named: 'journeyId'),
+            meters: any(named: 'meters'),
+            startedAt: any(named: 'startedAt'),
+            isCurrent: any(named: 'isCurrent'),
+          ),
+        );
+      },
+    );
   });
 }
 

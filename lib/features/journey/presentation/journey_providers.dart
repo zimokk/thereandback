@@ -4,6 +4,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../app/database_provider.dart';
 import '../../../core/local_owner.dart';
+import '../../../data/firestore/firestore_providers.dart'
+    show pushProgressBestEffort;
 import '../../steps/presentation/steps_providers.dart'
     show stepSampleRepositoryProvider;
 import '../data/journey_catalog.dart';
@@ -95,6 +97,16 @@ class SelectedJourney extends _$SelectedJourney {
   /// Starts a quest. `lastSyncedAt` seeds to the exact moment the user
   /// tapped "Start quest" (§5.2) — steps taken earlier that day, before the
   /// quest existed, are never counted.
+  ///
+  /// Two durable writes fire alongside the in-memory state, both
+  /// fire-and-forget: the local drift row (source of truth, §8) and an
+  /// initial `progressMeters: 0` push to Firestore via
+  /// [pushProgressBestEffort] — so `users/{uid}/progress/{journeyId}`
+  /// reflects the quest existing from this same tap, rather than only
+  /// appearing after the first steps sync lands. A friend's row/pin and
+  /// `AuthController`'s repeat-login reconciliation (§8, §14) both read
+  /// that document, so waiting on the first sync left a window where a
+  /// just-started quest was invisible to both.
   void start(String journeyId, {required DateTime now}) {
     state = SelectedQuest(
       journeyId: journeyId,
@@ -106,6 +118,14 @@ class SelectedJourney extends _$SelectedJourney {
       ref
           .read(progressRepositoryProvider)
           .startQuest(localOwnerId, journeyId: journeyId, startedAt: now),
+    );
+    unawaited(
+      pushProgressBestEffort(
+        ref,
+        journeyId: journeyId,
+        startedAt: now,
+        progressMeters: 0,
+      ),
     );
   }
 
