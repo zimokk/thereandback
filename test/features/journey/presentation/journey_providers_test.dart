@@ -171,6 +171,118 @@ void main() {
       },
     );
   });
+
+  group('start() no-ops when journeyId is already the active quest '
+      '(bug fix: re-tapping the catalog\'s button on an in-progress quest '
+      'used to reset its progress back to zero)', () {
+    test('progressMeters, startedAt and lastSyncedAt survive a re-tap '
+        'unchanged', () async {
+      final container = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+        ],
+      );
+      addTearDown(container.dispose);
+      final notifier = container.read(selectedJourneyProvider.notifier);
+
+      final startedAt = DateTime(2026, 3, 10, 8);
+      notifier.start('odyssey-ithaca', now: startedAt);
+
+      final syncedAt = startedAt.add(const Duration(days: 2));
+      notifier.applySyncedProgress(progressMeters: 5000, syncedAt: syncedAt);
+      expect(container.read(selectedJourneyProvider)!.progressMeters, 5000);
+
+      // The exact tap this bug report described: the user reopens the
+      // catalog (§6.1's "browsing" mode) and taps the card of the quest
+      // they are already on.
+      notifier.start(
+        'odyssey-ithaca',
+        now: startedAt.add(const Duration(days: 3)),
+      );
+
+      final state = container.read(selectedJourneyProvider)!;
+      expect(state.journeyId, 'odyssey-ithaca');
+      expect(state.progressMeters, 5000);
+      expect(state.startedAt, startedAt);
+      expect(state.lastSyncedAt, syncedAt);
+    });
+
+    test('no second meters: 0 push to Firestore fires on the re-tap', () async {
+      final progressSyncRepository = _MockProgressSyncRepository();
+      when(
+        () => progressSyncRepository.pushProgress(
+          uid: any(named: 'uid'),
+          journeyId: any(named: 'journeyId'),
+          meters: any(named: 'meters'),
+          startedAt: any(named: 'startedAt'),
+          isCurrent: any(named: 'isCurrent'),
+        ),
+      ).thenAnswer((_) async {});
+
+      final container = ProviderContainer(
+        overrides: [
+          appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+          currentUidProvider.overrideWithValue('uid-1'),
+          progressSyncRepositoryProvider.overrideWithValue(
+            progressSyncRepository,
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final notifier = container.read(selectedJourneyProvider.notifier);
+
+      final startedAt = DateTime(2026, 3, 10);
+      notifier.start('odyssey-ithaca', now: startedAt);
+      // The genuine first start is expected to push once — clear it so
+      // the assertion below is only about the re-tap.
+      clearInteractions(progressSyncRepository);
+
+      notifier.start(
+        'odyssey-ithaca',
+        now: startedAt.add(const Duration(days: 1)),
+      );
+
+      verifyNever(
+        () => progressSyncRepository.pushProgress(
+          uid: any(named: 'uid'),
+          journeyId: any(named: 'journeyId'),
+          meters: any(named: 'meters'),
+          startedAt: any(named: 'startedAt'),
+          isCurrent: any(named: 'isCurrent'),
+        ),
+      );
+    });
+
+    test(
+      'starting a genuinely different journey is unaffected — it still '
+      'resets progressMeters, startedAt and lastSyncedAt as before',
+      () async {
+        final container = ProviderContainer(
+          overrides: [
+            appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+          ],
+        );
+        addTearDown(container.dispose);
+        final notifier = container.read(selectedJourneyProvider.notifier);
+
+        final startedAt = DateTime(2026, 3, 10);
+        notifier.start('odyssey-ithaca', now: startedAt);
+        notifier.applySyncedProgress(
+          progressMeters: 5000,
+          syncedAt: startedAt.add(const Duration(days: 2)),
+        );
+
+        final newStart = startedAt.add(const Duration(days: 5));
+        notifier.start('a-different-quest', now: newStart);
+
+        final state = container.read(selectedJourneyProvider)!;
+        expect(state.journeyId, 'a-different-quest');
+        expect(state.progressMeters, 0);
+        expect(state.startedAt, newStart);
+        expect(state.lastSyncedAt, newStart);
+      },
+    );
+  });
 }
 
 /// Flushes several event-loop turns so an `unawaited()` background Future

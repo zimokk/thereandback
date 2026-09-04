@@ -13,6 +13,7 @@
 
   "journeyCatalogTitle": "Выберите поход",
   "journeyCatalogStartButton": "Начать поход",
+  "journeyCatalogContinueButton": "Продолжить поход",
   "journeyCatalogDownloadButton": "Скачать",
   "journeyCatalogDownloadingLabel": "Загрузка… {percent}%",
   "journeyCatalogDownloadFailedMessage": "Не удалось скачать содержимое похода.",

@@ -21,6 +21,12 @@ class QuestPickerView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final catalog = ref.watch(journeyCatalogEntriesProvider);
     final l10n = AppLocalizations.of(context)!;
+    // The currently active quest's id, if any — a card whose journey
+    // matches this one is already underway, not merely selectable (bug fix:
+    // the button used to say and act as "Start" even for this card, which
+    // reset progress back to zero on tap; see `_JourneyCard`/
+    // `_JourneyCardAction` below and `SelectedJourney.start()`'s own guard).
+    final activeJourneyId = ref.watch(selectedJourneyProvider)?.journeyId;
 
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -32,13 +38,18 @@ class QuestPickerView extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: AppSpacing.md),
             child: _JourneyCard(
               journey: journey,
+              isActive: journey.id == activeJourneyId,
               onStart: () {
+                // Starting a (possibly different) quest is always the way
+                // out of browsing mode — same as picking one for the first
+                // time, this always lands back on the path scene. Re-tapping
+                // the already-active quest's card takes this same path
+                // (`SelectedJourney.start()` no-ops on it, see its own doc
+                // comment) so the tap still does the one thing it should:
+                // return to the path scene, without resetting anything.
                 ref
                     .read(selectedJourneyProvider.notifier)
                     .start(journey.id, now: DateTime.now());
-                // Starting a (possibly different) quest is always the way
-                // out of browsing mode — same as picking one for the first
-                // time, this always lands back on the path scene.
                 ref.read(browsingCatalogProvider.notifier).exit();
               },
             ),
@@ -107,9 +118,18 @@ class _ComingSoonCard extends StatelessWidget {
 }
 
 class _JourneyCard extends ConsumerWidget {
-  const _JourneyCard({required this.journey, required this.onStart});
+  const _JourneyCard({
+    required this.journey,
+    required this.isActive,
+    required this.onStart,
+  });
 
   final Journey journey;
+
+  /// Whether this card's journey is the one the user already has underway
+  /// (`selectedJourneyProvider`), as opposed to one they could start fresh —
+  /// swaps the action button to "Continue" (§14 bug fix) instead of "Start".
+  final bool isActive;
   final VoidCallback onStart;
 
   @override
@@ -157,6 +177,7 @@ class _JourneyCard extends ConsumerWidget {
           const SizedBox(height: AppSpacing.md),
           _JourneyCardAction(
             status: ref.watch(journeyAssetStatusControllerProvider(journey.id)),
+            isActive: isActive,
             onStart: onStart,
             onDownload: () => ref
                 .read(journeyAssetStatusControllerProvider(journey.id).notifier)
@@ -177,11 +198,13 @@ class _JourneyCard extends ConsumerWidget {
 class _JourneyCardAction extends StatelessWidget {
   const _JourneyCardAction({
     required this.status,
+    required this.isActive,
     required this.onStart,
     required this.onDownload,
   });
 
   final JourneyAssetStatus status;
+  final bool isActive;
   final VoidCallback onStart;
   final VoidCallback onDownload;
 
@@ -198,7 +221,11 @@ class _JourneyCardAction extends StatelessWidget {
             backgroundColor: AppColors.gold,
             foregroundColor: AppColors.background,
           ),
-          child: Text(l10n.journeyCatalogStartButton),
+          child: Text(
+            isActive
+                ? l10n.journeyCatalogContinueButton
+                : l10n.journeyCatalogStartButton,
+          ),
         ),
       ),
       JourneyAssetNotDownloaded() => Align(

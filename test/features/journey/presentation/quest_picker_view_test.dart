@@ -7,6 +7,7 @@ import 'package:thereandback/core/app_theme_id.dart';
 import 'package:thereandback/data/drift/database.dart';
 import 'package:thereandback/features/journey/domain/journey.dart';
 import 'package:thereandback/features/journey/domain/journey_asset_status.dart';
+import 'package:thereandback/features/journey/domain/quest_selection.dart';
 import 'package:thereandback/features/journey/presentation/journey_asset_providers.dart';
 import 'package:thereandback/features/journey/presentation/journey_providers.dart';
 import 'package:thereandback/features/journey/presentation/quest_picker_view.dart';
@@ -36,6 +37,21 @@ class _FixedJourneyAssetStatusController extends JourneyAssetStatusController {
 
   @override
   JourneyAssetStatus build(String journeyId) => _status;
+}
+
+/// Seeds `selectedJourneyProvider` with an already-started quest instead of
+/// letting it restore (async, from an empty test database) to `null` — for
+/// the "already underway" card tests below. Deliberately *not* overriding
+/// `start()`: it must stay the real implementation so a tap on the card
+/// exercises `SelectedJourney.start()`'s actual no-op guard (bug fix), not a
+/// test double that merely assumes it.
+class _FixedSelectedJourney extends SelectedJourney {
+  _FixedSelectedJourney(this._initial);
+
+  final SelectedQuest? _initial;
+
+  @override
+  SelectedQuest? build() => _initial;
 }
 
 Widget _app(Widget child) {
@@ -155,4 +171,73 @@ void main() {
       );
     },
   );
+
+  group('the card for the quest already underway (bug fix: pressing the '
+      'button used to reset its progress)', () {
+    final activeQuest = SelectedQuest(
+      journeyId: _testJourney.id,
+      startedAt: DateTime(2026, 3, 1),
+      lastSyncedAt: DateTime(2026, 3, 5),
+      progressMeters: 500,
+    );
+
+    Future<void> pumpWithActiveQuest(WidgetTester tester) {
+      return tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+            journeyCatalogEntriesProvider.overrideWithValue([_testJourney]),
+            journeyAssetStatusControllerProvider(_testJourney.id).overrideWith(
+              () =>
+                  _FixedJourneyAssetStatusController(const JourneyAssetReady()),
+            ),
+            selectedJourneyProvider.overrideWith(
+              () => _FixedSelectedJourney(activeQuest),
+            ),
+          ],
+          child: _app(const Scaffold(body: QuestPickerView())),
+        ),
+      );
+    }
+
+    testWidgets('shows "Continue quest", not "Start quest"', (tester) async {
+      await pumpWithActiveQuest(tester);
+      await tester.pump();
+
+      expect(find.text('Continue quest'), findsOneWidget);
+      expect(find.text('Start quest'), findsNothing);
+    });
+
+    testWidgets('tapping "Continue quest" leaves progress, startedAt and '
+        'lastSyncedAt untouched instead of resetting them to zero/now', (
+      tester,
+    ) async {
+      await pumpWithActiveQuest(tester);
+      await tester.pump();
+
+      await tester.tap(find.text('Continue quest'));
+      await tester.pump();
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(QuestPickerView)),
+      );
+      final state = container.read(selectedJourneyProvider);
+      expect(state, isNotNull);
+      expect(state!.progressMeters, activeQuest.progressMeters);
+      expect(state.startedAt, activeQuest.startedAt);
+      expect(state.lastSyncedAt, activeQuest.lastSyncedAt);
+    });
+
+    testWidgets('a not-yet-started quest still shows "Start quest"', (
+      tester,
+    ) async {
+      // Same catalog card, but `selectedJourneyProvider` restores to `null`
+      // from the fresh test database (`_pump`'s own default overrides) —
+      // the "Continue" branch above must not leak into the ordinary case.
+      await _pump(tester, const JourneyAssetReady());
+
+      expect(find.text('Start quest'), findsOneWidget);
+      expect(find.text('Continue quest'), findsNothing);
+    });
+  });
 }

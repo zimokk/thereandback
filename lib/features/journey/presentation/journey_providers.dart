@@ -107,7 +107,19 @@ class SelectedJourney extends _$SelectedJourney {
   /// `AuthController`'s repeat-login reconciliation (§8, §14) both read
   /// that document, so waiting on the first sync left a window where a
   /// just-started quest was invisible to both.
+  ///
+  /// No-op when [journeyId] is already the active quest (bug fix: the
+  /// catalog's card button re-fires this same call when the user reopens
+  /// the catalog via "browsing" mode — §6.1's own return-to-catalog button —
+  /// and taps the card of the quest they're already on; without this guard
+  /// that reset `startedAt`/`lastSyncedAt` to `now` and `progressMeters` to
+  /// `0` both in memory and, via the Firestore push above, in the cloud
+  /// document too — wiping real progress until the next steps sync happened
+  /// to catch up). Starting a genuinely *different* quest is unaffected —
+  /// see `quest_picker_view.dart`'s own comment on why that must still go
+  /// through the full reset below.
   void start(String journeyId, {required DateTime now}) {
+    if (state?.journeyId == journeyId) return;
     state = SelectedQuest(
       journeyId: journeyId,
       startedAt: now,

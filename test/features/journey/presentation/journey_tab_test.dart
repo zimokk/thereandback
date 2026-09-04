@@ -142,9 +142,16 @@ void main() {
       final container = ProviderScope.containerOf(
         tester.element(find.byType(JourneyTab)),
       );
+      final startedAt = DateTime(2026, 3, 1);
       container
           .read(selectedJourneyProvider.notifier)
-          .start('odyssey-ithaca', now: DateTime.now());
+          .start('odyssey-ithaca', now: startedAt);
+      container
+          .read(selectedJourneyProvider.notifier)
+          .applySyncedProgress(
+            progressMeters: 5000,
+            syncedAt: startedAt.add(const Duration(days: 2)),
+          );
       await tester.pump();
       expect(find.text('Troy → Ithaca'), findsOneWidget);
 
@@ -152,19 +159,28 @@ void main() {
       await tester.pump();
 
       // Back on the catalog — but the quest itself is still selected, not
-      // cleared (browsing is separate from `selectedJourneyProvider`).
+      // cleared (browsing is separate from `selectedJourneyProvider`). Its
+      // card shows "Continue quest", not "Start quest" (bug fix — see
+      // `quest_picker_view_test.dart`/`journey_providers_test.dart` for the
+      // dedicated coverage of that button label and its no-reset guard).
       expect(find.text('Choose your quest'), findsOneWidget);
+      expect(find.text('Continue quest'), findsOneWidget);
+      expect(find.text('Start quest'), findsNothing);
       expect(
         container.read(selectedJourneyProvider)?.journeyId,
         'odyssey-ithaca',
       );
 
-      await tester.tap(find.text('Start quest'));
+      await tester.tap(find.text('Continue quest'));
       await tester.pump();
 
-      // Picking (the same) quest again is the way back to the path scene.
+      // Picking (the same) quest again is the way back to the path scene —
+      // without resetting the progress accumulated above.
       expect(find.text('Choose your quest'), findsNothing);
       expect(find.text('Troy → Ithaca'), findsOneWidget);
+      final state = container.read(selectedJourneyProvider)!;
+      expect(state.progressMeters, 5000);
+      expect(state.startedAt, startedAt);
     },
   );
 

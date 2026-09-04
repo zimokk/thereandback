@@ -158,6 +158,12 @@ abstract class AppLocalizations {
   /// **'Start quest'**
   String get journeyCatalogStartButton;
 
+  /// Button on a catalog card for the quest the user already has underway — returns to it instead of restarting it (§14 bug fix)
+  ///
+  /// In en, this message translates to:
+  /// **'Continue quest'**
+  String get journeyCatalogContinueButton;
+
   /// Button on a catalog card for a quest whose content is not yet downloaded (§8, §14)
   ///
   /// In en, this message translates to:
