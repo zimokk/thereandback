@@ -33,6 +33,157 @@ void main() {
     });
   });
 
+  group('hourOfDay', () {
+    test('extracts a decimal hour from a DateTime', () {
+      expect(hourOfDay(DateTime(2026, 1, 1, 6, 30)), 6.5);
+      expect(hourOfDay(DateTime(2026, 1, 1, 0, 0)), 0);
+      expect(hourOfDay(DateTime(2026, 1, 1, 23, 45)), closeTo(23.75, 1e-9));
+    });
+  });
+
+  group('skyBlendForHour (continuous counterpart of skyPhaseForHour, for '
+      'smooth sky transitions)', () {
+    test('flat inside night — from == to, t == 0', () {
+      for (final hour in [0.0, 2.0, 4.99, 20.0, 23.0]) {
+        final blend = skyBlendForHour(hour);
+        expect(blend.from, SkyPhase.night);
+        expect(blend.to, SkyPhase.night);
+        expect(blend.t, 0);
+      }
+    });
+
+    test('flat inside day — from == to, t == 0', () {
+      for (final hour in [7.0, 12.0, 17.99]) {
+        final blend = skyBlendForHour(hour);
+        expect(blend.from, SkyPhase.day);
+        expect(blend.to, SkyPhase.day);
+        expect(blend.t, 0);
+      }
+    });
+
+    test('night -> dawn across [5,6), dawn fully arrived at 6', () {
+      expect(skyBlendForHour(5), (
+        from: SkyPhase.night,
+        to: SkyPhase.dawn,
+        t: 0.0,
+      ));
+      expect(skyBlendForHour(5.5), (
+        from: SkyPhase.night,
+        to: SkyPhase.dawn,
+        t: 0.5,
+      ));
+    });
+
+    test('dawn -> day across [6,7), day fully arrived at 7', () {
+      expect(skyBlendForHour(6), (
+        from: SkyPhase.dawn,
+        to: SkyPhase.day,
+        t: 0.0,
+      ));
+      expect(skyBlendForHour(6.5), (
+        from: SkyPhase.dawn,
+        to: SkyPhase.day,
+        t: 0.5,
+      ));
+    });
+
+    test('day -> dusk across [18,19), dusk fully arrived at 19', () {
+      expect(skyBlendForHour(18), (
+        from: SkyPhase.day,
+        to: SkyPhase.dusk,
+        t: 0.0,
+      ));
+      expect(skyBlendForHour(18.5), (
+        from: SkyPhase.day,
+        to: SkyPhase.dusk,
+        t: 0.5,
+      ));
+    });
+
+    test('dusk -> night across [19,20), night fully arrived at 20', () {
+      expect(skyBlendForHour(19), (
+        from: SkyPhase.dusk,
+        to: SkyPhase.night,
+        t: 0.0,
+      ));
+      expect(skyBlendForHour(19.5), (
+        from: SkyPhase.dusk,
+        to: SkyPhase.night,
+        t: 0.5,
+      ));
+    });
+
+    test('seams are continuous where a transition ends: value just before '
+        'the boundary has t close to 1, matching the flat/next phase that '
+        'starts at the boundary', () {
+      const epsilon = 1e-9;
+      for (final boundary in [6.0, 7.0, 19.0, 20.0]) {
+        final before = skyBlendForHour(boundary - epsilon);
+        expect(before.t, closeTo(1, 1e-6));
+      }
+    });
+
+    test('seams are continuous where a flat band ends: value just before '
+        'the boundary is still flat (t == 0), matching the transition that '
+        'starts at t == 0 right at the boundary', () {
+      const epsilon = 1e-9;
+      for (final boundary in [5.0, 18.0]) {
+        final before = skyBlendForHour(boundary - epsilon);
+        expect(before.t, 0);
+      }
+    });
+
+    test('wraps past 24 the same as skyPhaseForHour', () {
+      expect(skyBlendForHour(30), skyBlendForHour(6));
+    });
+  });
+
+  group('starOpacityForHour (continuous counterpart of the binary night-only '
+      'star opacity)', () {
+    test('full opacity through the night band', () {
+      expect(starOpacityForHour(0), 1);
+      expect(starOpacityForHour(4.99), 1);
+      expect(starOpacityForHour(20), 1);
+      expect(starOpacityForHour(23), 1);
+    });
+
+    test('zero opacity through the day band', () {
+      expect(starOpacityForHour(7), 0);
+      expect(starOpacityForHour(12), 0);
+      expect(starOpacityForHour(17.99), 0);
+    });
+
+    test('fades out linearly across dawn [5,7)', () {
+      expect(starOpacityForHour(5), 1);
+      expect(starOpacityForHour(6), 0.5);
+      expect(starOpacityForHour(6.5), 0.25);
+    });
+
+    test('fades in linearly across dusk [18,20)', () {
+      expect(starOpacityForHour(18), 0);
+      expect(starOpacityForHour(19), 0.5);
+      expect(starOpacityForHour(19.5), 0.75);
+    });
+
+    test('is monotonic across each transition band', () {
+      const dawnHours = [5.0, 5.5, 6.0, 6.5, 6.99];
+      final dawnSamples = dawnHours.map(starOpacityForHour).toList();
+      for (var i = 1; i < dawnSamples.length; i++) {
+        expect(dawnSamples[i], lessThan(dawnSamples[i - 1]));
+      }
+
+      const duskHours = [18.0, 18.5, 19.0, 19.5, 19.99];
+      final duskSamples = duskHours.map(starOpacityForHour).toList();
+      for (var i = 1; i < duskSamples.length; i++) {
+        expect(duskSamples[i], greaterThan(duskSamples[i - 1]));
+      }
+    });
+
+    test('wraps past 24 the same as within [0,24)', () {
+      expect(starOpacityForHour(30), starOpacityForHour(6));
+    });
+  });
+
   group('fictionalHourFor (§6.1 — fictional sky time along the route)', () {
     final segments = [
       const JourneySegmentTiming(
