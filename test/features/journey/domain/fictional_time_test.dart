@@ -158,16 +158,14 @@ void main() {
     });
 
     test('is monotonic across each transition band', () {
-      final dawnSamples = [5.0, 5.5, 6.0, 6.5, 6.99]
-          .map(starOpacityForHour)
-          .toList();
+      const dawnHours = [5.0, 5.5, 6.0, 6.5, 6.99];
+      final dawnSamples = dawnHours.map(starOpacityForHour).toList();
       for (var i = 1; i < dawnSamples.length; i++) {
         expect(dawnSamples[i], lessThan(dawnSamples[i - 1]));
       }
 
-      final duskSamples = [18.0, 18.5, 19.0, 19.5, 19.99]
-          .map(starOpacityForHour)
-          .toList();
+      const duskHours = [18.0, 18.5, 19.0, 19.5, 19.99];
+      final duskSamples = duskHours.map(starOpacityForHour).toList();
       for (var i = 1; i < duskSamples.length; i++) {
         expect(duskSamples[i], greaterThan(duskSamples[i - 1]));
       }
