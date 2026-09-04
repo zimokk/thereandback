@@ -40,14 +40,19 @@ class JourneyScene extends FlameGame {
       controller: controller,
       metersProvider: () => controller.displayedProgressMeters,
       color: AppColors.gold,
-    )..priority = 20;
+    )..priority = travelerPriority;
     await world.add(solidTraveler);
 
     await world.add(EnvironmentLayer.behind(controller));
     await world.add(EnvironmentLayer.front(controller));
 
-    _ghost = GhostTravelerComponent(controller: controller);
-    await camera.viewport.add(_ghost);
+    // Same `world`/priority level as [solidTraveler] and every friend marker
+    // (§ [travelerPriority]'s doc comment) — not `camera.viewport`, which
+    // would always paint over `EnvironmentLayer.front` regardless of
+    // priority.
+    _ghost = GhostTravelerComponent(controller: controller)
+      ..priority = travelerPriority;
+    await world.add(_ghost);
   }
 
   @override
@@ -95,7 +100,7 @@ class JourneyScene extends FlameGame {
     for (final uid in visibleUids) {
       if (_friendComponents.containsKey(uid)) continue;
       final component = FriendMarkerComponent(controller: controller, uid: uid)
-        ..priority = 20;
+        ..priority = travelerPriority;
       _friendComponents[uid] = component;
       world.add(component);
     }

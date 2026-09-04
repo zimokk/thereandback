@@ -4,7 +4,6 @@ import 'package:flutter/material.dart' show Icons;
 import 'package:flutter/painting.dart';
 
 import '../../../design/colors.dart';
-import 'journey_scene.dart' show JourneyScene;
 import 'journey_scene_controller.dart';
 import 'terrain_layer.dart';
 
@@ -12,6 +11,15 @@ import 'terrain_layer.dart';
 /// CustomPaint placeholder used (`journey_path_view.dart`'s
 /// `_travelerIconSize`).
 const double travelerIconSize = 32;
+
+/// Shared z-order for every on-path figure — the solid traveler
+/// ([TravelerComponent] added in `journey_scene.dart`), each friend marker
+/// (`friend_component.dart`), and the rewind ghost ([GhostTravelerComponent]
+/// below) all render at this one `priority`, between
+/// `EnvironmentLayer.behind` (10) and `EnvironmentLayer.front` (30) — the
+/// front decoration layer is meant to visually pass in front of whichever
+/// figures are currently behind it, not sit under them.
+const int travelerPriority = 20;
 
 /// How far the rewind ghost's glyph shrinks relative to [travelerIconSize]
 /// — smaller and visibly behind the solid marker, not a same-size twin.
@@ -57,8 +65,10 @@ TextPainter _walkGlyphPainter({
 /// at its own row's `progressMeters`) are both this same component, only
 /// differing in which meters value they track and their color. A `World`
 /// child, so Flame's own camera transform places it on screen — no manual
-/// offset math here (contrast the rewind ghost, [GhostTravelerComponent]
-/// below, which is deliberately *not* a `World` child).
+/// offset math here. The rewind ghost ([GhostTravelerComponent] below) is a
+/// separate class (it hides conditionally and draws a different glyph
+/// scale/opacity) but shares this same `World` placement and
+/// [travelerPriority].
 class TravelerComponent extends PositionComponent {
   TravelerComponent({
     required this.controller,
@@ -100,18 +110,23 @@ class TravelerComponent extends PositionComponent {
 }
 
 /// The rewind ghost — "was here" (CLAUDE.md §6.1): a dim, smaller echo of
-/// the traveler glyph, always centred on the *viewport* (screen-space, not
-/// world-space) at the vertical height the horizon has at whatever route
-/// position the view is currently panned to. Hidden once that would
-/// coincide with the real traveler (looking at `You`) — one figure there,
-/// not two overlapping ones.
+/// the traveler glyph, at the world position [JourneySceneController
+/// .panMeters] — the route position the view is currently panned to,
+/// standing on the horizon there. Hidden once that would coincide with the
+/// real traveler (looking at `You`) — one figure there, not two overlapping
+/// ones.
 ///
-/// A `camera.viewport` child, not a `World` child: "wherever the view is
-/// currently centred" is by definition the viewport's own centre, which
-/// only Flame's HUD-space (unaffected by the world/camera transform) can
-/// express directly.
-class GhostTravelerComponent extends PositionComponent
-    with HasGameReference<JourneyScene> {
+/// A `World` child, added at [travelerPriority] — same level as the solid
+/// traveler and every friend marker — **not** a `camera.viewport` (HUD)
+/// child: HUD content always paints after (on top of) the whole world,
+/// which put the ghost above `EnvironmentLayer.front` regardless of
+/// `priority`. As a world entity it needs no special-cased viewport-space
+/// math either — [JourneyScene.update] already points the camera's
+/// viewfinder at `worldXFor(panMeters, pixelsPerMeter)`, so a figure placed
+/// at that exact world x lands at the viewport's centre on screen, exactly
+/// like before, just by ordinary camera transform rather than manual HUD
+/// positioning.
+class GhostTravelerComponent extends PositionComponent {
   GhostTravelerComponent({required this.controller})
     : super(
         size: Vector2.all(travelerIconSize * travelerGhostScale),
@@ -148,11 +163,9 @@ class GhostTravelerComponent extends PositionComponent
     if (!_visible) return;
 
     final panWorldX = worldXFor(controller.panMeters, pixelsPerMeter);
-    final viewportSize = game.camera.viewport.size;
-    position.setValues(
-      viewportSize.x / 2,
-      viewportSize.y / 2 + terrainHeightAt(panWorldX),
-    );
+    // `.setValues` on the existing `position` Vector2 — same
+    // no-per-frame-allocation rule [TravelerComponent.update] follows.
+    position.setValues(panWorldX, terrainHeightAt(panWorldX));
   }
 
   @override
