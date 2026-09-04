@@ -48,7 +48,7 @@ void main() {
     );
   });
 
-  group('GhostTravelerComponent (rewind ghost, viewport-space)', () {
+  group('GhostTravelerComponent (rewind ghost, world-space)', () {
     late JourneySceneController controller;
 
     JourneyScene createGame() {
@@ -73,7 +73,7 @@ void main() {
         game.update(0);
 
         final ghost = GhostTravelerComponent(controller: controller);
-        await game.camera.viewport.add(ghost);
+        await game.world.add(ghost);
         await game.ready();
         ghost.update(0);
 
@@ -82,20 +82,24 @@ void main() {
     );
 
     testWithGame<JourneyScene>(
-      'visible and centred on the viewport once rewound away from You',
+      'visible and sitting at worldXFor(panMeters) once rewound away from You',
       createGame,
       (game) async {
         controller.panMeters = 1000; // rewound well past the pixel threshold.
         game.update(0);
 
         final ghost = GhostTravelerComponent(controller: controller);
-        await game.camera.viewport.add(ghost);
+        await game.world.add(ghost);
         await game.ready();
         ghost.update(0);
 
         expect(ghost.isVisibleForTest, isTrue);
-        final viewportSize = game.camera.viewport.size;
-        expect(ghost.position.x, closeTo(viewportSize.x / 2, 1e-3));
+        // Same world x the camera itself points at (`JourneyScene.update`'s
+        // `viewfinder.position`) — that's what puts the ghost at screen
+        // centre, via the ordinary camera transform, not a HUD special case.
+        final expectedX = worldXFor(1000, controller.pixelsPerMeter);
+        expect(ghost.position.x, closeTo(expectedX, 1e-3));
+        expect(ghost.position.y, closeTo(terrainHeightAt(expectedX), 1e-3));
       },
     );
   });
