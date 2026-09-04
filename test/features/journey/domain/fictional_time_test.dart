@@ -62,47 +62,55 @@ void main() {
     });
 
     test('night -> dawn across [5,6), dawn fully arrived at 6', () {
-      expect(
-        skyBlendForHour(5),
-        (from: SkyPhase.night, to: SkyPhase.dawn, t: 0.0),
-      );
-      expect(
-        skyBlendForHour(5.5),
-        (from: SkyPhase.night, to: SkyPhase.dawn, t: 0.5),
-      );
+      expect(skyBlendForHour(5), (
+        from: SkyPhase.night,
+        to: SkyPhase.dawn,
+        t: 0.0,
+      ));
+      expect(skyBlendForHour(5.5), (
+        from: SkyPhase.night,
+        to: SkyPhase.dawn,
+        t: 0.5,
+      ));
     });
 
     test('dawn -> day across [6,7), day fully arrived at 7', () {
-      expect(
-        skyBlendForHour(6),
-        (from: SkyPhase.dawn, to: SkyPhase.day, t: 0.0),
-      );
-      expect(
-        skyBlendForHour(6.5),
-        (from: SkyPhase.dawn, to: SkyPhase.day, t: 0.5),
-      );
+      expect(skyBlendForHour(6), (
+        from: SkyPhase.dawn,
+        to: SkyPhase.day,
+        t: 0.0,
+      ));
+      expect(skyBlendForHour(6.5), (
+        from: SkyPhase.dawn,
+        to: SkyPhase.day,
+        t: 0.5,
+      ));
     });
 
     test('day -> dusk across [18,19), dusk fully arrived at 19', () {
-      expect(
-        skyBlendForHour(18),
-        (from: SkyPhase.day, to: SkyPhase.dusk, t: 0.0),
-      );
-      expect(
-        skyBlendForHour(18.5),
-        (from: SkyPhase.day, to: SkyPhase.dusk, t: 0.5),
-      );
+      expect(skyBlendForHour(18), (
+        from: SkyPhase.day,
+        to: SkyPhase.dusk,
+        t: 0.0,
+      ));
+      expect(skyBlendForHour(18.5), (
+        from: SkyPhase.day,
+        to: SkyPhase.dusk,
+        t: 0.5,
+      ));
     });
 
     test('dusk -> night across [19,20), night fully arrived at 20', () {
-      expect(
-        skyBlendForHour(19),
-        (from: SkyPhase.dusk, to: SkyPhase.night, t: 0.0),
-      );
-      expect(
-        skyBlendForHour(19.5),
-        (from: SkyPhase.dusk, to: SkyPhase.night, t: 0.5),
-      );
+      expect(skyBlendForHour(19), (
+        from: SkyPhase.dusk,
+        to: SkyPhase.night,
+        t: 0.0,
+      ));
+      expect(skyBlendForHour(19.5), (
+        from: SkyPhase.dusk,
+        to: SkyPhase.night,
+        t: 0.5,
+      ));
     });
 
     test('seams are continuous where a transition ends: value just before '
