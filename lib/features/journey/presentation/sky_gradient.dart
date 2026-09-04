@@ -19,10 +19,18 @@ List<Color> _gradientColorsFor(SkyPhase phase) {
   };
 }
 
-/// How visible the star layer is for [phase] — only night carries any
-/// stars; dawn/dusk fade them out entirely rather than a partial value, to
-/// keep the transition simple.
-double _starOpacityFor(SkyPhase phase) => phase == SkyPhase.night ? 1.0 : 0.0;
+/// Cross-fades [_gradientColorsFor]'s two endpoints along [SkyBlend.t] —
+/// the continuous counterpart of the old discrete per-phase lookup, so the
+/// sky eases through a transition band instead of snapping at its edge.
+List<Color> _gradientColorsForHour(double hour) {
+  final blend = skyBlendForHour(hour);
+  final from = _gradientColorsFor(blend.from);
+  final to = _gradientColorsFor(blend.to);
+  return [
+    Color.lerp(from[0], to[0], blend.t)!,
+    Color.lerp(from[1], to[1], blend.t)!,
+  ];
+}
 
 /// How often [_SkyGradientState] re-checks the real clock (the
 /// [SkyGradient.fictionalHour] == null fallback path) — the sky is "almost
@@ -55,14 +63,15 @@ class SkyGradient extends StatefulWidget {
 
 class _SkyGradientState extends State<SkyGradient> {
   Timer? _timer;
-  late SkyPhase _phase;
+  late double _hour;
+
+  double get _currentHour =>
+      widget.fictionalHour ?? hourOfDay(DateTime.now());
 
   @override
   void initState() {
     super.initState();
-    _phase = widget.fictionalHour != null
-        ? skyPhaseForHour(widget.fictionalHour!)
-        : skyPhaseFor(DateTime.now());
+    _hour = _currentHour;
     _syncTimer();
   }
 
@@ -74,12 +83,9 @@ class _SkyGradientState extends State<SkyGradient> {
       // driven by the parent's own rebuild cadence (every scroll/progress
       // change), not the once-a-minute real-clock timer. This also covers
       // flipping *back* to the real-clock fallback (e.g. leaving a
-      // story-driven quest): `_phase` must not sit on a stale fictional
+      // story-driven quest): `_hour` must not sit on a stale fictional
       // reading until the next timer tick.
-      final next = widget.fictionalHour != null
-          ? skyPhaseForHour(widget.fictionalHour!)
-          : skyPhaseFor(DateTime.now());
-      if (next != _phase) setState(() => _phase = next);
+      setState(() => _hour = _currentHour);
     }
     _syncTimer();
   }
@@ -99,8 +105,7 @@ class _SkyGradientState extends State<SkyGradient> {
   }
 
   void _recompute() {
-    final next = skyPhaseFor(DateTime.now());
-    if (next != _phase && mounted) setState(() => _phase = next);
+    if (mounted) setState(() => _hour = _currentHour);
   }
 
   @override
@@ -112,7 +117,7 @@ class _SkyGradientState extends State<SkyGradient> {
   @override
   Widget build(BuildContext context) {
     return SizedBox.expand(
-      child: CustomPaint(painter: _SkyPainter(phase: _phase)),
+      child: CustomPaint(painter: _SkyPainter(hour: _hour)),
     );
   }
 }
@@ -126,14 +131,14 @@ const int _starCount = 90;
 const int _starSeed = 11;
 
 class _SkyPainter extends CustomPainter {
-  const _SkyPainter({required this.phase});
+  const _SkyPainter({required this.hour});
 
-  final SkyPhase phase;
+  final double hour;
 
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
-    final colors = _gradientColorsFor(phase);
+    final colors = _gradientColorsForHour(hour);
     canvas.drawRect(
       rect,
       Paint()
@@ -144,7 +149,7 @@ class _SkyPainter extends CustomPainter {
         ).createShader(rect),
     );
 
-    final starOpacity = _starOpacityFor(phase);
+    final starOpacity = starOpacityForHour(hour);
     if (starOpacity <= 0) return;
 
     final starPaint = Paint()
@@ -161,5 +166,10 @@ class _SkyPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _SkyPainter oldDelegate) =>
-      oldDelegate.phase != phase;
+      (oldDelegate.hour - hour).abs() > _repaintHourTolerance;
 }
+
+/// Minimum hour delta worth a repaint (~30 real-time seconds) — well below
+/// any visible color/star-opacity change, so sub-tolerance jitter (e.g. a
+/// fictional hour recomputed every scroll frame) doesn't churn the canvas.
+const double _repaintHourTolerance = 1 / 120;
