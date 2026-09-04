@@ -57,6 +57,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journeyCatalogStartButton => 'Start quest';
 
   @override
+  String get journeyCatalogContinueButton => 'Continue quest';
+
+  @override
   String get journeyCatalogDownloadButton => 'Download';
 
   @override

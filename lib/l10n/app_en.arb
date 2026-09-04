@@ -29,6 +29,8 @@
   "@journeyCatalogTitle": {"description": "Heading over the quest catalog when no quest is selected"},
   "journeyCatalogStartButton": "Start quest",
   "@journeyCatalogStartButton": {"description": "Button on a catalog card that starts that quest"},
+  "journeyCatalogContinueButton": "Continue quest",
+  "@journeyCatalogContinueButton": {"description": "Button on a catalog card for the quest the user already has underway — returns to it instead of restarting it (§14 bug fix)"},
   "journeyCatalogDownloadButton": "Download",
   "@journeyCatalogDownloadButton": {"description": "Button on a catalog card for a quest whose content is not yet downloaded (§8, §14)"},
   "journeyCatalogDownloadingLabel": "Downloading… {percent}%",

@@ -61,6 +61,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get journeyCatalogStartButton => 'Начать поход';
 
   @override
+  String get journeyCatalogContinueButton => 'Продолжить поход';
+
+  @override
   String get journeyCatalogDownloadButton => 'Скачать';
 
   @override
