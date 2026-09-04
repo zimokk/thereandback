@@ -57,6 +57,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journeyCatalogStartButton => 'Start quest';
 
   @override
+  String get journeyCatalogDownloadButton => 'Download';
+
+  @override
+  String journeyCatalogDownloadingLabel(int percent) {
+    return 'Downloading… $percent%';
+  }
+
+  @override
+  String get journeyCatalogDownloadFailedMessage =>
+      'Couldn\'t download this quest\'s content.';
+
+  @override
+  String get journeyCatalogRetryDownloadButton => 'Retry';
+
+  @override
+  String get journeyCatalogComingSoonTitle => 'More journeys are on the way';
+
+  @override
+  String get journeyCatalogComingSoonSubtitle =>
+      'Future quests download their map and music on demand, so today\'s app stays small.';
+
+  @override
   String journeyDayCounter(int day) {
     return 'Day $day';
   }

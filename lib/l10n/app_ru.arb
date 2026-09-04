@@ -13,6 +13,12 @@
 
   "journeyCatalogTitle": "Выберите поход",
   "journeyCatalogStartButton": "Начать поход",
+  "journeyCatalogDownloadButton": "Скачать",
+  "journeyCatalogDownloadingLabel": "Загрузка… {percent}%",
+  "journeyCatalogDownloadFailedMessage": "Не удалось скачать содержимое похода.",
+  "journeyCatalogRetryDownloadButton": "Повторить",
+  "journeyCatalogComingSoonTitle": "Новые походы уже в пути",
+  "journeyCatalogComingSoonSubtitle": "Будущие походы будут скачивать карту и музыку по запросу — само приложение при этом останется компактным.",
   "journeyDayCounter": "День {day}",
   "journeyNarrativeComingSoon": "Рассказ об этом участке пути ещё пишется.",
   "journeyReturnToYouButton": "Вы",

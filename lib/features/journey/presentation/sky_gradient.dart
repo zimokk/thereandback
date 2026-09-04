@@ -149,6 +149,14 @@ class _SkyPainter extends CustomPainter {
     );
 
     final starOpacity = starOpacityForHour(hour);
+
+    // Sun glow — the exact complement of the star fade: full through the
+    // day band, gone through the night band, cross-fading with the stars
+    // across dawn/dusk so the two never overlap oddly (sun bleeding into a
+    // starry sky or vice versa).
+    final sunOpacity = 1 - starOpacity;
+    if (sunOpacity > 0) _paintSunGlow(canvas, size, sunOpacity);
+
     if (starOpacity <= 0) return;
 
     final starPaint = Paint()
@@ -161,6 +169,24 @@ class _SkyPainter extends CustomPainter {
       final dy = random.nextDouble() * size.height * 0.6;
       canvas.drawCircle(Offset(dx, dy), 0.9, starPaint);
     }
+  }
+
+  /// Soft radial sun glow, anchored top-right (CLAUDE.md §9's silhouette
+  /// art has no drawn sun disc — this is atmosphere, a warm gold
+  /// (`AppColors.gold`, the design system's single accent) halo bleeding
+  /// into the day sky, not a literal circle with a hard edge).
+  void _paintSunGlow(Canvas canvas, Size size, double opacity) {
+    final center = Offset(size.width * 0.82, size.height * 0.18);
+    final radius = size.width * 0.55;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+    final paint = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          AppColors.gold.withValues(alpha: 0.4 * opacity),
+          AppColors.gold.withValues(alpha: 0.0),
+        ],
+      ).createShader(rect);
+    canvas.drawRect(rect, paint);
   }
 
   @override

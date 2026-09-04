@@ -158,6 +158,42 @@ abstract class AppLocalizations {
   /// **'Start quest'**
   String get journeyCatalogStartButton;
 
+  /// Button on a catalog card for a quest whose content is not yet downloaded (§8, §14)
+  ///
+  /// In en, this message translates to:
+  /// **'Download'**
+  String get journeyCatalogDownloadButton;
+
+  /// Label shown on a catalog card while its quest content is downloading (§8, §14)
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading… {percent}%'**
+  String journeyCatalogDownloadingLabel(int percent);
+
+  /// Shown on a catalog card when a quest content download failed (§8, §14)
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t download this quest\'s content.'**
+  String get journeyCatalogDownloadFailedMessage;
+
+  /// Button on a catalog card to retry a failed quest content download
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get journeyCatalogRetryDownloadButton;
+
+  /// Heading on the placeholder card at the end of the quest catalog, hinting at future downloadable quests (§8, §14)
+  ///
+  /// In en, this message translates to:
+  /// **'More journeys are on the way'**
+  String get journeyCatalogComingSoonTitle;
+
+  /// Subtitle on the placeholder card at the end of the quest catalog
+  ///
+  /// In en, this message translates to:
+  /// **'Future quests download their map and music on demand, so today\'s app stays small.'**
+  String get journeyCatalogComingSoonSubtitle;
+
   /// Quest-day counter on the Путь tab; a label, not a count of days, so it never pluralizes (§5.3)
   ///
   /// In en, this message translates to:

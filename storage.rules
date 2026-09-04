@@ -1,0 +1,27 @@
+rules_version = '2';
+
+// Firebase Storage Security Rules for There and Back (CLAUDE.md §8, §14 —
+// the "quest content downloads on demand instead of shipping in every
+// build" feature). Storage holds a quest's not-bundled content — its drawn
+// map, and once real parallax art exists (§9.1), its layer files, plus an
+// optional per-quest theme track — described by
+// `features/journey/data/journey_asset_catalog.dart`'s
+// `journeyAssetManifests` (still empty today, so nothing actually lives
+// under this bucket yet).
+//
+// Schema:
+//   journeys/{journeyId}/**  — a quest's downloadable content, uploaded by
+//                               the content pipeline, never by the app.
+//
+// Read-only for clients, same shape `firestore.rules`' own
+// `match /journeys/{journeyId}` already holds for the catalog's metadata —
+// anonymous auth (§8's default sign-in) already grants a `request.auth`,
+// so no separate "must have a real account" gate is needed here.
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /journeys/{journeyId}/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+  }
+}

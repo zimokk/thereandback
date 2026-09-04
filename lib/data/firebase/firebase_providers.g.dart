@@ -117,3 +117,62 @@ final class FirestoreProvider
 }
 
 String _$firestoreHash() => r'864285def6284159b44f9598dcde96347e0c1dce';
+
+/// The Firebase Storage instance — where a quest's not-bundled content
+/// lives (§8, §14): `data/storage/journey_storage_repository.dart` is the
+/// only reader. Overridden in tests with `firebase_storage_mocks`'
+/// `MockFirebaseStorage` (`testing` skill: never the real Firebase SDK in a
+/// test).
+
+@ProviderFor(firebaseStorage)
+final firebaseStorageProvider = FirebaseStorageProvider._();
+
+/// The Firebase Storage instance — where a quest's not-bundled content
+/// lives (§8, §14): `data/storage/journey_storage_repository.dart` is the
+/// only reader. Overridden in tests with `firebase_storage_mocks`'
+/// `MockFirebaseStorage` (`testing` skill: never the real Firebase SDK in a
+/// test).
+
+final class FirebaseStorageProvider
+    extends
+        $FunctionalProvider<FirebaseStorage, FirebaseStorage, FirebaseStorage>
+    with $Provider<FirebaseStorage> {
+  /// The Firebase Storage instance — where a quest's not-bundled content
+  /// lives (§8, §14): `data/storage/journey_storage_repository.dart` is the
+  /// only reader. Overridden in tests with `firebase_storage_mocks`'
+  /// `MockFirebaseStorage` (`testing` skill: never the real Firebase SDK in a
+  /// test).
+  FirebaseStorageProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'firebaseStorageProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$firebaseStorageHash();
+
+  @$internal
+  @override
+  $ProviderElement<FirebaseStorage> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  FirebaseStorage create(Ref ref) {
+    return firebaseStorage(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(FirebaseStorage value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<FirebaseStorage>(value),
+    );
+  }
+}
+
+String _$firebaseStorageHash() => r'4d34fbbd82ac849c74805e19a05079afa5e20cad';

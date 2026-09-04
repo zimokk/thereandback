@@ -100,7 +100,7 @@ jobs:
           retention-days: 14
 
   firestore-rules:
-    name: Firestore Security Rules (emulator)
+    name: Firestore + Storage Security Rules (emulator)
     needs: detect
     if: needs.detect.outputs.flutter_project == 'true'
     runs-on: ubuntu-latest
@@ -120,7 +120,10 @@ jobs:
           key: firebase-emulators-${{ runner.os }}
       - run: npm ci
         working-directory: firebase/rules-tests
-      - run: npx firebase-tools emulators:exec --project demo-thereandback --only firestore "npm --prefix firebase/rules-tests test"
+      # `storage.rules` added alongside `firestore.rules` (§8, §14 — quest
+      # content downloads on demand) — one emulator run covers both rule
+      # sets, same job as before.
+      - run: npx firebase-tools emulators:exec --project demo-thereandback --only firestore,storage "npm --prefix firebase/rules-tests test"
 
   # Single required status for branch protection — flip on once Phase 0 lands
   # so "flutter_project == false" doesn't count as a free pass forever.

@@ -8,6 +8,7 @@ import '../../generated_migrations/schema.dart';
 import '../../generated_migrations/schema_v1.dart' as v1;
 import '../../generated_migrations/schema_v2.dart' as v2;
 import '../../generated_migrations/schema_v3.dart' as v3;
+import '../../generated_migrations/schema_v4.dart' as v4;
 
 /// The real drift schema migration test `app_database_test.dart` promised
 /// would land once `schemaVersion` moved past 1 (§12, Phase 3's "drift
@@ -256,6 +257,79 @@ void main() {
     // that never wrote this row at all.
     expect(row.backgroundMusicEnabled, isFalse);
     expect(row.localeCode, isNull);
+    await db.close();
+  });
+
+  test(
+    'v4 → v5 preserves existing data and the new JourneyAssetRows table '
+    'works — §8, §14, on-demand quest content',
+    () => verifier.testWithDataIntegrity<v4.DatabaseAtV4, AppDatabase>(
+      createOld: v4.DatabaseAtV4.new,
+      createNew: AppDatabase.new,
+      openTestedDatabase: AppDatabase.new,
+      // `backgroundMusicEnabled: 1`, not `true`: the schema-dump tool
+      // models `BoolColumn` as a raw `int` in this generated helper (same
+      // quirk this file's top comment already documents for `DateTime`
+      // columns, applied here to `bool`) — the real `AppDatabase`'s own
+      // generated table still exposes it as a proper `bool`, read back
+      // below.
+      createItems: (batch, oldDb) => batch.insert(
+        oldDb.userPreferenceRows,
+        v4.UserPreferenceRowsCompanion.insert(
+          ownerId: 'owner-1',
+          backgroundMusicEnabled: const Value(1),
+        ),
+      ),
+      validateItems: (newDb) async {
+        // The table that already existed at v4 — the migration must have
+        // left it untouched.
+        final rows = await newDb.select(newDb.userPreferenceRows).get();
+        expect(rows, hasLength(1));
+        expect(rows.single.backgroundMusicEnabled, isTrue);
+
+        // The new table exists and is usable post-migration — the actual
+        // point of adding it.
+        await newDb
+            .into(newDb.journeyAssetRows)
+            .insertOnConflictUpdate(
+              JourneyAssetRowsCompanion.insert(
+                ownerId: 'owner-1',
+                journeyId: 'some-quest',
+                assetsVersion: 1,
+                downloadedAt: DateTime.utc(2026, 9, 4),
+              ),
+            );
+        final asset = await (newDb.select(
+          newDb.journeyAssetRows,
+        )..where((t) => t.ownerId.equals('owner-1'))).getSingle();
+        expect(asset.journeyId, 'some-quest');
+        expect(asset.assetsVersion, 1);
+        expect(asset.downloadedAt, DateTime.utc(2026, 9, 4));
+      },
+      oldVersion: 4,
+      newVersion: 5,
+      options: const ValidationOptions(validateColumnConstraints: false),
+    ),
+  );
+
+  test('a fresh (never-migrated) database has JourneyAssetRows available '
+      'immediately', () async {
+    final db = AppDatabase(NativeDatabase.memory());
+    await db
+        .into(db.journeyAssetRows)
+        .insertOnConflictUpdate(
+          JourneyAssetRowsCompanion.insert(
+            ownerId: 'owner-1',
+            journeyId: 'some-quest',
+            assetsVersion: 1,
+            downloadedAt: DateTime.utc(2026, 9, 4),
+          ),
+        );
+    final row = await (db.select(
+      db.journeyAssetRows,
+    )..where((t) => t.journeyId.equals('some-quest'))).getSingle();
+    expect(row.assetsVersion, 1);
+    expect(row.downloadedAt, DateTime.utc(2026, 9, 4));
     await db.close();
   });
 }
