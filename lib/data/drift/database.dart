@@ -157,6 +157,32 @@ class AchievementUnlockRows extends Table {
   Set<Column> get primaryKey => {ownerId, achievementId, unlockedLocalDate};
 }
 
+/// Which version of a journey's downloadable content (§14 — "не
+/// увеличивать размер приложения при добавлении нового квеста") is on this
+/// device, per `(ownerId, journeyId)`. A quest with no row here — and no
+/// `JourneyAssetManifest` entry to begin with
+/// (`features/journey/data/journey_asset_catalog.dart`) — is a fully
+/// bundled quest (every quest today): nothing to track, nothing to
+/// download.
+///
+/// [assetsVersion] is compared against the catalog's current
+/// `JourneyAssetManifest.assetsVersion`
+/// (`features/journey/domain/journey_asset_status.dart`'s
+/// `journeyAssetNeedsDownload`) to decide whether a redownload is needed —
+/// the same "local record vs. catalog version" shape
+/// `UserPreferenceRows` already uses for a persisted Настройки toggle, just
+/// keyed on `(ownerId, journeyId)` instead of `ownerId` alone since a
+/// device can have more than one quest's content cached at once.
+class JourneyAssetRows extends Table {
+  TextColumn get ownerId => text()();
+  TextColumn get journeyId => text()();
+  IntColumn get assetsVersion => integer()();
+  DateTimeColumn get downloadedAt => dateTime()();
+
+  @override
+  Set<Column> get primaryKey => {ownerId, journeyId};
+}
+
 /// The app's local database (§8: drift/SQLite is the offline-first source
 /// of truth; Firestore is a sync layer added later, never the only store).
 ///
@@ -172,6 +198,7 @@ class AchievementUnlockRows extends Table {
     LockScreenPreferenceRows,
     AchievementUnlockRows,
     UserPreferenceRows,
+    JourneyAssetRows,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -182,11 +209,12 @@ class AppDatabase extends _$AppDatabase {
   factory AppDatabase.forTesting() => AppDatabase(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   // v1 → v2: added LockScreenPreferenceRows (see its doc comment).
   // v2 → v3: added AchievementUnlockRows (see its doc comment).
-  // v3 → v4: added UserPreferenceRows (see its doc comment). All purely
+  // v3 → v4: added UserPreferenceRows (see its doc comment).
+  // v4 → v5: added JourneyAssetRows (see its doc comment). All purely
   // additive migrations — existing rows in every earlier table are
   // untouched; a device upgrading from an older version just gets the new
   // table(s) created empty, same as a fresh install.
@@ -201,6 +229,9 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 4) {
         await m.createTable(userPreferenceRows);
+      }
+      if (from < 5) {
+        await m.createTable(journeyAssetRows);
       }
     },
   );

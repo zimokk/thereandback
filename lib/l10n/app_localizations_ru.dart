@@ -61,6 +61,28 @@ class AppLocalizationsRu extends AppLocalizations {
   String get journeyCatalogStartButton => 'Начать поход';
 
   @override
+  String get journeyCatalogDownloadButton => 'Скачать';
+
+  @override
+  String journeyCatalogDownloadingLabel(int percent) {
+    return 'Загрузка… $percent%';
+  }
+
+  @override
+  String get journeyCatalogDownloadFailedMessage =>
+      'Не удалось скачать содержимое похода.';
+
+  @override
+  String get journeyCatalogRetryDownloadButton => 'Повторить';
+
+  @override
+  String get journeyCatalogComingSoonTitle => 'Новые походы уже в пути';
+
+  @override
+  String get journeyCatalogComingSoonSubtitle =>
+      'Будущие походы будут скачивать карту и музыку по запросу — само приложение при этом останется компактным.';
+
+  @override
   String journeyDayCounter(int day) {
     return 'День $day';
   }

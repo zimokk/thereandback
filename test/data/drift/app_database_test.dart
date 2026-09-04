@@ -15,9 +15,9 @@ void main() {
   setUp(() => db = AppDatabase.forTesting());
   tearDown(() => db.close());
 
-  test('schemaVersion is 4 — UserPreferenceRows added on top of the v3 '
+  test('schemaVersion is 5 — JourneyAssetRows added on top of the v4 '
       'baseline (see migration_test.dart)', () {
-    expect(db.schemaVersion, 4);
+    expect(db.schemaVersion, 5);
   });
 
   test('selectedQuestRows round-trips a row, keyed on ownerId', () async {
@@ -165,5 +165,35 @@ void main() {
     expect(rows, hasLength(1));
     expect(rows.single.localeCode, 'ru');
     expect(rows.single.backgroundMusicEnabled, isFalse);
+  });
+
+  test('journeyAssetRows round-trips a row, keyed on (ownerId, journeyId), '
+      'and a second write for the same pair overwrites rather than adding '
+      'a row (§8, §14 — on-demand quest content)', () async {
+    await db
+        .into(db.journeyAssetRows)
+        .insertOnConflictUpdate(
+          JourneyAssetRowsCompanion.insert(
+            ownerId: 'owner-1',
+            journeyId: 'some-quest',
+            assetsVersion: 1,
+            downloadedAt: DateTime.utc(2026, 9, 4),
+          ),
+        );
+    await db
+        .into(db.journeyAssetRows)
+        .insertOnConflictUpdate(
+          JourneyAssetRowsCompanion.insert(
+            ownerId: 'owner-1',
+            journeyId: 'some-quest',
+            assetsVersion: 2,
+            downloadedAt: DateTime.utc(2026, 9, 5),
+          ),
+        );
+
+    final rows = await db.select(db.journeyAssetRows).get();
+    expect(rows, hasLength(1));
+    expect(rows.single.assetsVersion, 2);
+    expect(rows.single.downloadedAt, DateTime.utc(2026, 9, 5));
   });
 }

@@ -29,6 +29,21 @@
   "@journeyCatalogTitle": {"description": "Heading over the quest catalog when no quest is selected"},
   "journeyCatalogStartButton": "Start quest",
   "@journeyCatalogStartButton": {"description": "Button on a catalog card that starts that quest"},
+  "journeyCatalogDownloadButton": "Download",
+  "@journeyCatalogDownloadButton": {"description": "Button on a catalog card for a quest whose content is not yet downloaded (§8, §14)"},
+  "journeyCatalogDownloadingLabel": "Downloading… {percent}%",
+  "@journeyCatalogDownloadingLabel": {
+    "description": "Label shown on a catalog card while its quest content is downloading (§8, §14)",
+    "placeholders": {"percent": {"type": "int"}}
+  },
+  "journeyCatalogDownloadFailedMessage": "Couldn't download this quest's content.",
+  "@journeyCatalogDownloadFailedMessage": {"description": "Shown on a catalog card when a quest content download failed (§8, §14)"},
+  "journeyCatalogRetryDownloadButton": "Retry",
+  "@journeyCatalogRetryDownloadButton": {"description": "Button on a catalog card to retry a failed quest content download"},
+  "journeyCatalogComingSoonTitle": "More journeys are on the way",
+  "@journeyCatalogComingSoonTitle": {"description": "Heading on the placeholder card at the end of the quest catalog, hinting at future downloadable quests (§8, §14)"},
+  "journeyCatalogComingSoonSubtitle": "Future quests download their map and music on demand, so today's app stays small.",
+  "@journeyCatalogComingSoonSubtitle": {"description": "Subtitle on the placeholder card at the end of the quest catalog"},
   "journeyDayCounter": "Day {day}",
   "@journeyDayCounter": {
     "description": "Quest-day counter on the Путь tab; a label, not a count of days, so it never pluralizes (§5.3)",

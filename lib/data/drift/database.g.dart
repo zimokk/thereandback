@@ -1833,6 +1833,337 @@ class UserPreferenceRowsCompanion extends UpdateCompanion<UserPreferenceRow> {
   }
 }
 
+class $JourneyAssetRowsTable extends JourneyAssetRows
+    with TableInfo<$JourneyAssetRowsTable, JourneyAssetRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $JourneyAssetRowsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _ownerIdMeta = const VerificationMeta(
+    'ownerId',
+  );
+  @override
+  late final GeneratedColumn<String> ownerId = GeneratedColumn<String>(
+    'owner_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _journeyIdMeta = const VerificationMeta(
+    'journeyId',
+  );
+  @override
+  late final GeneratedColumn<String> journeyId = GeneratedColumn<String>(
+    'journey_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _assetsVersionMeta = const VerificationMeta(
+    'assetsVersion',
+  );
+  @override
+  late final GeneratedColumn<int> assetsVersion = GeneratedColumn<int>(
+    'assets_version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _downloadedAtMeta = const VerificationMeta(
+    'downloadedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> downloadedAt = GeneratedColumn<DateTime>(
+    'downloaded_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    ownerId,
+    journeyId,
+    assetsVersion,
+    downloadedAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'journey_asset_rows';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<JourneyAssetRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('owner_id')) {
+      context.handle(
+        _ownerIdMeta,
+        ownerId.isAcceptableOrUnknown(data['owner_id']!, _ownerIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_ownerIdMeta);
+    }
+    if (data.containsKey('journey_id')) {
+      context.handle(
+        _journeyIdMeta,
+        journeyId.isAcceptableOrUnknown(data['journey_id']!, _journeyIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_journeyIdMeta);
+    }
+    if (data.containsKey('assets_version')) {
+      context.handle(
+        _assetsVersionMeta,
+        assetsVersion.isAcceptableOrUnknown(
+          data['assets_version']!,
+          _assetsVersionMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_assetsVersionMeta);
+    }
+    if (data.containsKey('downloaded_at')) {
+      context.handle(
+        _downloadedAtMeta,
+        downloadedAt.isAcceptableOrUnknown(
+          data['downloaded_at']!,
+          _downloadedAtMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_downloadedAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {ownerId, journeyId};
+  @override
+  JourneyAssetRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return JourneyAssetRow(
+      ownerId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}owner_id'],
+      )!,
+      journeyId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}journey_id'],
+      )!,
+      assetsVersion: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}assets_version'],
+      )!,
+      downloadedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}downloaded_at'],
+      )!,
+    );
+  }
+
+  @override
+  $JourneyAssetRowsTable createAlias(String alias) {
+    return $JourneyAssetRowsTable(attachedDatabase, alias);
+  }
+}
+
+class JourneyAssetRow extends DataClass implements Insertable<JourneyAssetRow> {
+  final String ownerId;
+  final String journeyId;
+  final int assetsVersion;
+  final DateTime downloadedAt;
+  const JourneyAssetRow({
+    required this.ownerId,
+    required this.journeyId,
+    required this.assetsVersion,
+    required this.downloadedAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['owner_id'] = Variable<String>(ownerId);
+    map['journey_id'] = Variable<String>(journeyId);
+    map['assets_version'] = Variable<int>(assetsVersion);
+    map['downloaded_at'] = Variable<DateTime>(downloadedAt);
+    return map;
+  }
+
+  JourneyAssetRowsCompanion toCompanion(bool nullToAbsent) {
+    return JourneyAssetRowsCompanion(
+      ownerId: Value(ownerId),
+      journeyId: Value(journeyId),
+      assetsVersion: Value(assetsVersion),
+      downloadedAt: Value(downloadedAt),
+    );
+  }
+
+  factory JourneyAssetRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return JourneyAssetRow(
+      ownerId: serializer.fromJson<String>(json['ownerId']),
+      journeyId: serializer.fromJson<String>(json['journeyId']),
+      assetsVersion: serializer.fromJson<int>(json['assetsVersion']),
+      downloadedAt: serializer.fromJson<DateTime>(json['downloadedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'ownerId': serializer.toJson<String>(ownerId),
+      'journeyId': serializer.toJson<String>(journeyId),
+      'assetsVersion': serializer.toJson<int>(assetsVersion),
+      'downloadedAt': serializer.toJson<DateTime>(downloadedAt),
+    };
+  }
+
+  JourneyAssetRow copyWith({
+    String? ownerId,
+    String? journeyId,
+    int? assetsVersion,
+    DateTime? downloadedAt,
+  }) => JourneyAssetRow(
+    ownerId: ownerId ?? this.ownerId,
+    journeyId: journeyId ?? this.journeyId,
+    assetsVersion: assetsVersion ?? this.assetsVersion,
+    downloadedAt: downloadedAt ?? this.downloadedAt,
+  );
+  JourneyAssetRow copyWithCompanion(JourneyAssetRowsCompanion data) {
+    return JourneyAssetRow(
+      ownerId: data.ownerId.present ? data.ownerId.value : this.ownerId,
+      journeyId: data.journeyId.present ? data.journeyId.value : this.journeyId,
+      assetsVersion: data.assetsVersion.present
+          ? data.assetsVersion.value
+          : this.assetsVersion,
+      downloadedAt: data.downloadedAt.present
+          ? data.downloadedAt.value
+          : this.downloadedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('JourneyAssetRow(')
+          ..write('ownerId: $ownerId, ')
+          ..write('journeyId: $journeyId, ')
+          ..write('assetsVersion: $assetsVersion, ')
+          ..write('downloadedAt: $downloadedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode =>
+      Object.hash(ownerId, journeyId, assetsVersion, downloadedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is JourneyAssetRow &&
+          other.ownerId == this.ownerId &&
+          other.journeyId == this.journeyId &&
+          other.assetsVersion == this.assetsVersion &&
+          other.downloadedAt == this.downloadedAt);
+}
+
+class JourneyAssetRowsCompanion extends UpdateCompanion<JourneyAssetRow> {
+  final Value<String> ownerId;
+  final Value<String> journeyId;
+  final Value<int> assetsVersion;
+  final Value<DateTime> downloadedAt;
+  final Value<int> rowid;
+  const JourneyAssetRowsCompanion({
+    this.ownerId = const Value.absent(),
+    this.journeyId = const Value.absent(),
+    this.assetsVersion = const Value.absent(),
+    this.downloadedAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  JourneyAssetRowsCompanion.insert({
+    required String ownerId,
+    required String journeyId,
+    required int assetsVersion,
+    required DateTime downloadedAt,
+    this.rowid = const Value.absent(),
+  }) : ownerId = Value(ownerId),
+       journeyId = Value(journeyId),
+       assetsVersion = Value(assetsVersion),
+       downloadedAt = Value(downloadedAt);
+  static Insertable<JourneyAssetRow> custom({
+    Expression<String>? ownerId,
+    Expression<String>? journeyId,
+    Expression<int>? assetsVersion,
+    Expression<DateTime>? downloadedAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (ownerId != null) 'owner_id': ownerId,
+      if (journeyId != null) 'journey_id': journeyId,
+      if (assetsVersion != null) 'assets_version': assetsVersion,
+      if (downloadedAt != null) 'downloaded_at': downloadedAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  JourneyAssetRowsCompanion copyWith({
+    Value<String>? ownerId,
+    Value<String>? journeyId,
+    Value<int>? assetsVersion,
+    Value<DateTime>? downloadedAt,
+    Value<int>? rowid,
+  }) {
+    return JourneyAssetRowsCompanion(
+      ownerId: ownerId ?? this.ownerId,
+      journeyId: journeyId ?? this.journeyId,
+      assetsVersion: assetsVersion ?? this.assetsVersion,
+      downloadedAt: downloadedAt ?? this.downloadedAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (ownerId.present) {
+      map['owner_id'] = Variable<String>(ownerId.value);
+    }
+    if (journeyId.present) {
+      map['journey_id'] = Variable<String>(journeyId.value);
+    }
+    if (assetsVersion.present) {
+      map['assets_version'] = Variable<int>(assetsVersion.value);
+    }
+    if (downloadedAt.present) {
+      map['downloaded_at'] = Variable<DateTime>(downloadedAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('JourneyAssetRowsCompanion(')
+          ..write('ownerId: $ownerId, ')
+          ..write('journeyId: $journeyId, ')
+          ..write('assetsVersion: $assetsVersion, ')
+          ..write('downloadedAt: $downloadedAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -1846,6 +2177,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
       $AchievementUnlockRowsTable(this);
   late final $UserPreferenceRowsTable userPreferenceRows =
       $UserPreferenceRowsTable(this);
+  late final $JourneyAssetRowsTable journeyAssetRows = $JourneyAssetRowsTable(
+    this,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -1856,6 +2190,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     lockScreenPreferenceRows,
     achievementUnlockRows,
     userPreferenceRows,
+    journeyAssetRows,
   ];
   @override
   DriftDatabaseOptions get options =>
@@ -2920,6 +3255,197 @@ typedef $$UserPreferenceRowsTableProcessedTableManager =
       UserPreferenceRow,
       PrefetchHooks Function()
     >;
+typedef $$JourneyAssetRowsTableCreateCompanionBuilder =
+    JourneyAssetRowsCompanion Function({
+      required String ownerId,
+      required String journeyId,
+      required int assetsVersion,
+      required DateTime downloadedAt,
+      Value<int> rowid,
+    });
+typedef $$JourneyAssetRowsTableUpdateCompanionBuilder =
+    JourneyAssetRowsCompanion Function({
+      Value<String> ownerId,
+      Value<String> journeyId,
+      Value<int> assetsVersion,
+      Value<DateTime> downloadedAt,
+      Value<int> rowid,
+    });
+
+class $$JourneyAssetRowsTableFilterComposer
+    extends Composer<_$AppDatabase, $JourneyAssetRowsTable> {
+  $$JourneyAssetRowsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get journeyId => $composableBuilder(
+    column: $table.journeyId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get assetsVersion => $composableBuilder(
+    column: $table.assetsVersion,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get downloadedAt => $composableBuilder(
+    column: $table.downloadedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$JourneyAssetRowsTableOrderingComposer
+    extends Composer<_$AppDatabase, $JourneyAssetRowsTable> {
+  $$JourneyAssetRowsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get ownerId => $composableBuilder(
+    column: $table.ownerId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get journeyId => $composableBuilder(
+    column: $table.journeyId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get assetsVersion => $composableBuilder(
+    column: $table.assetsVersion,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get downloadedAt => $composableBuilder(
+    column: $table.downloadedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$JourneyAssetRowsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $JourneyAssetRowsTable> {
+  $$JourneyAssetRowsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get ownerId =>
+      $composableBuilder(column: $table.ownerId, builder: (column) => column);
+
+  GeneratedColumn<String> get journeyId =>
+      $composableBuilder(column: $table.journeyId, builder: (column) => column);
+
+  GeneratedColumn<int> get assetsVersion => $composableBuilder(
+    column: $table.assetsVersion,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get downloadedAt => $composableBuilder(
+    column: $table.downloadedAt,
+    builder: (column) => column,
+  );
+}
+
+class $$JourneyAssetRowsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $JourneyAssetRowsTable,
+          JourneyAssetRow,
+          $$JourneyAssetRowsTableFilterComposer,
+          $$JourneyAssetRowsTableOrderingComposer,
+          $$JourneyAssetRowsTableAnnotationComposer,
+          $$JourneyAssetRowsTableCreateCompanionBuilder,
+          $$JourneyAssetRowsTableUpdateCompanionBuilder,
+          (
+            JourneyAssetRow,
+            BaseReferences<
+              _$AppDatabase,
+              $JourneyAssetRowsTable,
+              JourneyAssetRow
+            >,
+          ),
+          JourneyAssetRow,
+          PrefetchHooks Function()
+        > {
+  $$JourneyAssetRowsTableTableManager(
+    _$AppDatabase db,
+    $JourneyAssetRowsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$JourneyAssetRowsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$JourneyAssetRowsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$JourneyAssetRowsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> ownerId = const Value.absent(),
+                Value<String> journeyId = const Value.absent(),
+                Value<int> assetsVersion = const Value.absent(),
+                Value<DateTime> downloadedAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => JourneyAssetRowsCompanion(
+                ownerId: ownerId,
+                journeyId: journeyId,
+                assetsVersion: assetsVersion,
+                downloadedAt: downloadedAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String ownerId,
+                required String journeyId,
+                required int assetsVersion,
+                required DateTime downloadedAt,
+                Value<int> rowid = const Value.absent(),
+              }) => JourneyAssetRowsCompanion.insert(
+                ownerId: ownerId,
+                journeyId: journeyId,
+                assetsVersion: assetsVersion,
+                downloadedAt: downloadedAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$JourneyAssetRowsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $JourneyAssetRowsTable,
+      JourneyAssetRow,
+      $$JourneyAssetRowsTableFilterComposer,
+      $$JourneyAssetRowsTableOrderingComposer,
+      $$JourneyAssetRowsTableAnnotationComposer,
+      $$JourneyAssetRowsTableCreateCompanionBuilder,
+      $$JourneyAssetRowsTableUpdateCompanionBuilder,
+      (
+        JourneyAssetRow,
+        BaseReferences<_$AppDatabase, $JourneyAssetRowsTable, JourneyAssetRow>,
+      ),
+      JourneyAssetRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -2937,4 +3463,6 @@ class $AppDatabaseManager {
       $$AchievementUnlockRowsTableTableManager(_db, _db.achievementUnlockRows);
   $$UserPreferenceRowsTableTableManager get userPreferenceRows =>
       $$UserPreferenceRowsTableTableManager(_db, _db.userPreferenceRows);
+  $$JourneyAssetRowsTableTableManager get journeyAssetRows =>
+      $$JourneyAssetRowsTableTableManager(_db, _db.journeyAssetRows);
 }
