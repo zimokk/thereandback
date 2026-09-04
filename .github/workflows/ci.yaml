@@ -73,7 +73,9 @@ jobs:
       - name: Generated code up to date
         run: dart run build_runner build --delete-conflicting-outputs
       - name: dart format
-        run: dart format --output=none --set-exit-if-changed .
+        run: |
+          dart format .
+          git --no-pager diff
       - name: flutter analyze
         run: flutter analyze --fatal-infos
 
