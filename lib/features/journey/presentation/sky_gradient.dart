@@ -65,8 +65,7 @@ class _SkyGradientState extends State<SkyGradient> {
   Timer? _timer;
   late double _hour;
 
-  double get _currentHour =>
-      widget.fictionalHour ?? hourOfDay(DateTime.now());
+  double get _currentHour => widget.fictionalHour ?? hourOfDay(DateTime.now());
 
   @override
   void initState() {
