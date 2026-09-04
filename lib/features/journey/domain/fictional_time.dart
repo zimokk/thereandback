@@ -16,15 +16,45 @@ part 'fictional_time.freezed.dart';
 /// one) — and both are meters/route math, not Flutter.
 enum SkyPhase { night, dawn, day, dusk }
 
+/// Midpoint hour of the dawn/dusk transition — the moment the dedicated
+/// [SkyPhase.dawn]/[SkyPhase.dusk] hue (`AppColors.skyDawnTop/Bottom`,
+/// `skyDuskTop/Bottom`) is fully visible in [skyBlendForHour]'s cross-fade.
+/// Kept fixed while [_transitionHalfWidthHours] widened (2026-09-04, by
+/// direct request) so lengthening dawn/dusk doesn't also shift sunrise/
+/// sunset later or earlier.
+const double _dawnMidpointHour = 6;
+const double _duskMidpointHour = 19;
+
+/// Half the width, in hours, of each dawn/dusk transition band around its
+/// midpoint — so each band spans `2 * _transitionHalfWidthHours` hours
+/// total. Widened from 1h (a 2h dawn/dusk) to 1.5h (3h) by direct request
+/// (2026-09-04) so the transition reads less abrupt; night and day shrink
+/// by the same half-hour on each side to make room.
+const double _transitionHalfWidthHours = 1.5;
+
+/// Hour bands, derived from the two midpoints and the shared half-width
+/// above — the single source of truth for [skyPhaseForHour],
+/// [skyBlendForHour] and [starOpacityForHour], so the three stay in sync.
+const double _nightDawnBoundary = // 4.5
+    _dawnMidpointHour - _transitionHalfWidthHours;
+const double _dawnDayBoundary = // 7.5
+    _dawnMidpointHour + _transitionHalfWidthHours;
+const double _dayDuskBoundary = // 17.5
+    _duskMidpointHour - _transitionHalfWidthHours;
+const double _duskNightBoundary = // 20.5
+    _duskMidpointHour + _transitionHalfWidthHours;
+
 /// Which [SkyPhase] the given [hour] of the day (0..24, wrapped) falls in —
 /// the shared band logic behind both [skyPhaseFor] (real clock) and the
 /// fictional-time path ([fictionalHourFor] + this function, wired in
 /// `journey_flame_scene_view.dart`).
 SkyPhase skyPhaseForHour(double hour) {
   final h = hour % 24;
-  if (h < 5 || h >= 20) return SkyPhase.night;
-  if (h < 7) return SkyPhase.dawn;
-  if (h < 18) return SkyPhase.day;
+  if (h < _nightDawnBoundary || h >= _duskNightBoundary) {
+    return SkyPhase.night;
+  }
+  if (h < _dawnDayBoundary) return SkyPhase.dawn;
+  if (h < _dayDuskBoundary) return SkyPhase.day;
   return SkyPhase.dusk;
 }
 
@@ -49,44 +79,73 @@ typedef SkyBlend = ({SkyPhase from, SkyPhase to, double t});
 /// The continuous counterpart of [skyPhaseForHour]: where [hour] (0..24,
 /// wrapped) sits between two [SkyPhase]s, instead of collapsing it into one.
 ///
-/// Reuses [skyPhaseForHour]'s own band edges (5, 7, 18, 20) as the only
-/// transition windows, but splits each short band (dawn, dusk) in half at
-/// its midpoint (6, 19) rather than blending straight from night to day (or
-/// day to night): this way the dedicated dawn/dusk hues
-/// (`AppColors.skyDawnTop/Bottom`, `skyDuskTop/Bottom`) are still fully
-/// visible for a moment at their center, instead of being skipped over by a
-/// direct two-color lerp.
+/// Reuses [skyPhaseForHour]'s own band edges as the only transition
+/// windows, but splits each short band (dawn, dusk) in half at its
+/// midpoint ([_dawnMidpointHour], [_duskMidpointHour]) rather than blending
+/// straight from night to day (or day to night): this way the dedicated
+/// dawn/dusk hues (`AppColors.skyDawnTop/Bottom`, `skyDuskTop/Bottom`) are
+/// still fully visible for a moment at their center, instead of being
+/// skipped over by a direct two-color lerp.
 ///
-///  - `[20,5)` night — flat, `t == 0`
-///  - `[5,6)` night → dawn
-///  - `[6,7)` dawn → day
-///  - `[7,18)` day — flat, `t == 0`
-///  - `[18,19)` day → dusk
-///  - `[19,20)` dusk → night
+///  - `[20.5,4.5)` night — flat, `t == 0`
+///  - `[4.5,6)` night → dawn
+///  - `[6,7.5)` dawn → day
+///  - `[7.5,17.5)` day — flat, `t == 0`
+///  - `[17.5,19)` day → dusk
+///  - `[19,20.5)` dusk → night
 SkyBlend skyBlendForHour(double hour) {
   final h = hour % 24;
-  if (h < 5) return (from: SkyPhase.night, to: SkyPhase.night, t: 0);
-  if (h < 6) return (from: SkyPhase.night, to: SkyPhase.dawn, t: h - 5);
-  if (h < 7) return (from: SkyPhase.dawn, to: SkyPhase.day, t: h - 6);
-  if (h < 18) return (from: SkyPhase.day, to: SkyPhase.day, t: 0);
-  if (h < 19) return (from: SkyPhase.day, to: SkyPhase.dusk, t: h - 18);
-  if (h < 20) return (from: SkyPhase.dusk, to: SkyPhase.night, t: h - 19);
+  if (h < _nightDawnBoundary) {
+    return (from: SkyPhase.night, to: SkyPhase.night, t: 0);
+  }
+  if (h < _dawnMidpointHour) {
+    return (
+      from: SkyPhase.night,
+      to: SkyPhase.dawn,
+      t: (h - _nightDawnBoundary) / _transitionHalfWidthHours,
+    );
+  }
+  if (h < _dawnDayBoundary) {
+    return (
+      from: SkyPhase.dawn,
+      to: SkyPhase.day,
+      t: (h - _dawnMidpointHour) / _transitionHalfWidthHours,
+    );
+  }
+  if (h < _dayDuskBoundary) {
+    return (from: SkyPhase.day, to: SkyPhase.day, t: 0);
+  }
+  if (h < _duskMidpointHour) {
+    return (
+      from: SkyPhase.day,
+      to: SkyPhase.dusk,
+      t: (h - _dayDuskBoundary) / _transitionHalfWidthHours,
+    );
+  }
+  if (h < _duskNightBoundary) {
+    return (
+      from: SkyPhase.dusk,
+      to: SkyPhase.night,
+      t: (h - _duskMidpointHour) / _transitionHalfWidthHours,
+    );
+  }
   return (from: SkyPhase.night, to: SkyPhase.night, t: 0);
 }
 
 /// The continuous counterpart of the star layer's visibility: how far
 /// through the dawn/dusk fade [hour] (0..24, wrapped) sits, instead of the
 /// binary on/off [skyPhaseForHour] would give. Reuses the same band edges
-/// (5, 7, 18, 20) as [skyBlendForHour], fading linearly across the full
-/// width of each band rather than splitting at its midpoint — there is no
-/// "dawn/dusk" opacity to preserve mid-fade, unlike the named hues in
+/// as [skyBlendForHour], fading linearly across the full width of each
+/// band rather than splitting at its midpoint — there is no "dawn/dusk"
+/// opacity to preserve mid-fade, unlike the named hues in
 /// [skyBlendForHour].
 double starOpacityForHour(double hour) {
   final h = hour % 24;
-  if (h < 5 || h >= 20) return 1;
-  if (h < 7) return 1 - (h - 5) / 2;
-  if (h < 18) return 0;
-  return (h - 18) / 2;
+  const bandWidth = 2 * _transitionHalfWidthHours;
+  if (h < _nightDawnBoundary || h >= _duskNightBoundary) return 1;
+  if (h < _dawnDayBoundary) return 1 - (h - _nightDawnBoundary) / bandWidth;
+  if (h < _dayDuskBoundary) return 0;
+  return (h - _dayDuskBoundary) / bandWidth;
 }
 
 /// One journey segment's in-fiction time span (CLAUDE.md §6.1's fictional

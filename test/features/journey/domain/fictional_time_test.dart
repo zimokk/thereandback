@@ -5,7 +5,7 @@ void main() {
   group('skyPhaseForHour / skyPhaseFor (§6.1 — sky by time of day)', () {
     test('deep night', () {
       expect(skyPhaseForHour(2), SkyPhase.night);
-      expect(skyPhaseForHour(23), SkyPhase.night);
+      expect(skyPhaseForHour(22), SkyPhase.night);
     });
     test('dawn', () {
       expect(skyPhaseForHour(6), SkyPhase.dawn);
@@ -44,7 +44,7 @@ void main() {
   group('skyBlendForHour (continuous counterpart of skyPhaseForHour, for '
       'smooth sky transitions)', () {
     test('flat inside night — from == to, t == 0', () {
-      for (final hour in [0.0, 2.0, 4.99, 20.0, 23.0]) {
+      for (final hour in [0.0, 2.0, 4.49, 20.5, 23.0]) {
         final blend = skyBlendForHour(hour);
         expect(blend.from, SkyPhase.night);
         expect(blend.to, SkyPhase.night);
@@ -53,7 +53,7 @@ void main() {
     });
 
     test('flat inside day — from == to, t == 0', () {
-      for (final hour in [7.0, 12.0, 17.99]) {
+      for (final hour in [7.5, 12.0, 17.49]) {
         final blend = skyBlendForHour(hour);
         expect(blend.from, SkyPhase.day);
         expect(blend.to, SkyPhase.day);
@@ -61,52 +61,52 @@ void main() {
       }
     });
 
-    test('night -> dawn across [5,6), dawn fully arrived at 6', () {
-      expect(skyBlendForHour(5), (
+    test('night -> dawn across [4.5,6), dawn fully arrived at 6', () {
+      expect(skyBlendForHour(4.5), (
         from: SkyPhase.night,
         to: SkyPhase.dawn,
         t: 0.0,
       ));
-      expect(skyBlendForHour(5.5), (
+      expect(skyBlendForHour(5.25), (
         from: SkyPhase.night,
         to: SkyPhase.dawn,
         t: 0.5,
       ));
     });
 
-    test('dawn -> day across [6,7), day fully arrived at 7', () {
+    test('dawn -> day across [6,7.5), day fully arrived at 7.5', () {
       expect(skyBlendForHour(6), (
         from: SkyPhase.dawn,
         to: SkyPhase.day,
         t: 0.0,
       ));
-      expect(skyBlendForHour(6.5), (
+      expect(skyBlendForHour(6.75), (
         from: SkyPhase.dawn,
         to: SkyPhase.day,
         t: 0.5,
       ));
     });
 
-    test('day -> dusk across [18,19), dusk fully arrived at 19', () {
-      expect(skyBlendForHour(18), (
+    test('day -> dusk across [17.5,19), dusk fully arrived at 19', () {
+      expect(skyBlendForHour(17.5), (
         from: SkyPhase.day,
         to: SkyPhase.dusk,
         t: 0.0,
       ));
-      expect(skyBlendForHour(18.5), (
+      expect(skyBlendForHour(18.25), (
         from: SkyPhase.day,
         to: SkyPhase.dusk,
         t: 0.5,
       ));
     });
 
-    test('dusk -> night across [19,20), night fully arrived at 20', () {
+    test('dusk -> night across [19,20.5), night fully arrived at 20.5', () {
       expect(skyBlendForHour(19), (
         from: SkyPhase.dusk,
         to: SkyPhase.night,
         t: 0.0,
       ));
-      expect(skyBlendForHour(19.5), (
+      expect(skyBlendForHour(19.75), (
         from: SkyPhase.dusk,
         to: SkyPhase.night,
         t: 0.5,
@@ -117,7 +117,7 @@ void main() {
         'the boundary has t close to 1, matching the flat/next phase that '
         'starts at the boundary', () {
       const epsilon = 1e-9;
-      for (final boundary in [6.0, 7.0, 19.0, 20.0]) {
+      for (final boundary in [6.0, 7.5, 19.0, 20.5]) {
         final before = skyBlendForHour(boundary - epsilon);
         expect(before.t, closeTo(1, 1e-6));
       }
@@ -127,7 +127,7 @@ void main() {
         'the boundary is still flat (t == 0), matching the transition that '
         'starts at t == 0 right at the boundary', () {
       const epsilon = 1e-9;
-      for (final boundary in [5.0, 18.0]) {
+      for (final boundary in [4.5, 17.5]) {
         final before = skyBlendForHour(boundary - epsilon);
         expect(before.t, 0);
       }
@@ -142,37 +142,37 @@ void main() {
       'star opacity)', () {
     test('full opacity through the night band', () {
       expect(starOpacityForHour(0), 1);
-      expect(starOpacityForHour(4.99), 1);
-      expect(starOpacityForHour(20), 1);
+      expect(starOpacityForHour(4.49), 1);
+      expect(starOpacityForHour(20.5), 1);
       expect(starOpacityForHour(23), 1);
     });
 
     test('zero opacity through the day band', () {
-      expect(starOpacityForHour(7), 0);
+      expect(starOpacityForHour(7.5), 0);
       expect(starOpacityForHour(12), 0);
-      expect(starOpacityForHour(17.99), 0);
+      expect(starOpacityForHour(17.49), 0);
     });
 
-    test('fades out linearly across dawn [5,7)', () {
-      expect(starOpacityForHour(5), 1);
+    test('fades out linearly across dawn [4.5,7.5)', () {
+      expect(starOpacityForHour(4.5), 1);
       expect(starOpacityForHour(6), 0.5);
-      expect(starOpacityForHour(6.5), 0.25);
+      expect(starOpacityForHour(6.75), 0.25);
     });
 
-    test('fades in linearly across dusk [18,20)', () {
-      expect(starOpacityForHour(18), 0);
+    test('fades in linearly across dusk [17.5,20.5)', () {
+      expect(starOpacityForHour(17.5), 0);
       expect(starOpacityForHour(19), 0.5);
-      expect(starOpacityForHour(19.5), 0.75);
+      expect(starOpacityForHour(19.75), 0.75);
     });
 
     test('is monotonic across each transition band', () {
-      const dawnHours = [5.0, 5.5, 6.0, 6.5, 6.99];
+      const dawnHours = [4.5, 5.25, 6.0, 6.75, 7.49];
       final dawnSamples = dawnHours.map(starOpacityForHour).toList();
       for (var i = 1; i < dawnSamples.length; i++) {
         expect(dawnSamples[i], lessThan(dawnSamples[i - 1]));
       }
 
-      const duskHours = [18.0, 18.5, 19.0, 19.5, 19.99];
+      const duskHours = [17.5, 18.25, 19.0, 19.75, 20.49];
       final duskSamples = duskHours.map(starOpacityForHour).toList();
       for (var i = 1; i < duskSamples.length; i++) {
         expect(duskSamples[i], greaterThan(duskSamples[i - 1]));
