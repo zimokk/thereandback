@@ -15,10 +15,12 @@ import '../../achievements/domain/achievement.dart';
 import '../../friends/domain/friend_progress.dart';
 import '../../friends/presentation/friends_providers.dart';
 import '../domain/fictional_time.dart';
+import '../domain/narrative_beat.dart';
 import '../domain/quest_time_service.dart';
 import '../domain/route_scale.dart';
 import '../domain/traveler_interpolation.dart';
 import 'achievement_overlay.dart';
+import 'journey_narrative_providers.dart';
 import 'journey_providers.dart';
 import 'journey_scene.dart';
 import 'journey_scene_controller.dart';
@@ -204,6 +206,20 @@ class _JourneyFlameSceneViewState extends ConsumerState<JourneyFlameSceneView>
         ? fictionalHourFor(timings, _panMeters.round())
         : null;
 
+    // The narrative line under the scene follows the same scrolled-to
+    // position the sky and terrain already do (§6.1) — falls back to the
+    // "still being written" placeholder for a quest with no narrative
+    // content at all, or before the traveler has reached the first beat.
+    final narrativeBeats = ref
+        .watch(selectedJourneyNarrativeBeatsProvider)
+        .value;
+    final narrativeText =
+        (narrativeBeats == null
+                ? null
+                : narrativeBeatFor(narrativeBeats, _panMeters.round()))
+            ?.text ??
+        l10n.journeyNarrativeComingSoon;
+
     final showFriends = ref.watch(showFriendsOnMapProvider);
     final friendRows = showFriends
         ? (ref.watch(friendsViewProvider).value?.rows ??
@@ -314,7 +330,7 @@ class _JourneyFlameSceneViewState extends ConsumerState<JourneyFlameSceneView>
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    l10n.journeyNarrativeComingSoon,
+                    narrativeText,
                     style: AppTypography.narrative,
                     textAlign: TextAlign.center,
                   ),
