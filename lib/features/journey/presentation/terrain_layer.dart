@@ -5,6 +5,7 @@ import 'package:flame/components.dart';
 
 import '../../../design/colors.dart';
 import '../../../design/spacing.dart';
+import '../domain/terrain_profile.dart' as domain;
 import 'journey_scene.dart';
 import 'journey_scene_controller.dart';
 
@@ -37,23 +38,51 @@ const double terrainWaveWavelength = 260;
 /// scene's vertical centre is.
 const double terrainMidY = 0;
 
-/// Height of the placeholder horizon line at world position [worldX].
-///
-/// Deliberately a function of **world position**, never of the camera's
-/// current pan — panning changes which part of this fixed profile is
-/// visible, never the profile itself (the same invariant the CustomPaint
-/// placeholder's `_wavyPathY` doc comment protected; ported unchanged
-/// because the bug it prevented — the same route point rendering at a
-/// different height after every pan — is exactly as possible in a
-/// hand-rolled Flame `render()` as it was in a `CustomPainter`).
-///
-/// A top-level function, not a private method of [HorizonTerrainLayer]: it
-/// is also the one place `achievement_overlay.dart` (the trophy guide-line)
-/// and `friend_component.dart` ask "how tall is the ground here" — there is
-/// exactly one function that knows the shape of this curve.
-double terrainHeightAt(double worldX) {
+/// Height of the horizon line at world position [worldX], for a quest whose
+/// [profile] is `null` — the original placeholder sine wave (§9.1: no real
+/// per-biome elevation art yet), kept exactly as it always rendered so a
+/// quest with no authored terrain content is visually unaffected by
+/// [terrainHeightAt] existing.
+double _placeholderTerrainHeightAt(double worldX) {
   final phase = worldX / terrainWaveWavelength * 2 * math.pi;
   return terrainMidY + terrainWaveAmplitude * math.sin(phase);
+}
+
+/// Height of the horizon line at world position [worldX] (§6.1's "изменения
+/// высоты, спуски и подъемы").
+///
+/// Deliberately a function of **world position** (and the fixed [profile]/
+/// [pixelsPerMeter] for the current frame), never of the camera's current
+/// pan — panning changes which part of this profile is visible, never the
+/// profile itself (the same invariant the CustomPaint placeholder's
+/// `_wavyPathY` doc comment protected, and the placeholder sine wave still
+/// does below).
+///
+/// [profile] is `null` for a quest that authors no terrain content (today:
+/// any quest other than `odyssey-ithaca`, and even that one until content
+/// authors a `terrainHeight`) — falls back unchanged to
+/// [_placeholderTerrainHeightAt]. Otherwise, [worldX] is converted back to a
+/// route position in meters (the inverse of [worldXFor]) and looked up via
+/// the domain's own `terrainHeightAt`, scaled from its unitless `-1..1`
+/// range to pixels by [terrainWaveAmplitude] — the same scale the
+/// placeholder wave already uses, so authored content and the placeholder
+/// read at a consistent visual scale.
+///
+/// A top-level function, not a private method of [HorizonTerrainLayer]: it
+/// is also the one place `achievement_overlay.dart` (the trophy guide-line),
+/// `friend_component.dart` and `traveler_component.dart` ask "how tall is
+/// the ground here" — there is exactly one function that knows the shape of
+/// this curve.
+double terrainHeightAt(
+  double worldX,
+  domain.TerrainProfile? profile,
+  double pixelsPerMeter,
+) {
+  if (profile == null) return _placeholderTerrainHeightAt(worldX);
+
+  final meters = pixelsPerMeter <= 0 ? 0 : (worldX / pixelsPerMeter).round();
+  return terrainMidY +
+      terrainWaveAmplitude * domain.terrainHeightAt(profile, meters);
 }
 
 /// A few pixels per sampled point reads as smooth without evaluating `sin()`
@@ -106,11 +135,14 @@ class HorizonTerrainLayer extends PositionComponent
     final right = math.min(routeRight, visible.right);
     if (right <= left) return;
 
-    final path = Path()..moveTo(left, terrainHeightAt(left));
+    final profile = controller.terrainProfile;
+    final pixelsPerMeter = controller.pixelsPerMeter;
+    final path = Path()
+      ..moveTo(left, terrainHeightAt(left, profile, pixelsPerMeter));
     for (var x = left + _terrainStep; x <= right; x += _terrainStep) {
-      path.lineTo(x, terrainHeightAt(x));
+      path.lineTo(x, terrainHeightAt(x, profile, pixelsPerMeter));
     }
-    path.lineTo(right, terrainHeightAt(right));
+    path.lineTo(right, terrainHeightAt(right, profile, pixelsPerMeter));
 
     canvas.drawPath(path, _linePaint);
   }

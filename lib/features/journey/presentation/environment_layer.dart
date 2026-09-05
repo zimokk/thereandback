@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flame/components.dart';
 
 import '../../../design/colors.dart';
+import '../domain/scene_prop_anchor.dart';
 import 'journey_scene_controller.dart';
 
 /// Screen-space x for an object that belongs to a parallax layer moving at
@@ -71,6 +72,7 @@ class EnvironmentLayer extends PositionComponent {
   EnvironmentLayer._({
     required this.velocityMultiplier,
     required this.controller,
+    required this.scenePropLayer,
     required int priority,
     required Color color,
     required this.baselineFraction,
@@ -85,6 +87,7 @@ class EnvironmentLayer extends PositionComponent {
       EnvironmentLayer._(
         velocityMultiplier: 0.5,
         controller: controller,
+        scenePropLayer: ScenePropLayer.behind,
         priority: 10,
         color: AppColors.journeySceneEnvironmentBehind,
         baselineFraction: 0.35,
@@ -98,6 +101,7 @@ class EnvironmentLayer extends PositionComponent {
       EnvironmentLayer._(
         velocityMultiplier: 1.6,
         controller: controller,
+        scenePropLayer: ScenePropLayer.front,
         priority: 30,
         color: AppColors.journeySceneEnvironmentFront,
         baselineFraction: 0.85,
@@ -107,6 +111,12 @@ class EnvironmentLayer extends PositionComponent {
 
   final double velocityMultiplier;
   final JourneySceneController controller;
+
+  /// Which named/anchored props (`controller.sceneProps`) belong to this
+  /// instance — matches [EnvironmentLayer.behind]/[EnvironmentLayer.front]
+  /// 1:1, so a [ScenePropAnchor] renders on exactly the one instance whose
+  /// depth its content author picked.
+  final ScenePropLayer scenePropLayer;
 
   /// Width, in this layer's own reference-meters axis, of one deterministic
   /// "bucket" — one decoration is generated per bucket.
@@ -179,5 +189,38 @@ class EnvironmentLayer extends PositionComponent {
       );
       canvas.drawCircle(Offset(screenX, baselineY), decoration.radius, _paint);
     }
+
+    // Named, anchored props (§6.1 — e.g. a cyclops silhouette) — unlike the
+    // procedural decorations above, these are never bucketed/randomized:
+    // each is placed at exactly `anchor.meters * velocityMultiplier`, the
+    // one formula that makes it sit at `centerX` precisely when
+    // `panMeters == anchor.meters`, so it lines up with wherever the
+    // terrain profile shapes the ground for that same landmark without the
+    // two ever being independently tuned. No bitmap art exists yet (§9.1),
+    // so this is the same placeholder-circle rendering the procedural
+    // decorations already use, just larger and content-anchored rather
+    // than randomly scattered — swapping in a real sprite later is
+    // self-contained to this file.
+    for (final anchor in controller.sceneProps) {
+      if (anchor.layer != scenePropLayer) continue;
+      final screenX = parallaxScreenX(
+        centerX: centerX,
+        objectMeters: anchor.meters * velocityMultiplier,
+        panMeters: panMeters,
+        velocityMultiplier: velocityMultiplier,
+        pixelsPerMeter: pixelsPerMeter,
+      );
+      canvas.drawCircle(
+        Offset(screenX, baselineY),
+        _anchoredPropRadius,
+        _paint,
+      );
+    }
   }
 }
+
+/// Placeholder radius for an anchored [ScenePropAnchor] — larger than any
+/// procedural `_Decoration` (`radius: 6 + random * 10`, so at most `16`) so
+/// it reads as a deliberate, named element rather than random scatter, even
+/// before real art (§9.1) replaces this shape.
+const double _anchoredPropRadius = 20;

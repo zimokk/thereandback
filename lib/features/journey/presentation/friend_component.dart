@@ -104,11 +104,14 @@ class FriendMarkerComponent extends PositionComponent {
     // Same formula `TravelerComponent.update()` uses for this row's own
     // meters, so the two can never visibly drift apart either way.
     final meters = (row?.progressMeters ?? 0).toDouble();
-    final worldX = worldXFor(meters, controller.pixelsPerMeter);
+    final pixelsPerMeter = controller.pixelsPerMeter;
+    final worldX = worldXFor(meters, pixelsPerMeter);
     // `.setValues` on the existing Vector2 — no fresh allocation per tick.
     _label.position.setValues(
       worldX,
-      terrainHeightAt(worldX) - travelerIconSize / 2 - friendLabelGap,
+      terrainHeightAt(worldX, controller.terrainProfile, pixelsPerMeter) -
+          travelerIconSize / 2 -
+          friendLabelGap,
     );
   }
 }

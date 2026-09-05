@@ -39,7 +39,17 @@ void main() {
         // would be too strict — a small tolerance accounts for that, not
         // for anything about this component's own math.
         expect(traveler.position.x, closeTo(expectedX, 1e-3));
-        expect(traveler.position.y, closeTo(terrainHeightAt(expectedX), 1e-3));
+        expect(
+          traveler.position.y,
+          closeTo(
+            terrainHeightAt(
+              expectedX,
+              controller.terrainProfile,
+              controller.pixelsPerMeter,
+            ),
+            1e-3,
+          ),
+        );
 
         controller.panMeters = 999999; // pan never affects this figure.
         traveler.update(0);
@@ -99,7 +109,17 @@ void main() {
         // centre, via the ordinary camera transform, not a HUD special case.
         final expectedX = worldXFor(1000, controller.pixelsPerMeter);
         expect(ghost.position.x, closeTo(expectedX, 1e-3));
-        expect(ghost.position.y, closeTo(terrainHeightAt(expectedX), 1e-3));
+        expect(
+          ghost.position.y,
+          closeTo(
+            terrainHeightAt(
+              expectedX,
+              controller.terrainProfile,
+              controller.pixelsPerMeter,
+            ),
+            1e-3,
+          ),
+        );
       },
     );
   });

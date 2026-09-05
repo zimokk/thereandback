@@ -10,6 +10,7 @@ import '../../../design/typography.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../achievements/domain/achievement.dart';
 import '../../achievements/presentation/achievement_titles.dart';
+import '../domain/terrain_profile.dart' hide terrainHeightAt;
 import 'terrain_layer.dart';
 
 /// One achievement marker's already-resolved screen `x` (from its meters
@@ -65,6 +66,7 @@ class AchievementMarkerOverlay extends StatelessWidget {
     required this.achievements,
     required this.sceneHeight,
     required this.pixelsPerMeter,
+    required this.terrainProfile,
     required this.l10n,
   });
 
@@ -78,6 +80,14 @@ class AchievementMarkerOverlay extends StatelessWidget {
   /// horizon line instead of at an arbitrary height.
   final double pixelsPerMeter;
 
+  /// The active quest's terrain profile (§6.1) — `null` for a quest with no
+  /// authored terrain content, in which case [terrainHeightAt] falls back to
+  /// the placeholder sine wave, same as `terrain_layer.dart` itself. Passed
+  /// through unchanged from `JourneySceneController.terrainProfile` so the
+  /// guide line always ends on the exact same horizon `HorizonTerrainLayer`
+  /// draws, never a second, independently-computed one.
+  final TerrainProfile? terrainProfile;
+
   final AppLocalizations l10n;
 
   @override
@@ -90,6 +100,7 @@ class AchievementMarkerOverlay extends StatelessWidget {
               achievements: achievements,
               sceneHeight: sceneHeight,
               pixelsPerMeter: pixelsPerMeter,
+              terrainProfile: terrainProfile,
             ),
           ),
         ),
@@ -183,11 +194,13 @@ class _AchievementGuidesPainter extends CustomPainter {
     required this.achievements,
     required this.sceneHeight,
     required this.pixelsPerMeter,
+    required this.terrainProfile,
   });
 
   final List<VisibleAchievement> achievements;
   final double sceneHeight;
   final double pixelsPerMeter;
+  final TerrainProfile? terrainProfile;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -206,7 +219,9 @@ class _AchievementGuidesPainter extends CustomPainter {
         achievement.state.def.thresholdMeters.toDouble(),
         pixelsPerMeter,
       );
-      final lineY = sceneHeight / 2 + terrainHeightAt(terrainWorldX);
+      final lineY =
+          sceneHeight / 2 +
+          terrainHeightAt(terrainWorldX, terrainProfile, pixelsPerMeter);
       final from = Offset(achievement.x, markerGuideStartY);
       final to = Offset(achievement.x, lineY);
       _drawDashedLine(canvas, from, to, paint);
