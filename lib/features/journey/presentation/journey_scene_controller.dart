@@ -1,5 +1,7 @@
 import '../../friends/domain/friend_progress.dart';
 import '../domain/route_scale.dart';
+import '../domain/scene_prop_anchor.dart';
+import '../domain/terrain_profile.dart';
 
 /// Mutable scene state, read by [JourneyScene]'s components every `update()`
 /// tick — the seam between Riverpod and the long-lived `FlameGame` instance
@@ -61,6 +63,22 @@ class JourneySceneController {
   /// to infer "off" from an empty list (which would be indistinguishable
   /// from "on, but the user simply has no accepted friends yet").
   bool showFriends = false;
+
+  /// The active quest's authored terrain profile (§6.1, §9.1) — `null`
+  /// before a quest is picked, or when it ships no `locations.json` terrain
+  /// content at all (today: any quest other than `odyssey-ithaca`, and even
+  /// that one until content actually authors a `terrainHeight`).
+  /// `terrain_layer.dart`'s `terrainHeightAt` falls back to its placeholder
+  /// sine wave exactly in that case, so a quest with no authored profile
+  /// renders unchanged from before this field existed.
+  TerrainProfile? terrainProfile;
+
+  /// Named background props anchored to a specific route position (§6.1 —
+  /// e.g. a cyclops silhouette at its own landmark's meters), as opposed to
+  /// [EnvironmentLayer]'s own procedural, randomly-scattered decorations.
+  /// Empty exactly when [terrainProfile] is `null` or the quest authors no
+  /// `prop` fields — `EnvironmentLayer` draws nothing extra in that case.
+  List<ScenePropAnchor> sceneProps = const [];
 
   /// Whether the scene should currently be running its game loop — driven
   /// by tab visibility and app lifecycle (`lib/app/active_tab_index.dart`),

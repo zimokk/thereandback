@@ -22,6 +22,7 @@ import 'achievement_overlay.dart';
 import 'journey_providers.dart';
 import 'journey_scene.dart';
 import 'journey_scene_controller.dart';
+import 'journey_terrain_providers.dart';
 import 'journey_timing_providers.dart';
 import 'sky_gradient.dart';
 
@@ -212,6 +213,15 @@ class _JourneyFlameSceneViewState extends ConsumerState<JourneyFlameSceneView>
               .toList()
         : const <FriendProgressRow>[];
 
+    // Terrain shape + anchored props for the quest's own content (§6.1) —
+    // `null`/empty for a quest with none, in which case every consumer
+    // (`HorizonTerrainLayer`, `EnvironmentLayer`, the achievement guide
+    // line, traveler/friend markers) falls back to today's placeholder
+    // unchanged.
+    final terrainContent = ref
+        .watch(selectedJourneyTerrainContentProvider)
+        .value;
+
     // Pushed into the long-lived controller every build — the Flame game
     // itself is never rebuilt (§6.1/§12).
     _sceneController
@@ -221,7 +231,9 @@ class _JourneyFlameSceneViewState extends ConsumerState<JourneyFlameSceneView>
       ..displayedProgressMeters = _displayedProgressMeters
       ..panMeters = _panMeters
       ..showFriends = showFriends
-      ..friendRows = friendRows;
+      ..friendRows = friendRows
+      ..terrainProfile = terrainContent?.profile
+      ..sceneProps = terrainContent?.props ?? const [];
 
     // §12: "game loop stops on inactive tab" — a plain field mutation on
     // the already-created game, safe to repeat on every build.
@@ -275,6 +287,7 @@ class _JourneyFlameSceneViewState extends ConsumerState<JourneyFlameSceneView>
                           achievements: visibleAchievements,
                           sceneHeight: size.height,
                           pixelsPerMeter: pixelsPerMeter,
+                          terrainProfile: _sceneController.terrainProfile,
                           l10n: l10n,
                         ),
                         if (showReturnButton)

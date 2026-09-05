@@ -67,4 +67,55 @@ void main() {
       });
     },
   );
+
+  group('anchored scene props (§6.1 — a ScenePropAnchor shares its meters '
+      'with the terrain profile, not a pixel position)', () {
+    // The formula `environment_layer.dart`'s render loop uses for a
+    // ScenePropAnchor: objectMeters = anchor.meters * velocityMultiplier —
+    // the one choice that makes the anchor sit at screen centre exactly
+    // when panMeters == anchor.meters, for any depth.
+    double anchorScreenX({
+      required double anchorMeters,
+      required double panMeters,
+      required double velocityMultiplier,
+    }) => parallaxScreenX(
+      centerX: 400,
+      objectMeters: anchorMeters * velocityMultiplier,
+      panMeters: panMeters,
+      velocityMultiplier: velocityMultiplier,
+      pixelsPerMeter: 0.04,
+    );
+
+    test('sits at centerX exactly when panMeters == anchor.meters, on the '
+        'behind layer (velocityMultiplier 0.5)', () {
+      final x = anchorScreenX(
+        anchorMeters: 391875,
+        panMeters: 391875,
+        velocityMultiplier: 0.5,
+      );
+      expect(x, closeTo(400, 1e-9));
+    });
+
+    test('sits at centerX exactly when panMeters == anchor.meters, on the '
+        'front layer (velocityMultiplier 1.6) too', () {
+      final x = anchorScreenX(
+        anchorMeters: 391875,
+        panMeters: 391875,
+        velocityMultiplier: 1.6,
+      );
+      expect(x, closeTo(400, 1e-9));
+    });
+
+    test('screen position is linear in panMeters, same invariant every '
+        'parallax layer already satisfies', () {
+      double xAt(double pan) => anchorScreenX(
+        anchorMeters: 391875,
+        panMeters: pan,
+        velocityMultiplier: 0.5,
+      );
+      final deltaA = xAt(392875) - xAt(391875);
+      final deltaB = xAt(393875) - xAt(392875);
+      expect(deltaA, closeTo(deltaB, 1e-9));
+    });
+  });
 }
