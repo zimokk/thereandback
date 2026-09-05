@@ -240,42 +240,34 @@ void main() {
       },
     );
 
-    test(
-      'a quest already selected before this controller ever builds picks '
-      'its own track immediately, not only on the next switch',
-      () async {
-        container
-            .read(selectedJourneyProvider.notifier)
-            .start('tower-of-lights', now: DateTime(2026, 3, 10));
+    test('a quest already selected before this controller ever builds picks '
+        'its own track immediately, not only on the next switch', () async {
+      container
+          .read(selectedJourneyProvider.notifier)
+          .start('tower-of-lights', now: DateTime(2026, 3, 10));
 
-        container.read(backgroundMusicControllerProvider);
-        await pumpEventQueue();
+      container.read(backgroundMusicControllerProvider);
+      await pumpEventQueue();
 
-        verify(
-          () => player.selectTrack('journeys/tower-of-lights/theme.mp3'),
-        ).called(1);
-      },
-    );
+      verify(() => player.selectTrack('journeys/tower-of-lights/theme.mp3'))
+          .called(1);
+    });
 
-    test(
-      'switching the active quest while the controller is alive switches '
-      'the track live, on or off',
-      () async {
-        container.read(backgroundMusicControllerProvider);
-        await pumpEventQueue();
-        clearInteractions(player);
-        when(() => player.selectTrack(any())).thenAnswer((_) async {});
+    test('switching the active quest while the controller is alive switches '
+        'the track live, on or off', () async {
+      container.read(backgroundMusicControllerProvider);
+      await pumpEventQueue();
+      clearInteractions(player);
+      when(() => player.selectTrack(any())).thenAnswer((_) async {});
 
-        container
-            .read(selectedJourneyProvider.notifier)
-            .start('tower-of-lights', now: DateTime(2026, 3, 10));
-        await pumpEventQueue();
+      container
+          .read(selectedJourneyProvider.notifier)
+          .start('tower-of-lights', now: DateTime(2026, 3, 10));
+      await pumpEventQueue();
 
-        verify(
-          () => player.selectTrack('journeys/tower-of-lights/theme.mp3'),
-        ).called(1);
-      },
-    );
+      verify(() => player.selectTrack('journeys/tower-of-lights/theme.mp3'))
+          .called(1);
+    });
 
     test(
       'odyssey-ithaca also picks its own track, not just tower-of-lights',
@@ -287,15 +279,15 @@ void main() {
         container.read(backgroundMusicControllerProvider);
         await pumpEventQueue();
 
-        verify(
-          () => player.selectTrack('journeys/odyssey-ithaca/theme.mp3'),
-        ).called(1);
+        verify(() => player.selectTrack('journeys/odyssey-ithaca/theme.mp3'))
+            .called(1);
       },
     );
 
     test(
-      'a quest id that resolves to no catalog entry falls back to the '
-      'shared default (selectedJourneyDetailsProvider itself returns null)',
+      'a journeyId with no entry in journeyThemeTrackAssetPath falls back '
+      'to the shared default — including one absent from the catalog '
+      'entirely, since this no longer goes through selectedJourneyDetails',
       () async {
         container
             .read(selectedJourneyProvider.notifier)

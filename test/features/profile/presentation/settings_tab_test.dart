@@ -174,6 +174,7 @@ Widget _wrap(
   when(() => musicPlayer.stop()).thenAnswer((_) async {});
   when(() => musicPlayer.pause()).thenAnswer((_) async {});
   when(() => musicPlayer.resume()).thenAnswer((_) async {});
+  when(() => musicPlayer.selectTrack(any())).thenAnswer((_) async {});
 
   return ProviderScope(
     overrides: [

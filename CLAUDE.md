@@ -1725,6 +1725,51 @@ Lights»: реалистичные трофеи для нового квеста
   Подробности — `assets/journeys/odyssey-ithaca/README.md`'s раздел
   «`theme.mp3` — this quest's own track».
 
+Решено 2026-09-05 (§6.5, §14 «background music» — баг-фикс CI, по красному
+CI на PR с обоими треками выше):
+
+- **`dart format` упал** — два тестовых файла из PR выше (`background_
+  music_player_test.dart`, `background_music_provider_test.dart`) были
+  запушены неотформатированными (в песочнице тогда не было Flutter SDK,
+  чтобы прогнать `dart format` по-настоящему). Тривиально исправлено самим
+  `dart format .`
+- **Найден и исправлен реальный баг в переключении трека, не только форматирование.**
+  `BackgroundMusicController` слушал `selectedJourneyDetailsProvider`
+  (вычисляемый `@riverpod`-провайдер, зависящий от `selectedJourneyProvider`
+  через `ref.watch`) — работало для «трек уже выбранного при старте квеста»,
+  но **не реагировало** на смену квеста, произошедшую уже после того, как
+  контроллер собрался: `ref.listen` на *вычисляемый* провайдер не гарантирует
+  промптный ребилд+нотификацию вне живого дерева виджетов (в приложении это
+  прячет обычный цикл кадров Flutter, но в чистом `ProviderContainer`-тесте
+  без пампинга кадров — нет; смена трека всё равно сработала бы в реальном
+  приложении, но осталась бы непроверенной без реального прогона тестов).
+  Найдено и подтверждено экспериментально через временные debug-принты по
+  всей цепочке провайдеров — не теория, а воспроизведённая причина.
+  **Исправлено**: `ref.listen<SelectedQuest?>(selectedJourneyProvider, ...)`
+  — слушать сырой Notifier напрямую, тем же паттерном, что уже применяет
+  `lock_screen_controller.dart`'s `_onQuestChanged`
+  (`ref.listen<SelectedQuest?>(selectedJourneyProvider, _onQuestChanged)`) —
+  `state = ...`-сеттер нотифицирует слушателей синхронно, вычисляемому
+  провайдеру для этого сначала нужно инвалидироваться и **пересобраться**.
+  Заодно код стал проще и строже: `journeyThemeTrackAssetPath` теперь
+  получает `journeyId` напрямую с `SelectedQuest`, без похода в каталог
+  через `selectedJourneyDetailsProvider` — раньше `journeyId`, которого нет
+  в каталоге, схлопывался в `null` ещё до попадания в мапу треков, теряя
+  сам id.
+- **Побочный, тоже реальный баг-фикс:** `settings_tab_test.dart`'s
+  `_MockBackgroundMusicPlayer` не стабил новый метод `selectTrack` — любой
+  тест, монтирующий `SettingsTab`, падал с `type 'Null' is not a subtype of
+  type 'Future<void>'` (мок без стаба на async-метод возвращает `null`).
+  Добавлен недостающий `when(() => musicPlayer.selectTrack(any()))
+  .thenAnswer((_) async {})`.
+- **Проверено по-настоящему.** В этой сессии оказался сетевой доступ —
+  скачаны отдельно Dart SDK (для `dart format`) и Flutter 3.47.2 (ровно
+  версия CI) во временные каталоги, прогнан весь §10 гейт взаправду:
+  `flutter pub get`, `dart run build_runner build`, `flutter analyze` (чисто),
+  `dart format` (чисто), `flutter test` — все 610 тестов зелёные. Реальный
+  баг нашёлся именно так — по логам упавшего CI и последующему
+  воспроизведению, не по одному чтению кода.
+
 Остаётся нерешённым:
 
 - [x] Первый квест каталога — «The Odyssey: Troy to Ithaca» (§1.1). Черновик
