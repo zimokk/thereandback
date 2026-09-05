@@ -53,6 +53,9 @@ Architecture, `lib/features/journey/presentation/`:
   visible window (`game.camera.visibleWorldRect`), never the whole route —
   a quest can span on the order of a hundred screen-widths, so a per-frame
   cost bounded by screen size, not route length, is load-bearing here.
+  `terrainHeightAt` takes an optional `domain.TerrainProfile` (see "Terrain
+  profile & anchored scene props" below); `null` — any quest that ships no
+  such content — reproduces the original placeholder sine wave unchanged.
 - **`traveler_component.dart`** — `TravelerComponent` (world-space; reused
   for both the player's solid marker and every friend marker, parameterized
   by a `metersProvider` closure + color) and `GhostTravelerComponent` (the
@@ -69,6 +72,12 @@ Architecture, `lib/features/journey/presentation/`:
   since there's no bitmap art yet to feed a real `ParallaxComponent`).
   Decorations are generated procedurally per visible window
   (`math.Random(bucket)`), never stored as a list spanning the whole route.
+  Alongside those, each instance also draws the subset of
+  `controller.sceneProps` matching its own `ScenePropLayer` (see "Terrain
+  profile & anchored scene props" below) — unlike the procedural
+  decorations, these are never bucketed/randomized: one placeholder circle
+  per anchor, placed at exactly `anchor.meters`, larger than any procedural
+  decoration so it reads as deliberate rather than scatter.
 - **`sky_gradient.dart`** — `SkyGradient`, a plain Flutter `CustomPaint` (not
   a Flame component — it's driven by wall-clock time, not scroll, so it has
   no per-frame reason to live in the game loop). `skyPhaseFor(DateTime)` is
@@ -137,6 +146,10 @@ canvas inside `GameWidget`, not separate `find.byKey`-able Flutter widgets
   scale.
 - `interpolatedTravelerMeters` (`domain/traveler_interpolation.dart`) — the
   pure catch-up math behind the solid traveler's smooth motion (see above).
+- `TerrainPoint`/`TerrainProfile`/`terrainHeightAt`
+  (`domain/terrain_profile.dart`) and `ScenePropAnchor`/`ScenePropLayer`
+  (`domain/scene_prop_anchor.dart`) — see "Terrain profile & anchored scene
+  props" below.
 - `evaluateAchievements` (`features/achievements/domain/achievement.dart`,
   `achievementCatalog` from `features/achievements/data/`) — reused as-is
   from the Трофеи tab (§6.3) to drive the marker row; this screen adds no
@@ -182,6 +195,42 @@ tower-of-lights additionally ships a `ru` translation overlay
 (`locations.ru.json`) that the provider swaps in when `appLocaleProvider`
 is `ru`; odyssey-ithaca has none yet (CLAUDE.md §14's still-open item), so
 it always shows its base English text regardless of app language.
+
+## Terrain profile & anchored scene props
+
+Mechanism only (CLAUDE.md §14, "Решено 2026-09-05" — data-driven terrain
+profile and anchored scene props) — no quest today authors any
+`terrainHeight`/`prop` content, so the visible scene is unchanged for both
+catalog quests; this is the plumbing a future quest's `locations.json` can
+opt into without any further code changes.
+
+- `landmarks[].terrainHeight` (a unitless `-1..1` number) and
+  `landmarks[].prop` (`{asset, layer: "behind"|"front"}`) are two new,
+  independently-optional fields on the same `locations.json` landmark
+  entries the narrative line and `fictional_time.dart` already read —
+  parsed by `data/journey_terrain_repository.dart`'s
+  `tryLoadJourneyTerrainContent`/`parseJourneyTerrainContent`, same
+  `null`-when-no-file / `FormatException`-when-malformed contract as
+  `journey_timing_repository.dart`.
+- `parseJourneyTerrainContent` builds a `TerrainProfile` that always spans
+  the whole route — a synthetic flat point (height `0`) is inserted at `0`
+  and at `totalMeters` whenever no authored landmark sits exactly there —
+  and validates `terrainHeight` points never decrease in `meters`, mirroring
+  `quest_map_repository.dart`'s own polyline-monotonicity rule.
+- `terrainHeightAt` (domain) interpolates between the two bracketing points
+  with smoothstep, not a plain lerp or a spline — zero slope at each control
+  point (no visible kink between segments) and no overshoot past sparse,
+  far-apart authored points.
+- A prop's `meters` is the *only* value shared with a terrain point at the
+  same landmark — each side converts it through its own already-existing
+  formula (`terrainHeightAt` for the ground line, `parallaxScreenX` for the
+  prop's screen position), so ground shape and prop placement can never be
+  edited into disagreement by hand-tuning two separate numbers.
+- Wiring: `selectedJourneyTerrainContentProvider`
+  (`journey_terrain_providers.dart`) loads it for the selected quest;
+  `journey_flame_scene_view.dart` pushes `.profile`/`.props` into
+  `JourneySceneController.terrainProfile`/`.sceneProps` every rebuild, the
+  same seam `friendRows`/`showFriends` already use.
 
 ## Empty / permission states
 
@@ -242,6 +291,15 @@ negative meters.
 `test/features/journey/domain/traveler_interpolation_test.dart` covers the
 catch-up math: monotonic, reaches the target exactly at the duration, never
 overshoots, and is a no-op when already there.
+
+`test/features/journey/domain/terrain_profile_test.dart` covers
+`terrainHeightAt`: interpolation between bracketing points, the
+smoothstep-vs-overshoot property, clamping past either end, and the
+empty/single-point degenerate cases. `test/features/journey/data/
+journey_terrain_repository_test.dart` covers the `locations.json` parsing
+contract: synthetic endpoint insertion, the meters-must-not-decrease
+validation, prop layer/asset validation, and the `null`-vs-`FormatException`
+distinction for a missing vs. malformed file.
 
 `test/features/journey/domain/quest_time_service_test.dart` covers
 `questDay`, `paceMetersPerDay`, `estimateArrival` per the §12 mandatory

@@ -1616,6 +1616,57 @@ Lights»: реалистичные трофеи для нового квеста
   инварианты, не конкретные координаты, так что перерисовка формы линии его
   не задевает.
 
+Решено 2026-09-05 (§6.1, §9.1 — данные для рельефа и «заякоренных» декораций
+сцены «Путь»):
+
+- **Новый механизм, без реального контента.** Горизонт вкладки «Путь»
+  (`terrain_layer.dart`'s `terrainHeightAt`) до этого был фиксированной
+  синусоидой-заглушкой, никак не связанной с контентом квеста. Теперь его
+  можно задать данными: два новых опциональных поля на записи ориентира
+  (`landmarks[]`) в `locations.json` — `terrainHeight` (безразмерное число
+  `-1..1`, высота земли в этой точке) и `prop` (`{asset, layer: "behind"|
+  "front"}` — именованный, не процедурный силуэт на фоне, заякоренный на
+  точную позицию маршрута, например силуэт циклопа там, где рельеф
+  поднимается к горе у его же ориентира — в отличие от уже существующих
+  `EnvironmentLayer`'s `_Decoration`, которые безымянны и раскиданы
+  процедурно). Ни у одного квеста каталога сегодня эти поля не заполнены —
+  визуально ни «Одиссея», ни «Tower of Lights» не изменились; это только
+  инфраструктура для будущего контента.
+- **Домен:** `TerrainPoint`/`TerrainProfile`/`terrainHeightAt`
+  (`features/journey/domain/terrain_profile.dart`) — интерполяция
+  smoothstep (`3t² − 2t³`) между двумя ближайшими точками, не линейный lerp
+  и не сплайн: нулевой наклон в каждой заданной точке (сегменты сходятся
+  без видимого излома), и, в отличие от Catmull-Rom, не даёт выброса выше/
+  ниже соседних точек — важно, потому что заданные точки могут быть редкими
+  и далеко друг от друга (одна на заметный ориентир, не на каждый метр).
+  `ScenePropAnchor`/`ScenePropLayer` (`features/journey/domain/
+  scene_prop_anchor.dart`) — `meters` заякоренной декорации это **то же
+  самое число**, что и `TerrainPoint.meters` того же ориентира: рельеф и
+  декорация переводят его в экранные координаты каждый своей уже
+  существующей формулой (`terrainHeightAt` / `parallaxScreenX`), так что
+  их нельзя рассинхронизировать вручную подбором двух разных чисел.
+- **Data:** `features/journey/data/journey_terrain_repository.dart`'s
+  `tryLoadJourneyTerrainContent`/`parseJourneyTerrainContent` — тот же
+  контракт `null`/`FormatException`, что уже используют
+  `journey_timing_repository.dart`/`quest_map_repository.dart`: нет
+  `locations.json` у квеста → `null` (фолбэк на заглушку-синусоиду, декораций
+  нет), файл есть, но битый → бросает. Профиль всегда покрывает весь
+  маршрут — синтетическая точка высоты `0` добавляется на `0` м и на
+  `totalMeters`, если там нет заданной вручную; `meters` точек с
+  `terrainHeight` обязаны не убывать (то же правило монотонности, что у
+  `quest_map_repository.dart`'s полилинии).
+- **Presentation:** `journey_terrain_providers.dart`'s
+  `selectedJourneyTerrainContentProvider` (тот же приём, что и
+  `friendRows`/`showFriends`) кладёт результат в
+  `JourneySceneController.terrainProfile`/`.sceneProps`;
+  `terrain_layer.dart`'s `terrainHeightAt` принимает опциональный
+  `TerrainProfile` (без него — прежнее поведение неизменно);
+  `environment_layer.dart`'s `EnvironmentLayer.behind`/`.front` рисует свою
+  часть `controller.sceneProps` (по `ScenePropLayer`) поверх уже
+  существующих процедурных декораций — placeholder-круг крупнее любой
+  процедурной декорации, пока не появится настоящий арт (§9.1).
+  Подробности — `docs/screens/journey.md`.
+
 Остаётся нерешённым:
 
 - [x] Первый квест каталога — «The Odyssey: Troy to Ithaca» (§1.1). Черновик
