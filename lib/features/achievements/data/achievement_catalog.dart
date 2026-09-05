@@ -12,6 +12,17 @@ import '../domain/achievement.dart';
 /// treatment the map screen already gives landmark names (§11, see
 /// `quest_map_view.dart`'s "Ahead: {name}" caption). Kept in ascending
 /// threshold order so the list itself reads as the route.
+///
+/// **Known gap since the second catalog quest ("The Road to the Skyfire",
+/// 240 000 m, §14 2026-09-05):** this list is not scoped per quest —
+/// `evaluateAchievements` compares whichever quest is active's raw meters
+/// against these same absolute thresholds regardless of which journey they
+/// were authored against. In practice that means every Odyssey-specific
+/// entry above 240 000 m (most of this list, and every `landmarkReached`
+/// entry) can simply never unlock while playing the shorter quest — not a
+/// crash, just achievements that never fire for it. Not fixed here: giving
+/// achievements a real per-quest scope is a larger design change (§13 wants
+/// a plan first), tracked as an open item in CLAUDE.md §14.
 const achievementCatalog = <AchievementDef>[
   AchievementDef(
     id: 'first-steps',

@@ -365,7 +365,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsThemeClassic => 'Классическая';
 
   @override
-  String get settingsThemeOdyssey => 'Одиссея (активный поход)';
+  String get settingsThemeOdyssey => 'Одиссея';
 
   @override
   String get settingsLockScreenSectionTitle => 'Экран блокировки';

@@ -17,9 +17,10 @@ import '../domain/quest_time_service.dart';
 
 part 'journey_providers.g.dart';
 
-/// The read-only quest catalog (§8). One entry today (§14: "на MVP один
-/// квест («Одиссея»)"). Phase 8 swaps the data source for cached Firestore
-/// metadata without changing this provider's shape.
+/// The read-only quest catalog (§8). Two entries as of §14's 2026-09-05
+/// decision (superseding the earlier "на MVP один квест («Одиссея»)"). Phase
+/// 8 swaps the data source for cached Firestore metadata without changing
+/// this provider's shape.
 @riverpod
 List<Journey> journeyCatalogEntries(Ref ref) => journeyCatalog;
 

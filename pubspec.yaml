@@ -62,6 +62,7 @@ flutter:
   # file listed by name is.
   assets:
     - assets/journeys/odyssey-ithaca/
+    - assets/journeys/tower-of-lights/
     # The app's one background track (§6.5) — kept separate from
     # assets/journeys/{id}/ (§4) because it isn't quest content, it's a
     # single app-wide asset. Listed as a directory, same reasoning as the

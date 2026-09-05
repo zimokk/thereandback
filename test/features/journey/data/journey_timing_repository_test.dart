@@ -158,4 +158,38 @@ void main() {
       expect(segments.first.departureHour, 6);
     });
   });
+
+  group('the shipped Tower of Lights locations.json (§14, 2026-09-05 — '
+      'second catalog quest)', () {
+    late List<JourneySegmentTiming> segments;
+
+    setUpAll(() {
+      segments = parseJourneySegmentTimings(
+        File(journeyTimingAssetPath('tower-of-lights')).readAsStringSync(),
+      );
+    });
+
+    test('covers the whole route with 8 contiguous segments', () {
+      expect(segments, hasLength(8));
+      expect(segments.first.fromMeters, 0);
+      expect(segments.last.toMeters, 240000);
+    });
+
+    test('every segment respects the pace-safety cap', () {
+      for (final segment in segments) {
+        final cap =
+            (segment.toMeters - segment.fromMeters) / minMetersPerFictionalDay;
+        expect(
+          segment.durationDays,
+          lessThanOrEqualTo(cap),
+          reason: segment.id,
+        );
+      }
+    });
+
+    test('the tower is left at dawn, per the request\'s own example', () {
+      expect(segments.first.id, 'the-open-door');
+      expect(segments.first.departureHour, 6);
+    });
+  });
 }

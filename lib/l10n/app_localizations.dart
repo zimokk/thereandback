@@ -692,10 +692,10 @@ abstract class AppLocalizations {
   /// **'Classic'**
   String get settingsThemeClassic;
 
-  /// Theme option label for AppThemeId.odyssey — names it as the active quest (this app ships one quest today, §14) so it reads as distinct from "Quest theme" (settingsThemeFollowQuest) rather than a confusing duplicate
+  /// Theme option label for AppThemeId.odyssey — plain quest name, no longer qualified as "(active quest)" now that a second, non-Odyssey-themed quest exists (§14, 2026-09-05): that qualifier was only ever true while the Odyssey was the app's one quest, and would misdescribe this option whenever a different quest is actually active
   ///
   /// In en, this message translates to:
-  /// **'Odyssey (active quest)'**
+  /// **'Odyssey'**
   String get settingsThemeOdyssey;
 
   /// Settings section heading for the persistent lock-screen/notification-shade progress toggle (§7)

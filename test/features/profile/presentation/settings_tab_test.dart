@@ -793,19 +793,20 @@ void main() {
   );
 
   testWidgets(
-    'the Odyssey theme option names itself as the active quest, so it '
-    "reads as distinct from the default 'Тема похода' option instead of a "
-    'confusing duplicate',
+    'the Odyssey theme option is a plain quest name (§14, 2026-09-05 — no '
+    "longer qualified as 'active quest' now that a second, differently "
+    'themed quest exists)',
     (tester) async {
       await tester.pumpWidget(_wrap(const SettingsTab()));
       await tester.pump();
 
       await tester.dragUntilVisible(
-        find.text('Одиссея (активный поход)'),
+        find.text('Одиссея'),
         find.byType(ListView),
         const Offset(0, -300),
       );
-      expect(find.text('Одиссея (активный поход)'), findsOneWidget);
+      expect(find.text('Одиссея'), findsOneWidget);
+      expect(find.text('Одиссея (активный поход)'), findsNothing);
     },
   );
 

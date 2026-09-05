@@ -1,10 +1,11 @@
 import '../domain/journey_asset_status.dart';
 
 /// Downloadable-content manifests, parallel to `journey_catalog.dart`'s
-/// `journeyCatalog` (CLAUDE.md §8, §14). **Empty today** — the Odyssey (the
-/// only catalog entry, §14) ships fully bundled in the app binary and has
-/// no manifest here — but wired end to end so the next quest only needs an
-/// entry in this list, never a change to the download machinery itself
+/// `journeyCatalog` (CLAUDE.md §8, §14). **Empty today** — both catalog
+/// entries (the Odyssey and, since 2026-09-05, "The Road to the Skyfire",
+/// §14) ship fully bundled in the app binary and have no manifest here —
+/// but wired end to end so the next quest only needs an entry in this list,
+/// never a change to the download machinery itself
 /// (`journey_asset_repository.dart`, `journey_asset_providers.dart`,
 /// `quest_picker_view.dart`'s download UI).
 ///

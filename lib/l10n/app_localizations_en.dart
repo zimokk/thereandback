@@ -361,7 +361,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsThemeClassic => 'Classic';
 
   @override
-  String get settingsThemeOdyssey => 'Odyssey (active quest)';
+  String get settingsThemeOdyssey => 'Odyssey';
 
   @override
   String get settingsLockScreenSectionTitle => 'Lock screen';
