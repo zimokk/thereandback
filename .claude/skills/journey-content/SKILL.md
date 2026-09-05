@@ -1,6 +1,6 @@
 ---
 name: journey-content
-description: Add or edit quest content for There and Back — a new journey, its locations, segments, narrative beats, landmarks, map.json polyline or assets under assets/journeys/. Use when the user asks to add a quest/маршрут/квест, write narrative, or wire a drawn map. Includes the mandatory copyright check from CLAUDE.md §1.1.
+description: Add or edit quest content for There and Back — a new journey, its locations, segments, narrative beats, landmarks, map.json polyline or assets under assets/journeys/. Use when the user asks to add a quest/маршрут/квест, write narrative, or wire a drawn map.
 ---
 
 # Quest content
@@ -16,12 +16,6 @@ assets/journeys/{journeyId}/
 ```
 
 The first catalog quest is **«The Odyssey: Troy to Ithaca»** (`assets/journeys/odyssey-ithaca/`). Other catalog quests use the project's own fantasy world — whose name and regions are **still undecided** (§14); use placeholders and flag them rather than inventing a final setting.
-
-## Copyright check — do this first, every time (§1.1, §13)
-
-- **Never** use a copyrighted universe: Tolkien, Rowling, or anything where the author is alive or the term has not expired. Not their names, place names, races, artifacts or phrasings — not in content, not in examples, not in test data. The reference screenshots that inspired the UX use a thinly-veiled Tolkien setting; we copy **structure and UX only**.
-- Public-domain sources (mythology, classics — e.g. Homer's *Odyssey*, ~8th c. BCE) are allowed, but **verify the status before using**: country of publication, author's death date, trademarks. "It's an old book" is not a check.
-- Record what you checked in the PR description.
 
 ## Segments and narrative (§5, §11)
 

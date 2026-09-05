@@ -26,7 +26,6 @@ Replacing it with a real track:
   WAV for anything longer than this short placeholder — `audioplayers`
   (§3) plays any of them the same way via `AssetSource`.
 - Licensing applies here the same way §9 already requires it for the app's
-  font and §1.1 for quest settings — check the track is actually cleared for
-  use (commissioned, or a suitable open license) before committing it, "it's
-  just a placeholder anyway" is not a reason to skip that check once it's
-  the real one.
+  font — check the track is actually cleared for use (commissioned, or a
+  suitable open license) before committing it, "it's just a placeholder
+  anyway" is not a reason to skip that check once it's the real one.

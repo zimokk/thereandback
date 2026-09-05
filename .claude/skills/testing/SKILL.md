@@ -45,7 +45,6 @@ dart format . && flutter analyze
 - Inject the clock. No `DateTime.now()` inside pure functions; pass time in so day/pace/ETA are deterministic.
 - Fakes with `mocktail`. Widget tests override Riverpod providers via `ProviderScope(overrides: […])` — never a real drift database, health plugin or Firestore.
 - **No real personal data in fixtures**: no real health samples, coordinates or identifiers (§13). Invent numbers.
-- **No copyrighted names in test data** either — no Tolkien/Rowling place names in a fixture journey (§1.1, §13). Use the Odyssey quest or a neutral placeholder.
 - Golden tests are optional; if used, keep them off the parallax scene (time-of-day sky makes them flaky) — test the math, not the pixels.
 
 ## Failing tests

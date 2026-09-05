@@ -35,7 +35,7 @@ Gold is for **numbers, active icons and buttons** — it is an accent, not a fil
 - One antiquarian serif with a fantasy character across the whole app — headings, distances, body, everything.
 - Narrative lines: the same serif, *italic*.
 - Distance numbers: large, gold. The unit label is a **separate, smaller line beneath the number** (§5.4) — never `5.23 km` on one line.
-- **License: public domain / free (OFL-style) only — never a paid embedding license** (§9, resolved 2026-08-23). The exact family is still unpicked (§14) — before adding one, verify its license the same way §1.1 requires verifying a setting's copyright status; "looks old" is not a check.
+- **License: public domain / free (OFL-style) only — never a paid embedding license** (§9, resolved 2026-08-23). The exact family is still unpicked (§14) — before adding one, verify its license; "looks old" is not a check.
 - Register the font in `pubspec.yaml`; no runtime font downloads (offline-first, §8).
 
 ## Iconography (§9)

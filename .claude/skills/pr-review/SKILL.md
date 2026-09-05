@@ -1,6 +1,6 @@
 ---
 name: pr-review
-description: Review a pull request, branch, or working diff of There and Back against the project spec. Use when the user asks to review a PR, "посмотри PR", check a branch before merge, or prepare a PR description. Checks the CLAUDE.md hard rules (layer purity, stack, privacy, licensing, l10n, tests) that a generic review misses.
+description: Review a pull request, branch, or working diff of There and Back against the project spec. Use when the user asks to review a PR, "посмотри PR", check a branch before merge, or prepare a PR description. Checks the CLAUDE.md hard rules (layer purity, stack, privacy, l10n, tests) that a generic review misses.
 ---
 
 # PR review
@@ -26,21 +26,20 @@ These are §13 "Правила для Claude". Flag each with the section number
 1. **Stack unchanged** — Flutter / Flame / Riverpod / Firebase / drift. A new state manager, HTTP client, or DB is a block unless the user approved it in writing.
 2. **No Google Fit** (§3) — the API is dead and removed from `health` ≥ 11.0.0.
 3. **No `flutter_map`, OSM, Google Maps, or any tile source** (§6.2) — the world is fictional, the map is a drawn asset.
-4. **No copyrighted universes** (§1.1) — Tolkien, Rowling and friends, in content, examples, tests, fixtures, or asset names alike. Public-domain settings are fine *if* the PR shows the protection status was checked.
-5. **`domain/` is pure Dart** (§4) — no `package:flutter/*`, no Firebase, no `health` imports. Grep the diff:
+4. **`domain/` is pure Dart** (§4) — no `package:flutter/*`, no Firebase, no `health` imports. Grep the diff:
    ```bash
    git diff origin/main...HEAD -- '*/domain/*' | grep -nE '^\+.*import .*(package:flutter|firebase|health)'
    ```
-6. **UI never touches repositories directly** (§4) — only through a Riverpod provider.
-7. **Firestore DTOs ≠ domain entities** (§4) — mapping lives in `data/`.
-8. **No hardcoded UI strings** (§11) — everything through `l10n`, both `ru` and `en` updated.
-9. **No hardcoded colors/sizes in widgets** (§9) — tokens from `lib/design/` only.
-10. **No monetization** (§11) — no IAP, paywalls, premium quests.
-11. **Progress math lives in `domain/` and ships with tests** (§13).
-12. **No health data, coordinates, or identifiers in logs or analytics** (§13).
-13. **Generated files not hand-edited** — `*.g.dart`, `*.freezed.dart` (§11).
-14. **New dependency** — the PR must explain why nothing already in the project can do it (§13).
-15. **Permissions / privacy / Firestore schema touched** → the plan must have been shown and agreed before the code (§13).
+5. **UI never touches repositories directly** (§4) — only through a Riverpod provider.
+6. **Firestore DTOs ≠ domain entities** (§4) — mapping lives in `data/`.
+7. **No hardcoded UI strings** (§11) — everything through `l10n`, both `ru` and `en` updated.
+8. **No hardcoded colors/sizes in widgets** (§9) — tokens from `lib/design/` only.
+9. **No monetization** (§11) — no IAP, paywalls, premium quests.
+10. **Progress math lives in `domain/` and ships with tests** (§13).
+11. **No health data, coordinates, or identifiers in logs or analytics** (§13).
+12. **Generated files not hand-edited** — `*.g.dart`, `*.freezed.dart` (§11).
+13. **New dependency** — the PR must explain why nothing already in the project can do it (§13).
+14. **Permissions / privacy / Firestore schema touched** → the plan must have been shown and agreed before the code (§13).
 
 ## Domain-correctness checks
 
