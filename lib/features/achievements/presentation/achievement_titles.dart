@@ -23,6 +23,16 @@ String achievementTitle(AppLocalizations l10n, AchievementDef def) {
       l10n.achievementPassedScyllaCharybdisTitle,
     'achievementPassedSirensTitle' => l10n.achievementPassedSirensTitle,
     'achievementJourneysEndTitle' => l10n.achievementJourneysEndTitle,
+    'achievementLeftTheTowerTitle' => l10n.achievementLeftTheTowerTitle,
+    'achievementCrossedThePinesTitle' => l10n.achievementCrossedThePinesTitle,
+    'achievementTowerHalfwayTitle' => l10n.achievementTowerHalfwayTitle,
+    'achievementReachedMountainGateTitle' =>
+      l10n.achievementReachedMountainGateTitle,
+    'achievementReachedSeaHorizonTitle' =>
+      l10n.achievementReachedSeaHorizonTitle,
+    'achievementReachedLanternHillTitle' =>
+      l10n.achievementReachedLanternHillTitle,
+    'achievementUnderTheSkyfireTitle' => l10n.achievementUnderTheSkyfireTitle,
     'achievementDaily1kmTitle' => l10n.achievementDaily1kmTitle,
     'achievementDaily5kmTitle' => l10n.achievementDaily5kmTitle,
     'achievementDaily10kmTitle' => l10n.achievementDaily10kmTitle,

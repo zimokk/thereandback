@@ -94,4 +94,52 @@ void main() {
       throwsArgumentError,
     );
   });
+
+  group('achievementsForJourney (§14, 2026-09-05 — per-quest scoping)', () {
+    const scopedCatalog = [
+      AchievementDef(
+        id: 'generic',
+        titleKey: 'achievementFirstStepsTitle',
+        kind: AchievementKind.distanceReached,
+        thresholdMeters: 1000,
+      ),
+      AchievementDef(
+        id: 'odyssey-only',
+        titleKey: 'achievementReachedCirceTitle',
+        kind: AchievementKind.landmarkReached,
+        thresholdMeters: 561921,
+        journeyId: 'odyssey-ithaca',
+      ),
+      AchievementDef(
+        id: 'tower-only',
+        titleKey: 'achievementLeftTheTowerTitle',
+        kind: AchievementKind.landmarkReached,
+        thresholdMeters: 20000,
+        journeyId: 'tower-of-lights',
+      ),
+    ];
+
+    test('journeyId null (no quest selected) returns the whole catalog '
+        'unchanged — the catalog-browsing preview', () {
+      expect(achievementsForJourney(scopedCatalog, null), same(scopedCatalog));
+    });
+
+    test('a quest sees its own scoped entries plus every generic one, never '
+        "another quest's", () {
+      final forOdyssey = achievementsForJourney(
+        scopedCatalog,
+        'odyssey-ithaca',
+      );
+      expect(forOdyssey.map((d) => d.id), ['generic', 'odyssey-only']);
+
+      final forTower = achievementsForJourney(scopedCatalog, 'tower-of-lights');
+      expect(forTower.map((d) => d.id), ['generic', 'tower-only']);
+    });
+
+    test('an unknown journeyId still gets every generic entry, no scoped '
+        'ones', () {
+      final result = achievementsForJourney(scopedCatalog, 'no-such-quest');
+      expect(result.map((d) => d.id), ['generic']);
+    });
+  });
 }

@@ -452,6 +452,48 @@ abstract class AppLocalizations {
   /// **'Journey\'s End'**
   String get achievementJourneysEndTitle;
 
+  /// Achievement title: reach the Stone Marker landmark on the tower-of-lights quest — map.json's "005-stone-marker"
+  ///
+  /// In en, this message translates to:
+  /// **'Left the Tower'**
+  String get achievementLeftTheTowerTitle;
+
+  /// Achievement title: reach the Last Pine landmark on the tower-of-lights quest — map.json's "012-last-pine"
+  ///
+  /// In en, this message translates to:
+  /// **'Crossed the Singing Pines'**
+  String get achievementCrossedThePinesTitle;
+
+  /// Achievement title: reach half of the tower-of-lights quest's 240 000 m length
+  ///
+  /// In en, this message translates to:
+  /// **'Halfway to the Skyfire'**
+  String get achievementTowerHalfwayTitle;
+
+  /// Achievement title: reach the Mountain Gate landmark on the tower-of-lights quest — map.json's "034-mountain-gate"
+  ///
+  /// In en, this message translates to:
+  /// **'Reached the Mountain Gate'**
+  String get achievementReachedMountainGateTitle;
+
+  /// Achievement title: reach the Sea Horizon landmark on the tower-of-lights quest — map.json's "042-sea-horizon"
+  ///
+  /// In en, this message translates to:
+  /// **'Reached the Sea Horizon'**
+  String get achievementReachedSeaHorizonTitle;
+
+  /// Achievement title: reach the Lantern Hill landmark on the tower-of-lights quest — map.json's "049-lantern-hill"
+  ///
+  /// In en, this message translates to:
+  /// **'Reached Lantern Hill'**
+  String get achievementReachedLanternHillTitle;
+
+  /// Achievement title: reach the Under the Skyfire landmark on the tower-of-lights quest — map.json's "056-under-the-skyfire", exactly the quest's full 240 000 m length, so also its completion trophy
+  ///
+  /// In en, this message translates to:
+  /// **'Under the Skyfire'**
+  String get achievementUnderTheSkyfireTitle;
+
   /// Caption on an unlocked achievement tile
   ///
   /// In en, this message translates to:

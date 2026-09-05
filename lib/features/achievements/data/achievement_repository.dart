@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../../../data/drift/database.dart';
 import '../../journey/domain/quest_time_service.dart'
     show MeteredInterval, calendarDate;
+import '../domain/achievement.dart' show achievementsForJourney;
 import '../domain/achievement_unlocks.dart';
 import 'achievement_catalog.dart';
 
@@ -52,7 +53,11 @@ class DriftAchievementRepository implements AchievementRepository {
     final intervals = _db.stepIntervalRecords;
 
     // Quest achievements: this quest's own history only — its thresholds
-    // (e.g. "journeys-end") are this specific route's own length.
+    // (e.g. "journeys-end") are this specific route's own length. The
+    // catalog itself is scoped to match (§14, 2026-09-05 — a second quest
+    // means a landmark threshold from one route is meaningless progress on
+    // another's own intervals).
+    final scopedCatalog = achievementsForJourney(achievementCatalog, journeyId);
     final journeyRows =
         await (_db.select(intervals)
               ..where(
@@ -70,7 +75,7 @@ class DriftAchievementRepository implements AchievementRepository {
     ];
     final journeyUnlocks = computeJourneyAchievementUnlockDates(
       orderedIntervals: journeyIntervals,
-      catalog: achievementCatalog,
+      catalog: scopedCatalog,
     );
 
     // Daily achievements: every step this owner has ever recorded, across

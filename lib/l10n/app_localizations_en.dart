@@ -227,6 +227,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get achievementJourneysEndTitle => 'Journey\'s End';
 
   @override
+  String get achievementLeftTheTowerTitle => 'Left the Tower';
+
+  @override
+  String get achievementCrossedThePinesTitle => 'Crossed the Singing Pines';
+
+  @override
+  String get achievementTowerHalfwayTitle => 'Halfway to the Skyfire';
+
+  @override
+  String get achievementReachedMountainGateTitle => 'Reached the Mountain Gate';
+
+  @override
+  String get achievementReachedSeaHorizonTitle => 'Reached the Sea Horizon';
+
+  @override
+  String get achievementReachedLanternHillTitle => 'Reached Lantern Hill';
+
+  @override
+  String get achievementUnderTheSkyfireTitle => 'Under the Skyfire';
+
+  @override
   String get achievementUnlockedLabel => 'Unlocked';
 
   @override

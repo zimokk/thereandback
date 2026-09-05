@@ -45,6 +45,10 @@ const Map<String, IconData> _dailyIllustrations = {
 /// Setting-neutral icons for the journey catalog — no Odyssey-specific
 /// lore reference, so a future non-Odyssey quest's achievements read fine
 /// under this same set (§14: the original fantasy world isn't named yet).
+/// This is also the set "The Road to the Skyfire" (`AppThemeId.classic`,
+/// §14 2026-09-05) actually uses, not just a fallback — its own
+/// `landmarkReached` entries (`left-the-tower` etc.) get real icons here,
+/// same as every classic-themed entry before them.
 const Map<String, IconData> _classicIllustrations = {
   'first-steps': Icons.directions_walk,
   'first-league': Icons.hiking,
@@ -59,6 +63,13 @@ const Map<String, IconData> _classicIllustrations = {
   'passed-scylla-charybdis': Icons.route,
   'passed-sirens': Icons.flag,
   'journeys-end': Icons.emoji_events,
+  'left-the-tower': Icons.exit_to_app,
+  'crossed-the-pines': Icons.forest,
+  'tower-halfway': Icons.flag_circle,
+  'reached-mountain-gate': Icons.filter_hdr,
+  'reached-sea-horizon': Icons.waves,
+  'reached-lantern-hill': Icons.nightlight_round,
+  'under-the-skyfire': Icons.emoji_events,
 };
 
 /// Odyssey-flavored icons — the `landmarkReached` entries reuse the exact
