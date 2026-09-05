@@ -82,12 +82,14 @@ doesn't change per locale. `timeNote` isn't translated either, same
 treatment `historicalNote` gets on odyssey-ithaca: an author's aside, never
 shown to the traveler as-is.
 
-Nothing in the app actually reads this file yet — narrative content isn't
-wired to any screen at all today (`journey_flame_scene_view.dart` shows a
-placeholder "coming soon" line, not `locations.json`'s own `narrative`
-field, for **any** quest, Odyssey included) — so this is prepared content
-ahead of that wiring, same status as odyssey-ithaca's still-open "translate
-the narrative to ru" item (CLAUDE.md §14).
+`journey_flame_scene_view.dart` reads this file's `narrative` overlay
+(`journey_narrative_providers.dart`'s `selectedJourneyNarrativeBeatsProvider`)
+whenever the app's language is `ru` — the Путь tab's narrative line shows
+this file's translated text for a landmark once the traveler (or the
+rewound scroll position) has reached it, falling back to the base
+`locations.json` text for any `en` viewer. odyssey-ithaca's own "translate
+the narrative to ru" item (CLAUDE.md §14) is unaffected by this — it just
+has no such overlay file yet, so it always shows its base English text.
 
 ## Known gap
 

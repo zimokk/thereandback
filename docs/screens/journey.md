@@ -16,7 +16,8 @@ Bottom tab 1 of 4 in this base (CLAUDE.md §6.1). Route: **`/journey`**
   - Distance travelled so far (`formatDistance`, §5.4), gold hero number +
     unit line beneath it
   - `pointA → pointB`
-  - A narrative placeholder line (see below)
+  - A narrative line — the reached landmark's `NarrativeBeat` text for a
+    quest that ships one, or the placeholder otherwise (see below)
   - A Flame `FlameGame` scene with camera-driven scroll, animated `You`
     catch-up, and the round `< catalog`/`You >` anchor buttons.
 
@@ -153,17 +154,34 @@ canvas inside `GameWidget`, not separate `find.byKey`-able Flutter widgets
 
 `pointA → pointB` and the distance number itself are **data, not copy** —
 not routed through l10n (the arrow is a typographic separator, per the same
-note in the source files).
+note in the source files). `NarrativeBeat` text (below) is the same kind of
+data — quest content, not UI copy — so it is never routed through l10n
+either; per-language text comes from `locations.<lang>.json` overlays
+instead (§14, `journey-content` skill).
 
-## Narrative placeholder — not a shortcut around real content
+## Narrative line
+
+`journey_narrative_providers.dart`'s `selectedJourneyNarrativeBeatsProvider`
+loads `assets/journeys/{id}/locations.json`'s `landmarks[].narrative` into
+`NarrativeBeat`s (`features/journey/domain/narrative_beat.dart`), and
+`narrativeBeatFor(beats, panMeters)` picks the most recent one at or before
+the scrolled-to position — the same "rewind re-derives everything from the
+scroll position" idiom `fictional_time.dart`'s `fictionalHourFor` already
+uses for the sky, so rewinding the scene shows the narrative for wherever
+the view is looking, not real progress.
 
 `journeyNarrativeComingSoon` ("Narrative for this stretch of the road is
-still being written.") is a UI **empty state**, distinct from real
-`NarrativeBeat` content. CLAUDE.md §11 is explicit that quest narrative is
-human-authored content that belongs with the journey (`journey-content`
-skill), never generated — so this base does not fabricate Homer-flavored
-copy. Phase 11 wires real narrative beats in; this line disappears once a
-beat exists for the visible position.
+still being written.") remains the fallback for three cases: a quest with
+no `locations.json` at all, a position before the very first landmark
+(nothing reached yet to narrate), and — CLAUDE.md §11's human-authored-only
+rule — any quest whose narrative genuinely hasn't been written yet, since
+this base never fabricates copy to fill the gap. Both catalog quests
+(odyssey-ithaca, tower-of-lights) ship real narrative for every landmark
+today, so in practice the placeholder only shows before the first beat.
+tower-of-lights additionally ships a `ru` translation overlay
+(`locations.ru.json`) that the provider swaps in when `appLocaleProvider`
+is `ru`; odyssey-ithaca has none yet (CLAUDE.md §14's still-open item), so
+it always shows its base English text regardless of app language.
 
 ## Empty / permission states
 
