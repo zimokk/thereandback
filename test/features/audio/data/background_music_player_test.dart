@@ -79,4 +79,85 @@ void main() {
       verify(() => audioPlayer.play(any())).called(2);
     },
   );
+
+  test(
+    'selectTrack() before start() only changes what start() will play — '
+    'no playback call happens yet',
+    () async {
+      await player.selectTrack('journeys/tower-of-lights/theme.mp3');
+
+      verifyNever(() => audioPlayer.play(any()));
+
+      await player.start();
+      verify(
+        () => audioPlayer.play(
+          any(
+            that: isA<AssetSource>().having(
+              (s) => s.path,
+              'path',
+              'journeys/tower-of-lights/theme.mp3',
+            ),
+          ),
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'selectTrack() while already playing restarts on the new asset',
+    () async {
+      await player.start();
+      verify(() => audioPlayer.play(any())).called(1);
+
+      await player.selectTrack('journeys/tower-of-lights/theme.mp3');
+
+      verify(() => audioPlayer.stop()).called(1);
+      verify(
+        () => audioPlayer.play(
+          any(
+            that: isA<AssetSource>().having(
+              (s) => s.path,
+              'path',
+              'journeys/tower-of-lights/theme.mp3',
+            ),
+          ),
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'selectTrack(null) resets to the default asset',
+    () async {
+      await player.selectTrack('journeys/tower-of-lights/theme.mp3');
+      await player.start();
+
+      await player.selectTrack(null);
+
+      verify(
+        () => audioPlayer.play(
+          any(
+            that: isA<AssetSource>().having(
+              (s) => s.path,
+              'path',
+              'media/journey_theme.wav',
+            ),
+          ),
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'selectTrack() with the already-selected track is a no-op',
+    () async {
+      await player.start();
+      verify(() => audioPlayer.play(any())).called(1);
+
+      await player.selectTrack(null);
+
+      verifyNever(() => audioPlayer.stop());
+      verify(() => audioPlayer.play(any())).called(1);
+    },
+  );
 }

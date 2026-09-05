@@ -7,7 +7,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../app/app_lifecycle.dart';
 import '../../../app/user_preference_repository_provider.dart';
 import '../../../core/local_owner.dart';
+import '../../journey/presentation/journey_providers.dart';
 import '../data/background_music_player.dart';
+import '../domain/journey_theme_track.dart';
 
 part 'background_music_provider.g.dart';
 
@@ -22,10 +24,16 @@ BackgroundMusicPlayer backgroundMusicPlayer(Ref ref) {
   return player;
 }
 
-/// Whether the app's one background track (§6.5) is on. **Off by
-/// default** — this task's own requirement — turning it on in Настройки
-/// starts the track immediately (Настройки is only reachable while the app
-/// is in the foreground, so there's no lifecycle gate to check first).
+/// Whether background music (§6.5) is on. **Off by default** — this task's
+/// own requirement — turning it on in Настройки starts the track
+/// immediately (Настройки is only reachable while the app is in the
+/// foreground, so there's no lifecycle gate to check first).
+///
+/// Which track plays isn't fixed — a quest with its own theme
+/// (`journey_theme_track.dart`) overrides the app's shared default while
+/// it's the selected quest (§14 "background music" — Tower of Lights'
+/// own), switching live if the toggle is already on when the player
+/// switches quests, same as the shared default for every other quest.
 ///
 /// While on, this also follows [appLifecycleProvider]: the track pauses the
 /// instant the app leaves the foreground and resumes the instant it
@@ -53,6 +61,22 @@ class BackgroundMusicController extends _$BackgroundMusicController {
     // be captured in this synchronous scope and closed over instead.
     final player = ref.read(backgroundMusicPlayerProvider);
     ref.listen<AppLifecycleState>(appLifecycleProvider, _onLifecycleChanged);
+    // The active quest's own track (`journey_theme_track.dart`) takes over
+    // whenever the selected quest changes — including the very first read
+    // below, so a quest already selected before this controller ever
+    // builds (e.g. restart mid-quest) picks the right track from the
+    // start, not just on the next switch.
+    ref.listen(selectedJourneyDetailsProvider, (previous, next) {
+      if (previous?.id == next?.id) return;
+      unawaited(player.selectTrack(journeyThemeTrackAssetPath(next?.id)));
+    });
+    unawaited(
+      player.selectTrack(
+        journeyThemeTrackAssetPath(
+          ref.read(selectedJourneyDetailsProvider)?.id,
+        ),
+      ),
+    );
     ref.onDispose(() {
       unawaited(player.stop());
     });
