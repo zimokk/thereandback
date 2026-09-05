@@ -100,9 +100,10 @@ Unlike `assets/media/journey_theme.wav` (the app's shared default —
 `journeyThemeTrackAssetPath` maps this journey's id to it,
 `BackgroundMusicPlayer.selectTrack` switches to it (live, if the toggle
 is already on) the moment the quest becomes selected, and back to the
-shared default the moment it stops being selected. Lives here rather
-than in `assets/media/` for the same reason `map.webp`/`locations.json`
-do: it's this quest's own content (§4), not an app-wide asset.
+shared default — or `odyssey-ithaca`'s own track, see its README — the
+moment it stops being selected. Lives here rather than in `assets/media/`
+for the same reason `map.webp`/`locations.json` do: it's this quest's own
+content (§4), not an app-wide asset.
 
 **Provenance:** supplied by the repository owner as their own original
 studio recording, not commissioned or independently verified by this

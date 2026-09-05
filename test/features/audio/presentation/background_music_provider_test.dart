@@ -278,11 +278,28 @@ void main() {
     );
 
     test(
-      'a quest with no track of its own falls back to the shared default',
+      'odyssey-ithaca also picks its own track, not just tower-of-lights',
       () async {
         container
             .read(selectedJourneyProvider.notifier)
             .start('odyssey-ithaca', now: DateTime(2026, 3, 10));
+
+        container.read(backgroundMusicControllerProvider);
+        await pumpEventQueue();
+
+        verify(
+          () => player.selectTrack('journeys/odyssey-ithaca/theme.mp3'),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a quest id that resolves to no catalog entry falls back to the '
+      'shared default (selectedJourneyDetailsProvider itself returns null)',
+      () async {
+        container
+            .read(selectedJourneyProvider.notifier)
+            .start('some-future-quest', now: DateTime(2026, 3, 10));
 
         container.read(backgroundMusicControllerProvider);
         await pumpEventQueue();

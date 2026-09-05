@@ -9,8 +9,14 @@ void main() {
     );
   });
 
+  test('odyssey-ithaca has its own track', () {
+    expect(
+      journeyThemeTrackAssetPath('odyssey-ithaca'),
+      'journeys/odyssey-ithaca/theme.mp3',
+    );
+  });
+
   test('a quest with no authored track returns null', () {
-    expect(journeyThemeTrackAssetPath('odyssey-ithaca'), isNull);
     expect(journeyThemeTrackAssetPath('some-future-quest'), isNull);
   });
 

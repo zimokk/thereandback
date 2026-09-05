@@ -31,9 +31,10 @@ BackgroundMusicPlayer backgroundMusicPlayer(Ref ref) {
 ///
 /// Which track plays isn't fixed — a quest with its own theme
 /// (`journey_theme_track.dart`) overrides the app's shared default while
-/// it's the selected quest (§14 "background music" — Tower of Lights'
-/// own), switching live if the toggle is already on when the player
-/// switches quests, same as the shared default for every other quest.
+/// it's the selected quest (§14 "background music" — both catalog quests
+/// have their own today), switching live if the toggle is already on when
+/// the player switches quests, same as the shared default for every other
+/// (future, track-less) quest.
 ///
 /// While on, this also follows [appLifecycleProvider]: the track pauses the
 /// instant the app leaves the foreground and resumes the instant it
