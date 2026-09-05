@@ -21,10 +21,10 @@ and `map.webp` next to it, overwriting both.
 How it works
 ------------
 1. A handful of hand-placed anchor points define a Catmull-Rom spline
-   across the image — purely a visual composition (§9's palette/style,
-   applied here as a dashed gold line over a flat dark background with
-   faint bands hinting at the 8 biomes). The anchors' *index* order has
-   nothing to do with route meters.
+   across the image — purely a visual composition, a winding multi-loop
+   route covering the whole canvas (2026-09-05: redrawn from the earlier
+   single diagonal sweep to a more meandering "adventure map" shape). The
+   anchors' *index* order has nothing to do with route meters.
 2. The spline is sampled densely and its real pixel arc length computed,
    giving an exact meters-to-point mapping (`point_at_meters`) — arc-length
    parametrized, so the traveler moves at constant visual speed along the
@@ -38,13 +38,19 @@ How it works
    evenly-spaced filler points between each consecutive pair for a
    smoother-looking line — not the full dense sample set, which would be
    thousands of vertices for no visible benefit.
+5. `map.webp` itself is a plain flat black rectangle (2026-09-05, by
+   request) — no drawn line, bands, or landmark dots baked into the image
+   any more. The spline above still exists purely to place `map.json`'s
+   polyline and landmark hotspots; the app's own `Карта` tab draws the
+   route line and markers over this image at runtime from that data
+   (CLAUDE.md §6.2), same as it would over a real illustration.
 """
 
 import json
 import math
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image
 
 HERE = Path(__file__).resolve().parent
 LOCATIONS_PATH = HERE / "locations.json"
@@ -55,42 +61,29 @@ JOURNEY_ID = "tower-of-lights"
 IMAGE_WIDTH, IMAGE_HEIGHT = 1024, 1536  # 2:3 portrait, matches §9.1/§6.2.
 
 # Control anchors for the Catmull-Rom spline, in normalized (0..1) image
-# space — a winding route from the Bellglass Tower (bottom) up to the
-# Lantern Fields (top). Purely a visual composition (index-uniform
-# parametrization): meters are assigned afterwards from real arc length,
-# not from anchor index, so these don't need to line up with segment
-# boundaries.
+# space — a winding, multi-loop route from the Bellglass Tower (top-left)
+# down to the Lantern Fields (bottom-right), covering the full canvas in a
+# series of switchbacks rather than one direct diagonal sweep (2026-09-05
+# redraw). Purely a visual composition (index-uniform parametrization):
+# meters are assigned afterwards from real arc length, not from anchor
+# index, so these don't need to line up with segment boundaries.
 ANCHORS = [
-    (0.52, 0.90),  # The Bellglass Tower / The Open Door
-    (0.70, 0.80),
-    (0.62, 0.68),
-    (0.76, 0.60),
-    (0.66, 0.50),  # The Golden Fields / River of Mills area
-    (0.50, 0.44),
-    (0.62, 0.34),  # The Blue Mountains zigzag
-    (0.44, 0.26),  # The Salt Coast
-    (0.30, 0.14),
-    (0.20, 0.05),  # Under the Skyfire
+    (0.15, 0.07),  # The Bellglass Tower / The Open Door
+    (0.60, 0.12),
+    (0.72, 0.28),
+    (0.50, 0.38),  # The Singing Pines
+    (0.20, 0.48),
+    (0.48, 0.55),  # The Golden Fields / River of Mills area
+    (0.72, 0.62),
+    (0.55, 0.75),  # The Blue Mountains
+    (0.18, 0.82),  # The Salt Coast
+    (0.35, 0.92),
+    (0.78, 0.95),  # Under the Skyfire
 ]
 
 SAMPLES_PER_SEGMENT = 500
 
-BACKGROUND = (11, 10, 9)
-GOLD = (224, 174, 63)
-GOLD_DIM = (150, 116, 42)
-# Faint region bands hinting at the 8 biomes, without gradients inside any
-# one shape (§9 — flat fills only) — alternating very subtle tints, spanning
-# the whole canvas rather than following the winding path itself.
-BAND_COLORS = [
-    (18, 16, 13),
-    (14, 18, 15),
-    (19, 18, 12),
-    (13, 17, 19),
-    (16, 14, 17),
-    (12, 15, 19),
-    (19, 16, 12),
-    (13, 13, 20),
-]
+BLACK = (0, 0, 0)
 
 
 def _catmull_rom(p0, p1, p2, p3, t):
@@ -179,48 +172,13 @@ def _build_path_vertices(landmark_meters, total_meters, point_at):
     return path
 
 
-def _render_image(dense, map_landmarks, path):
-    img = Image.new("RGB", (IMAGE_WIDTH, IMAGE_HEIGHT), BACKGROUND)
-    draw = ImageDraw.Draw(img)
-
-    band_count = len(BAND_COLORS)
-    for i, color in enumerate(BAND_COLORS):
-        y0 = int(IMAGE_HEIGHT * i / band_count)
-        y1 = int(IMAGE_HEIGHT * (i + 1) / band_count)
-        draw.rectangle([0, y0, IMAGE_WIDTH, y1], fill=color)
-
-    # Dashed route line, drawn from the dense spline samples.
-    px_dense = [(x * IMAGE_WIDTH, y * IMAGE_HEIGHT) for x, y in dense]
-    dash_on, dash_off = 10, 7
-    accumulated = 0.0
-    drawing = True
-    last = px_dense[0]
-    for point in px_dense[1:]:
-        seg_len = math.hypot(point[0] - last[0], point[1] - last[1])
-        if drawing:
-            draw.line([last, point], fill=GOLD, width=3)
-        accumulated += seg_len
-        limit = dash_on if drawing else dash_off
-        if accumulated >= limit:
-            accumulated = 0.0
-            drawing = not drawing
-        last = point
-
-    for landmark in map_landmarks:
-        x, y = landmark["x"] * IMAGE_WIDTH, landmark["y"] * IMAGE_HEIGHT
-        r = 4
-        draw.ellipse([x - r, y - r, x + r, y + r], fill=GOLD_DIM, outline=GOLD)
-
-    # Endpoint markers: point A (square) and point B (ringed dot).
-    ax, ay = path[0]["x"] * IMAGE_WIDTH, path[0]["y"] * IMAGE_HEIGHT
-    bx, by = path[-1]["x"] * IMAGE_WIDTH, path[-1]["y"] * IMAGE_HEIGHT
-    s = 9
-    draw.rectangle([ax - s, ay - s, ax + s, ay + s], outline=GOLD, width=2)
-    r = 12
-    draw.ellipse([bx - r, by - r, bx + r, by + r], outline=GOLD, width=2)
-    r2 = 5
-    draw.ellipse([bx - r2, by - r2, bx + r2, by + r2], fill=GOLD)
-
+def _render_image():
+    """Plain flat black rectangle (2026-09-05, by request) — no route line,
+    bands, or landmark dots baked in. `map.json`'s polyline/landmarks (built
+    from the same spline via `point_at_meters`) are what the app itself
+    draws over this at runtime (CLAUDE.md §6.2), same as it would over a
+    real illustration."""
+    img = Image.new("RGB", (IMAGE_WIDTH, IMAGE_HEIGHT), BLACK)
     img.save(MAP_WEBP_PATH, "WEBP", quality=90)
 
 
@@ -285,7 +243,7 @@ def main():
     }
 
     MAP_JSON_PATH.write_text(json.dumps(map_json, indent=2) + "\n")
-    _render_image(dense, map_landmarks, path)
+    _render_image()
 
     print(f"wrote {MAP_JSON_PATH.name} ({len(path)} vertices) and {MAP_WEBP_PATH.name}")
 
