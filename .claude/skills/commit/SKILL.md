@@ -45,7 +45,6 @@ Skip only the steps that cannot apply — e.g. before Phase 0 there is no Flutte
 - `.env`, any secret, any Firebase service-account key (`.gitignore` covers `.env*`, keep it that way).
 - Generated files edited by hand — `*.g.dart`, `*.freezed.dart` are generated, never hand-patched (§11).
 - Real health data, coordinates, user identifiers in fixtures or test data (§13).
-- Content from copyrighted universes (Tolkien, Rowling, …) — including in tests and examples (§1.1, §13).
 
 ## 4. Message format
 
