@@ -11,6 +11,7 @@ import 'package:thereandback/data/drift/database.dart';
 import 'package:thereandback/features/achievements/data/achievement_catalog.dart';
 import 'package:thereandback/features/achievements/presentation/achievement_titles.dart';
 import 'package:thereandback/features/journey/presentation/journey_flame_scene_view.dart';
+import 'package:thereandback/features/journey/presentation/journey_narrative_providers.dart';
 import 'package:thereandback/features/journey/presentation/journey_providers.dart';
 import 'package:thereandback/features/journey/presentation/journey_timing_providers.dart';
 import 'package:thereandback/features/journey/presentation/sky_gradient.dart';
@@ -51,6 +52,20 @@ const _timingJson = '''
       "departureHour": 6,
       "durationDays": 1
     }
+  ]
+}
+''';
+
+/// Two narrative beats, standing in for `locations.json`'s `landmarks[]`
+/// (§5, §6.1) — enough to prove the narrative line under the scene follows
+/// the scrolled-to position, without depending on the shipped file's exact
+/// 120-landmark shape (that content is verified separately, against the
+/// real files, by `journey_narrative_repository_test.dart`).
+const _narrativeJson = '''
+{
+  "landmarks": [
+    {"id": "l1", "meters": 1000, "narrative": "Test narrative one."},
+    {"id": "l2", "meters": 5000, "narrative": "Test narrative two."}
   ]
 }
 ''';
@@ -329,5 +344,124 @@ void main() {
         expect(sky.fictionalHour, 6);
       },
     );
+
+    group('the narrative line under the scene (§5, §6.1 — wired to '
+        'locations.json, replacing the "coming soon" placeholder)', () {
+      testWidgets(
+        'shows the coming-soon placeholder before any beat is reached',
+        (tester) async {
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+                journeyNarrativeBundleProvider.overrideWithValue(
+                  _FakeTimingBundle({
+                    'assets/journeys/odyssey-ithaca/locations.json':
+                        _narrativeJson,
+                  }),
+                ),
+              ],
+              child: _app(const JourneyFlameSceneView()),
+            ),
+          );
+
+          final container = ProviderScope.containerOf(
+            tester.element(find.byType(JourneyFlameSceneView)),
+          );
+          container
+              .read(selectedJourneyProvider.notifier)
+              .start('odyssey-ithaca', now: DateTime.now());
+          await _pumpFrames(tester);
+
+          final l10n = AppLocalizations.of(
+            tester.element(find.byType(JourneyFlameSceneView)),
+          )!;
+          expect(find.text(l10n.journeyNarrativeComingSoon), findsOneWidget);
+          expect(find.text('Test narrative one.'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'shows the reached beat\'s text, and swaps to the next one once '
+        'progress passes it',
+        (tester) async {
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+                journeyNarrativeBundleProvider.overrideWithValue(
+                  _FakeTimingBundle({
+                    'assets/journeys/odyssey-ithaca/locations.json':
+                        _narrativeJson,
+                  }),
+                ),
+              ],
+              child: _app(const JourneyFlameSceneView()),
+            ),
+          );
+
+          final container = ProviderScope.containerOf(
+            tester.element(find.byType(JourneyFlameSceneView)),
+          );
+          final notifier = container.read(selectedJourneyProvider.notifier);
+          notifier.start('odyssey-ithaca', now: DateTime.now());
+          notifier.applySyncedProgress(
+            progressMeters: 1000,
+            syncedAt: DateTime.now(),
+          );
+          await _pumpFrames(tester);
+          expect(find.text('Test narrative one.'), findsOneWidget);
+
+          notifier.applySyncedProgress(
+            progressMeters: 5000,
+            syncedAt: DateTime.now(),
+          );
+          await _pumpFrames(tester);
+          expect(find.text('Test narrative two.'), findsOneWidget);
+          expect(find.text('Test narrative one.'), findsNothing);
+        },
+      );
+
+      testWidgets('rewinding the scroll shows the narrative for the rewound '
+          'position, not real progress', (tester) async {
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+              journeyNarrativeBundleProvider.overrideWithValue(
+                _FakeTimingBundle({
+                  'assets/journeys/odyssey-ithaca/locations.json':
+                      _narrativeJson,
+                }),
+              ),
+            ],
+            child: _app(const JourneyFlameSceneView()),
+          ),
+        );
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(JourneyFlameSceneView)),
+        );
+        final notifier = container.read(selectedJourneyProvider.notifier);
+        notifier.start('odyssey-ithaca', now: DateTime.now());
+        notifier.applySyncedProgress(
+          progressMeters: 5000,
+          syncedAt: DateTime.now(),
+        );
+        await _pumpFrames(tester);
+        expect(find.text('Test narrative two.'), findsOneWidget);
+
+        // 5000 m at 20 000 m/screen-width -> 200 px, same conversion the
+        // earlier rewind tests above use — drags all the way back to 0 m.
+        await tester.drag(_scene, const Offset(200, 0));
+        await _pumpFrames(tester);
+
+        final l10n = AppLocalizations.of(
+          tester.element(find.byType(JourneyFlameSceneView)),
+        )!;
+        expect(find.text(l10n.journeyNarrativeComingSoon), findsOneWidget);
+        expect(find.text('Test narrative two.'), findsNothing);
+      });
+    });
   });
 }
