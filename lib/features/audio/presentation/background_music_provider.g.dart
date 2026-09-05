@@ -70,10 +70,17 @@ final class BackgroundMusicPlayerProvider
 String _$backgroundMusicPlayerHash() =>
     r'882399b04d01320a46f6e0ef39dc50a7c392a6bd';
 
-/// Whether the app's one background track (§6.5) is on. **Off by
-/// default** — this task's own requirement — turning it on in Настройки
-/// starts the track immediately (Настройки is only reachable while the app
-/// is in the foreground, so there's no lifecycle gate to check first).
+/// Whether background music (§6.5) is on. **Off by default** — this task's
+/// own requirement — turning it on in Настройки starts the track
+/// immediately (Настройки is only reachable while the app is in the
+/// foreground, so there's no lifecycle gate to check first).
+///
+/// Which track plays isn't fixed — a quest with its own theme
+/// (`journey_theme_track.dart`) overrides the app's shared default while
+/// it's the selected quest (§14 "background music" — both catalog quests
+/// have their own today), switching live if the toggle is already on when
+/// the player switches quests, same as the shared default for every other
+/// (future, track-less) quest.
 ///
 /// While on, this also follows [appLifecycleProvider]: the track pauses the
 /// instant the app leaves the foreground and resumes the instant it
@@ -95,10 +102,17 @@ String _$backgroundMusicPlayerHash() =>
 @ProviderFor(BackgroundMusicController)
 final backgroundMusicControllerProvider = BackgroundMusicControllerProvider._();
 
-/// Whether the app's one background track (§6.5) is on. **Off by
-/// default** — this task's own requirement — turning it on in Настройки
-/// starts the track immediately (Настройки is only reachable while the app
-/// is in the foreground, so there's no lifecycle gate to check first).
+/// Whether background music (§6.5) is on. **Off by default** — this task's
+/// own requirement — turning it on in Настройки starts the track
+/// immediately (Настройки is only reachable while the app is in the
+/// foreground, so there's no lifecycle gate to check first).
+///
+/// Which track plays isn't fixed — a quest with its own theme
+/// (`journey_theme_track.dart`) overrides the app's shared default while
+/// it's the selected quest (§14 "background music" — both catalog quests
+/// have their own today), switching live if the toggle is already on when
+/// the player switches quests, same as the shared default for every other
+/// (future, track-less) quest.
 ///
 /// While on, this also follows [appLifecycleProvider]: the track pauses the
 /// instant the app leaves the foreground and resumes the instant it
@@ -118,10 +132,17 @@ final backgroundMusicControllerProvider = BackgroundMusicControllerProvider._();
 /// started).
 final class BackgroundMusicControllerProvider
     extends $NotifierProvider<BackgroundMusicController, bool> {
-  /// Whether the app's one background track (§6.5) is on. **Off by
-  /// default** — this task's own requirement — turning it on in Настройки
-  /// starts the track immediately (Настройки is only reachable while the app
-  /// is in the foreground, so there's no lifecycle gate to check first).
+  /// Whether background music (§6.5) is on. **Off by default** — this task's
+  /// own requirement — turning it on in Настройки starts the track
+  /// immediately (Настройки is only reachable while the app is in the
+  /// foreground, so there's no lifecycle gate to check first).
+  ///
+  /// Which track plays isn't fixed — a quest with its own theme
+  /// (`journey_theme_track.dart`) overrides the app's shared default while
+  /// it's the selected quest (§14 "background music" — both catalog quests
+  /// have their own today), switching live if the toggle is already on when
+  /// the player switches quests, same as the shared default for every other
+  /// (future, track-less) quest.
   ///
   /// While on, this also follows [appLifecycleProvider]: the track pauses the
   /// instant the app leaves the foreground and resumes the instant it
@@ -167,12 +188,19 @@ final class BackgroundMusicControllerProvider
 }
 
 String _$backgroundMusicControllerHash() =>
-    r'bf7db0151523f7fd0047586e24aaf23c58135e97';
+    r'2b77566cb4716228545e91a7823d4781fcc2f8f5';
 
-/// Whether the app's one background track (§6.5) is on. **Off by
-/// default** — this task's own requirement — turning it on in Настройки
-/// starts the track immediately (Настройки is only reachable while the app
-/// is in the foreground, so there's no lifecycle gate to check first).
+/// Whether background music (§6.5) is on. **Off by default** — this task's
+/// own requirement — turning it on in Настройки starts the track
+/// immediately (Настройки is only reachable while the app is in the
+/// foreground, so there's no lifecycle gate to check first).
+///
+/// Which track plays isn't fixed — a quest with its own theme
+/// (`journey_theme_track.dart`) overrides the app's shared default while
+/// it's the selected quest (§14 "background music" — both catalog quests
+/// have their own today), switching live if the toggle is already on when
+/// the player switches quests, same as the shared default for every other
+/// (future, track-less) quest.
 ///
 /// While on, this also follows [appLifecycleProvider]: the track pauses the
 /// instant the app leaves the foreground and resumes the instant it

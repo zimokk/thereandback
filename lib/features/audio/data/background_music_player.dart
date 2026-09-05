@@ -18,7 +18,11 @@ class BackgroundMusicPlayer {
   /// `assets/journeys/{id}/` (§4) since it isn't quest content, this task's
   /// own instruction. See `assets/media/README.md` for the file's status
   /// (placeholder track, not final art).
-  static const _trackAssetPath = 'media/journey_theme.wav';
+  static const _defaultTrackAssetPath = 'media/journey_theme.wav';
+
+  /// Which asset [start] plays — the default above until [selectTrack]
+  /// picks a quest's own track (`journey_theme_track.dart`).
+  String _trackAssetPath = _defaultTrackAssetPath;
 
   /// Whether [start] has run without a matching [stop] — not the same as
   /// "audio is audibly playing right now" (a paused session still counts):
@@ -35,6 +39,25 @@ class BackgroundMusicPlayer {
     await _player.setReleaseMode(ReleaseMode.loop);
     await _player.play(AssetSource(_trackAssetPath));
     _started = true;
+  }
+
+  /// Picks which asset [start] plays next — the active quest's own track
+  /// when it has one (`journey_theme_track.dart`'s
+  /// `journeyThemeTrackAssetPath`), [_defaultTrackAssetPath] for `null`
+  /// (no quest, or a quest that authors none). A no-op if this is already
+  /// the selected track. If playback is already underway, restarts it on
+  /// the new asset immediately — same loop mode, just a different source —
+  /// rather than waiting for the next off→on toggle; that's the only way a
+  /// quest switch while the toggle is already on ever reaches the
+  /// listener's ears.
+  Future<void> selectTrack(String? trackAssetPath) async {
+    final next = trackAssetPath ?? _defaultTrackAssetPath;
+    if (next == _trackAssetPath) return;
+    _trackAssetPath = next;
+    if (!_started) return;
+    await _player.stop();
+    await _player.setReleaseMode(ReleaseMode.loop);
+    await _player.play(AssetSource(_trackAssetPath));
   }
 
   /// Stops and releases playback outright — the on→off transition (the

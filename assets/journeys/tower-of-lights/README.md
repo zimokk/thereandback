@@ -7,6 +7,7 @@
 | `map.json` | Route overlay for the drawn map: polyline + landmark hotspots (§6.2) | yes |
 | `map.webp` | The map illustration — **placeholder, plain black**, see below (§9.1) | yes — 1024 × 1536, ~3 KB |
 | `generate_map.py` | The script that generates `map.json` + `map.webp` (see below) | yes |
+| `theme.mp3` | This quest's own background-music track (§6.5, §14 "background music") | yes — see below |
 
 ## `map.webp` — what the file actually is
 
@@ -90,6 +91,32 @@ rewound scroll position) has reached it, falling back to the base
 `locations.json` text for any `en` viewer. odyssey-ithaca's own "translate
 the narrative to ru" item (CLAUDE.md §14) is unaffected by this — it just
 has no such overlay file yet, so it always shows its base English text.
+
+## `theme.mp3` — this quest's own track
+
+Unlike `assets/media/journey_theme.wav` (the app's shared default —
+§6.5, `assets/media/README.md`), this file only plays while
+`tower-of-lights` is the selected quest — `journey_theme_track.dart`'s
+`journeyThemeTrackAssetPath` maps this journey's id to it,
+`BackgroundMusicPlayer.selectTrack` switches to it (live, if the toggle
+is already on) the moment the quest becomes selected, and back to the
+shared default — or `odyssey-ithaca`'s own track, see its README — the
+moment it stops being selected. Lives here rather than in `assets/media/`
+for the same reason `map.webp`/`locations.json` do: it's this quest's own
+content (§4), not an app-wide asset.
+
+**Provenance:** supplied by the repository owner as their own original
+studio recording, not commissioned or independently verified by this
+tooling — the same posture `assets/media/README.md` already asks for
+("check the track is actually cleared for use... before committing it")
+applies here too; if that representation ever turns out to be wrong,
+replacing this file is the same drop-in swap described for `map.webp`
+above (keep the filename, or update the path in
+`journey_theme_track.dart`).
+
+It loops (`ReleaseMode.loop`, same as the shared default) — a source
+that doesn't already start/end cleanly will click at the seam every
+loop.
 
 ## Known gap
 

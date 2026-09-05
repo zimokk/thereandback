@@ -7,6 +7,7 @@ import 'package:thereandback/app/database_provider.dart';
 import 'package:thereandback/data/drift/database.dart';
 import 'package:thereandback/features/audio/data/background_music_player.dart';
 import 'package:thereandback/features/audio/presentation/background_music_provider.dart';
+import 'package:thereandback/features/journey/presentation/journey_providers.dart';
 
 class _MockPlayer extends Mock implements BackgroundMusicPlayer {}
 
@@ -40,6 +41,7 @@ void main() {
     when(() => player.stop()).thenAnswer((_) async {});
     when(() => player.pause()).thenAnswer((_) async {});
     when(() => player.resume()).thenAnswer((_) async {});
+    when(() => player.selectTrack(any())).thenAnswer((_) async {});
 
     // `testing` skill: never a real (file-backed) drift database in a
     // test — `BackgroundMusicController.build()` now reads
@@ -166,6 +168,7 @@ void main() {
     when(() => restartedPlayer.stop()).thenAnswer((_) async {});
     when(() => restartedPlayer.pause()).thenAnswer((_) async {});
     when(() => restartedPlayer.resume()).thenAnswer((_) async {});
+    when(() => restartedPlayer.selectTrack(any())).thenAnswer((_) async {});
     final restartedContainer = ProviderContainer(
       overrides: [
         backgroundMusicPlayerProvider.overrideWithValue(restartedPlayer),
@@ -207,6 +210,7 @@ void main() {
     final restartedPlayer = _MockPlayer();
     when(() => restartedPlayer.start()).thenAnswer((_) async {});
     when(() => restartedPlayer.stop()).thenAnswer((_) async {});
+    when(() => restartedPlayer.selectTrack(any())).thenAnswer((_) async {});
     final restartedContainer = ProviderContainer(
       overrides: [
         backgroundMusicPlayerProvider.overrideWithValue(restartedPlayer),
@@ -223,5 +227,77 @@ void main() {
 
     expect(restartedContainer.read(backgroundMusicControllerProvider), isFalse);
     verifyNever(() => restartedPlayer.start());
+  });
+
+  group('per-quest track (`journey_theme_track.dart`)', () {
+    test(
+      'no quest selected — selectTrack(null) at build, the shared default',
+      () async {
+        container.read(backgroundMusicControllerProvider);
+        await pumpEventQueue();
+
+        verify(() => player.selectTrack(null)).called(1);
+      },
+    );
+
+    test('a quest already selected before this controller ever builds picks '
+        'its own track immediately, not only on the next switch', () async {
+      container
+          .read(selectedJourneyProvider.notifier)
+          .start('tower-of-lights', now: DateTime(2026, 3, 10));
+
+      container.read(backgroundMusicControllerProvider);
+      await pumpEventQueue();
+
+      verify(() => player.selectTrack('journeys/tower-of-lights/theme.mp3'))
+          .called(1);
+    });
+
+    test('switching the active quest while the controller is alive switches '
+        'the track live, on or off', () async {
+      container.read(backgroundMusicControllerProvider);
+      await pumpEventQueue();
+      clearInteractions(player);
+      when(() => player.selectTrack(any())).thenAnswer((_) async {});
+
+      container
+          .read(selectedJourneyProvider.notifier)
+          .start('tower-of-lights', now: DateTime(2026, 3, 10));
+      await pumpEventQueue();
+
+      verify(() => player.selectTrack('journeys/tower-of-lights/theme.mp3'))
+          .called(1);
+    });
+
+    test(
+      'odyssey-ithaca also picks its own track, not just tower-of-lights',
+      () async {
+        container
+            .read(selectedJourneyProvider.notifier)
+            .start('odyssey-ithaca', now: DateTime(2026, 3, 10));
+
+        container.read(backgroundMusicControllerProvider);
+        await pumpEventQueue();
+
+        verify(() => player.selectTrack('journeys/odyssey-ithaca/theme.mp3'))
+            .called(1);
+      },
+    );
+
+    test(
+      'a journeyId with no entry in journeyThemeTrackAssetPath falls back '
+      'to the shared default — including one absent from the catalog '
+      'entirely, since this no longer goes through selectedJourneyDetails',
+      () async {
+        container
+            .read(selectedJourneyProvider.notifier)
+            .start('some-future-quest', now: DateTime(2026, 3, 10));
+
+        container.read(backgroundMusicControllerProvider);
+        await pumpEventQueue();
+
+        verify(() => player.selectTrack(null)).called(1);
+      },
+    );
   });
 }

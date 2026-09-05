@@ -7,7 +7,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../app/app_lifecycle.dart';
 import '../../../app/user_preference_repository_provider.dart';
 import '../../../core/local_owner.dart';
+import '../../journey/domain/quest_selection.dart';
+import '../../journey/presentation/journey_providers.dart';
 import '../data/background_music_player.dart';
+import '../domain/journey_theme_track.dart';
 
 part 'background_music_provider.g.dart';
 
@@ -22,10 +25,17 @@ BackgroundMusicPlayer backgroundMusicPlayer(Ref ref) {
   return player;
 }
 
-/// Whether the app's one background track (§6.5) is on. **Off by
-/// default** — this task's own requirement — turning it on in Настройки
-/// starts the track immediately (Настройки is only reachable while the app
-/// is in the foreground, so there's no lifecycle gate to check first).
+/// Whether background music (§6.5) is on. **Off by default** — this task's
+/// own requirement — turning it on in Настройки starts the track
+/// immediately (Настройки is only reachable while the app is in the
+/// foreground, so there's no lifecycle gate to check first).
+///
+/// Which track plays isn't fixed — a quest with its own theme
+/// (`journey_theme_track.dart`) overrides the app's shared default while
+/// it's the selected quest (§14 "background music" — both catalog quests
+/// have their own today), switching live if the toggle is already on when
+/// the player switches quests, same as the shared default for every other
+/// (future, track-less) quest.
 ///
 /// While on, this also follows [appLifecycleProvider]: the track pauses the
 /// instant the app leaves the foreground and resumes the instant it
@@ -53,6 +63,43 @@ class BackgroundMusicController extends _$BackgroundMusicController {
     // be captured in this synchronous scope and closed over instead.
     final player = ref.read(backgroundMusicPlayerProvider);
     ref.listen<AppLifecycleState>(appLifecycleProvider, _onLifecycleChanged);
+    // The active quest's own track (`journey_theme_track.dart`) takes over
+    // whenever the selected quest changes — including the very first read
+    // below, so a quest already selected before this controller ever
+    // builds (e.g. restart mid-quest) picks the right track from the
+    // start, not just on the next switch.
+    //
+    // Listens to `selectedJourneyProvider` directly — the raw Notifier,
+    // same as `lock_screen_controller.dart`'s own
+    // `ref.listen<SelectedQuest?>(selectedJourneyProvider, _onQuestChanged)`
+    // — not the derived `selectedJourneyDetailsProvider` (a computed
+    // `@riverpod` function). A Notifier's `state = ...` setter notifies
+    // listeners synchronously; a computed provider instead has to be
+    // invalidated and *rebuilt* before it can notify its own listeners, and
+    // outside a live widget tree nothing forces that rebuild promptly (nothing
+    // here pumps Flutter frames) — found the hard way: a bare
+    // `ProviderContainer` test starting a quest after this controller had
+    // already built never fired the listener at all until something else
+    // happened to read `selectedJourneyDetailsProvider` again. Reading
+    // `journeyId` directly off `SelectedQuest` sidesteps the derived
+    // provider entirely, so there's no rebuild step to depend on — and is
+    // strictly more correct besides: it works even for a `journeyId` that
+    // somehow isn't in the catalog (`selectedJourneyDetailsProvider` would
+    // collapse that to `null`, losing the id `journeyThemeTrackAssetPath`
+    // actually needs).
+    ref.listen<SelectedQuest?>(selectedJourneyProvider, (previous, next) {
+      if (previous?.journeyId == next?.journeyId) return;
+      unawaited(
+        player.selectTrack(journeyThemeTrackAssetPath(next?.journeyId)),
+      );
+    });
+    unawaited(
+      player.selectTrack(
+        journeyThemeTrackAssetPath(
+          ref.read(selectedJourneyProvider)?.journeyId,
+        ),
+      ),
+    );
     ref.onDispose(() {
       unawaited(player.stop());
     });

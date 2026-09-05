@@ -5,6 +5,7 @@
 | `locations.json` | Content draft: 120 landmarks, segments, narrative (§11) | yes |
 | `map.json` | Route overlay for the drawn map: polyline + landmark hotspots (§6.2) | yes |
 | `map.webp` | The drawn map illustration itself (§9.1) | yes — 1024 × 1536, ~330 KB |
+| `theme.mp3` | This quest's own background-music track (§6.5, §14 "background music") | yes — see below |
 
 ## `map.webp` — what the file is
 
@@ -67,6 +68,35 @@ out of place against the map's ink/parchment illustration style. Adding a
 landmark to `map.json` — for the Odyssey or a future quest — that isn't in
 that lookup is safe (it falls back to a plain pin, `Icons.location_on`) but
 loses the per-landmark identity; add its id and an icon to the lookup too.
+
+## `theme.mp3` — this quest's own track
+
+Unlike `assets/media/journey_theme.wav` (the app's shared default — §6.5,
+`assets/media/README.md`), this file only plays while `odyssey-ithaca` is
+the selected quest — `journey_theme_track.dart`'s
+`journeyThemeTrackAssetPath` maps this journey's id to it,
+`BackgroundMusicPlayer.selectTrack` switches to it (live, if the toggle is
+already on) the moment the quest becomes selected, and back to the shared
+default (or `tower-of-lights`' own) the moment it stops being selected.
+Lives here rather than in `assets/media/` for the same reason
+`map.webp`/`locations.json` do: it's this quest's own content (§4), not an
+app-wide asset.
+
+**Provenance:** supplied by the repository owner as an mp3 conversion of an
+old video recording of a studio session, not commissioned or independently
+verified by this tooling — the file's own container metadata (`major_brand:
+isom`, `compatible_brands: isomiso2mp41`, an `Lavf`-stamped encoder) is
+consistent with that account (audio pulled out of an MP4/video source, not
+exported directly from a DAW), which is what prompted asking before adding
+it. Same posture `assets/media/README.md` and
+`tower-of-lights/README.md` already ask for ("check the track is actually
+cleared for use... before committing it") applies here too; if that
+representation ever turns out to be wrong, replacing this file is the same
+drop-in swap described for `map.webp` above (keep the filename, or update
+the path in `journey_theme_track.dart`).
+
+It loops (`ReleaseMode.loop`, same as the shared default) — a source that
+doesn't already start/end cleanly will click at the seam every loop.
 
 ## Known gap
 
