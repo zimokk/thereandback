@@ -5,7 +5,7 @@
 | `locations.json` | Content draft: 56 landmarks, segments, narrative (§11) | yes |
 | `locations.ru.json` | Russian translation of `locations.json`'s names/narrative (§11) | yes |
 | `map.json` | Route overlay for the drawn map: polyline + landmark hotspots (§6.2) | yes |
-| `map.webp` | The map illustration — **placeholder**, see below (§9.1) | yes — 1024 × 1536, ~17 KB |
+| `map.webp` | The map illustration — **placeholder, plain black**, see below (§9.1) | yes — 1024 × 1536, ~3 KB |
 | `generate_map.py` | The script that generates `map.json` + `map.webp` (see below) | yes |
 
 ## `map.webp` — what the file actually is
@@ -13,25 +13,30 @@
 Unlike `odyssey-ithaca/map.webp` (a real hand-drawn ink illustration this
 quest's `map.json` was traced onto after the fact), this quest has no
 commissioned art yet — the art source for the app as a whole is still an
-open decision (CLAUDE.md §9.1). `map.webp` here is a small script-generated
-placeholder: a Catmull-Rom spline through a handful of control points,
-rendered as a dashed gold line over a flat dark background with faint
-horizontal bands hinting at the eight biomes, plus a dot per landmark. It
-exists only so the Карта tab has something to show and the polyline
-invariants have a real file to check against — the same "structure exists,
-source pending" treatment §9.1 already gives the art pipeline in general,
-and the same spirit as `assets/media/README.md`'s procedurally generated
-placeholder track for the app's background music.
+open decision (CLAUDE.md §9.1). `map.webp` here is a **plain flat black
+rectangle** (2026-09-05, by request) — no route line, bands, or landmark
+dots drawn into the image at all. It exists only so the Карта tab has an
+asset to load and the polyline invariants have a real file to check
+against — the same "structure exists, source pending" treatment §9.1
+already gives the art pipeline in general, and the same spirit as
+`assets/media/README.md`'s procedurally generated placeholder track for the
+app's background music. (An earlier version of this placeholder did draw a
+dashed line, faint biome bands, and landmark dots into the image itself —
+replaced by the plain rectangle above; the app's own runtime overlay, from
+`map.json`, is what draws the route now, same as it will over real art.)
 
-Because there is no pre-existing illustration to trace, `map.json` here was
-generated **together with** the image from the same spline —
-`generate_map.py`, committed in this directory (unlike odyssey-ithaca's own
-trace tooling, which isn't shipped, since it's a manual process against
-real art rather than a script): every landmark's `(x, y)` sits at the exact
-point along the spline that corresponds to its `meters` value (arc-length
-parametrized, so the traveler moves at constant visual speed along the
-line, matching odyssey-ithaca's own polyline convention) — landmarks land
-essentially exactly on the drawn line, not just near it.
+`map.json`'s route itself still comes from a Catmull-Rom spline through a
+handful of control points in `generate_map.py` — redrawn 2026-09-05 from a
+single direct diagonal sweep to a winding, multi-loop composition covering
+the whole canvas (a generic switchback "adventure map" shape; no named
+locations or characters from any existing IP, only the geometry). Because
+there is no illustration to trace it onto, `map.json` is generated
+**together with** that spline, not traced onto pre-existing art afterwards:
+every landmark's `(x, y)` sits at the exact point along the spline that
+corresponds to its `meters` value (arc-length parametrized, so the
+traveler moves at constant visual speed along the line, matching
+odyssey-ithaca's own polyline convention) — landmarks land essentially
+exactly on the drawn line, not just near it.
 
 **Rerunning it** (after editing the spline's control anchors, say, or once
 Pillow's WebP encoder gets an update):
