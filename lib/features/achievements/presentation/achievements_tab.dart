@@ -50,7 +50,10 @@ class AchievementsTab extends ConsumerWidget {
 
     final journeyStates = evaluateAchievements(
       progressMeters: selected?.progressMeters ?? 0,
-      catalog: achievementCatalog,
+      // Scoped to the active quest (§14, 2026-09-05) — with none selected
+      // this returns the whole catalog unchanged, the existing "browse
+      // every trophy that exists" preview.
+      catalog: achievementsForJourney(achievementCatalog, selected?.journeyId),
     );
     final dailyStates = buildDailyAchievementStates(
       catalog: dailyAchievementCatalog,

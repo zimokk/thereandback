@@ -193,4 +193,64 @@ void main() {
       expect(map.imageWidth / map.imageHeight, closeTo(2 / 3, 0.001));
     });
   });
+
+  group("the shipped Tower of Lights map.json (§14, 2026-09-05 — second "
+      "catalog quest)", () {
+    late QuestMap map;
+
+    setUpAll(() {
+      map = parseQuestMap(
+        File(questMapAssetPath('tower-of-lights')).readAsStringSync(),
+      );
+    });
+
+    test('describes the quest the catalog ships', () {
+      final journey = findJourney('tower-of-lights')!;
+
+      expect(map.journeyId, journey.id);
+      expect(map.totalMeters, journey.totalMeters);
+      expect(map.polyline.vertices.last.cumulativeMeters, journey.totalMeters);
+    });
+
+    test('runs from the Bellglass Window to Under the Skyfire, with both '
+        'ends on the drawn line', () {
+      expect(map.landmarks.first.id, '001-bellglass-window');
+      expect(map.landmarks.first.meters, 0);
+      expect(map.landmarks.last.id, '056-under-the-skyfire');
+      expect(map.landmarks.last.meters, map.totalMeters);
+
+      final start = metersToPoint(map.polyline, 0);
+      final end = metersToPoint(map.polyline, map.totalMeters);
+      expect(start.x, closeTo(map.landmarks.first.x, 0.01));
+      expect(start.y, closeTo(map.landmarks.first.y, 0.01));
+      expect(end.x, closeTo(map.landmarks.last.x, 0.01));
+      expect(end.y, closeTo(map.landmarks.last.y, 0.01));
+    });
+
+    test('every landmark sits on the drawn line', () {
+      // This quest's map.json was generated together with map.webp from the
+      // same spline (README's own doc), rather than traced onto pre-existing
+      // art afterwards like odyssey-ithaca — so, unlike that quest's looser
+      // 10%-of-image sanity bound, every landmark here sits essentially
+      // exactly on the line.
+      for (final landmark in map.landmarks) {
+        final onLine = metersToPoint(map.polyline, landmark.meters);
+        expect(
+          (onLine.x - landmark.x).abs(),
+          lessThan(0.01),
+          reason: '${landmark.id} x',
+        );
+        expect(
+          (onLine.y - landmark.y).abs(),
+          lessThan(0.01),
+          reason: '${landmark.id} y',
+        );
+      }
+    });
+
+    test('points at the illustration the coordinates were generated with', () {
+      expect(map.imageAsset, 'assets/journeys/tower-of-lights/map.webp');
+      expect(map.imageWidth / map.imageHeight, closeTo(2 / 3, 0.001));
+    });
+  });
 }

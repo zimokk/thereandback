@@ -8,23 +8,26 @@ part of 'journey_providers.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// The read-only quest catalog (§8). One entry today (§14: "на MVP один
-/// квест («Одиссея»)"). Phase 8 swaps the data source for cached Firestore
-/// metadata without changing this provider's shape.
+/// The read-only quest catalog (§8). Two entries as of §14's 2026-09-05
+/// decision (superseding the earlier "на MVP один квест («Одиссея»)"). Phase
+/// 8 swaps the data source for cached Firestore metadata without changing
+/// this provider's shape.
 
 @ProviderFor(journeyCatalogEntries)
 final journeyCatalogEntriesProvider = JourneyCatalogEntriesProvider._();
 
-/// The read-only quest catalog (§8). One entry today (§14: "на MVP один
-/// квест («Одиссея»)"). Phase 8 swaps the data source for cached Firestore
-/// metadata without changing this provider's shape.
+/// The read-only quest catalog (§8). Two entries as of §14's 2026-09-05
+/// decision (superseding the earlier "на MVP один квест («Одиссея»)"). Phase
+/// 8 swaps the data source for cached Firestore metadata without changing
+/// this provider's shape.
 
 final class JourneyCatalogEntriesProvider
     extends $FunctionalProvider<List<Journey>, List<Journey>, List<Journey>>
     with $Provider<List<Journey>> {
-  /// The read-only quest catalog (§8). One entry today (§14: "на MVP один
-  /// квест («Одиссея»)"). Phase 8 swaps the data source for cached Firestore
-  /// metadata without changing this provider's shape.
+  /// The read-only quest catalog (§8). Two entries as of §14's 2026-09-05
+  /// decision (superseding the earlier "на MVP один квест («Одиссея»)"). Phase
+  /// 8 swaps the data source for cached Firestore metadata without changing
+  /// this provider's shape.
   JourneyCatalogEntriesProvider._()
     : super(
         from: null,
@@ -174,7 +177,7 @@ final class SelectedJourneyProvider
   }
 }
 
-String _$selectedJourneyHash() => r'bc95b4e8059486782b3aa415d9edb72b6cd41087';
+String _$selectedJourneyHash() => r'3aa57a7f8edbc28cb35cfc16802bf923d93fb5f3';
 
 /// The currently selected/started quest, or `null` before the user picks
 /// one, or before the persisted quest (if any) has finished loading.

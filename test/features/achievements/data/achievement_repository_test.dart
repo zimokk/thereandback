@@ -133,6 +133,52 @@ void main() {
     },
   );
 
+  test('a quest-specific threshold never unlocks against another quest\'s '
+      'history, even past its raw meters value (§14, 2026-09-05 — per-quest '
+      'scoping)', () async {
+    // 20 000 m crosses tower-of-lights' own "left-the-tower" (20 000 m)
+    // — but recorded against odyssey-ithaca, whose catalog entry that
+    // threshold doesn't belong to.
+    await recordInterval(
+      journeyId: 'odyssey-ithaca',
+      end: DateTime.utc(2026, 3, 10),
+      meters: 20000,
+    );
+
+    await repository.refreshUnlocks(
+      ownerId: 'owner-1',
+      journeyId: 'odyssey-ithaca',
+    );
+    final unlocks = await repository.loadUnlocks('owner-1');
+
+    expect(unlocks.containsKey('left-the-tower'), isFalse);
+    // The generic "first-league" (10 000 m) still applies to any quest.
+    expect(unlocks['first-league'], [DateTime(2026, 3, 10)]);
+  });
+
+  test(
+    "tower-of-lights' own scoped achievement unlocks from its own history",
+    () async {
+      await recordInterval(
+        journeyId: 'tower-of-lights',
+        end: DateTime.utc(2026, 3, 10),
+        meters: 20000, // crosses "left-the-tower" (20 000 m).
+      );
+
+      await repository.refreshUnlocks(
+        ownerId: 'owner-1',
+        journeyId: 'tower-of-lights',
+      );
+      final unlocks = await repository.loadUnlocks('owner-1');
+
+      expect(unlocks['left-the-tower'], [DateTime(2026, 3, 10)]);
+      // odyssey-ithaca's own scoped entries never apply here, however large
+      // the total — 561 921 m exceeds the whole quest's 240 000 m anyway,
+      // but the point is the scoping, not just the unreachable threshold.
+      expect(unlocks.containsKey('reached-circe'), isFalse);
+    },
+  );
+
   test('a different owner never sees another owner\'s unlocks', () async {
     await recordInterval(
       journeyId: 'odyssey-ithaca',

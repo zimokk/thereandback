@@ -17,7 +17,17 @@ mixin _$AchievementDef {
 
  String get id;/// L10n key for the title — achievement copy is UI text (§11), not
 /// narrative content, so it lives in the ARB files like any other label.
- String get titleKey; AchievementKind get kind; int get thresholdMeters;
+ String get titleKey; AchievementKind get kind; int get thresholdMeters;/// `null` — a generic milestone that applies to whichever quest is
+/// active (e.g. "First Steps"); a catalog id — this entry only makes
+/// sense for that one quest (its `landmarkReached` entries above all,
+/// since a threshold there is literally a specific quest's own
+/// landmark meters, but also a `distanceReached` one picked to land on
+/// a specific quest's own milestone, like "halfway through *this*
+/// route"). Added when the catalog grew a second quest (§14,
+/// 2026-09-05) — before that every entry's threshold happened to
+/// exceed any other quest's length, so the absence of scoping never
+/// showed. [achievementsForJourney] is the one place that reads this.
+ String? get journeyId;
 /// Create a copy of AchievementDef
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +38,16 @@ $AchievementDefCopyWith<AchievementDef> get copyWith => _$AchievementDefCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AchievementDef&&(identical(other.id, id) || other.id == id)&&(identical(other.titleKey, titleKey) || other.titleKey == titleKey)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.thresholdMeters, thresholdMeters) || other.thresholdMeters == thresholdMeters));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is AchievementDef&&(identical(other.id, id) || other.id == id)&&(identical(other.titleKey, titleKey) || other.titleKey == titleKey)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.thresholdMeters, thresholdMeters) || other.thresholdMeters == thresholdMeters)&&(identical(other.journeyId, journeyId) || other.journeyId == journeyId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,titleKey,kind,thresholdMeters);
+int get hashCode => Object.hash(runtimeType,id,titleKey,kind,thresholdMeters,journeyId);
 
 @override
 String toString() {
-  return 'AchievementDef(id: $id, titleKey: $titleKey, kind: $kind, thresholdMeters: $thresholdMeters)';
+  return 'AchievementDef(id: $id, titleKey: $titleKey, kind: $kind, thresholdMeters: $thresholdMeters, journeyId: $journeyId)';
 }
 
 
@@ -48,7 +58,7 @@ abstract mixin class $AchievementDefCopyWith<$Res>  {
   factory $AchievementDefCopyWith(AchievementDef value, $Res Function(AchievementDef) _then) = _$AchievementDefCopyWithImpl;
 @useResult
 $Res call({
- String id, String titleKey, AchievementKind kind, int thresholdMeters
+ String id, String titleKey, AchievementKind kind, int thresholdMeters, String? journeyId
 });
 
 
@@ -65,13 +75,14 @@ class _$AchievementDefCopyWithImpl<$Res>
 
 /// Create a copy of AchievementDef
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? titleKey = null,Object? kind = null,Object? thresholdMeters = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? titleKey = null,Object? kind = null,Object? thresholdMeters = null,Object? journeyId = freezed,}) {
   return _then(AchievementDef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,titleKey: null == titleKey ? _self.titleKey : titleKey // ignore: cast_nullable_to_non_nullable
 as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as AchievementKind,thresholdMeters: null == thresholdMeters ? _self.thresholdMeters : thresholdMeters // ignore: cast_nullable_to_non_nullable
-as int,
+as int,journeyId: freezed == journeyId ? _self.journeyId : journeyId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 
@@ -156,10 +167,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String titleKey,  AchievementKind kind,  int thresholdMeters)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String titleKey,  AchievementKind kind,  int thresholdMeters,  String? journeyId)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _AchievementDef() when $default != null:
-return $default(_that.id,_that.titleKey,_that.kind,_that.thresholdMeters);case _:
+return $default(_that.id,_that.titleKey,_that.kind,_that.thresholdMeters,_that.journeyId);case _:
   return orElse();
 
 }
@@ -177,10 +188,10 @@ return $default(_that.id,_that.titleKey,_that.kind,_that.thresholdMeters);case _
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String titleKey,  AchievementKind kind,  int thresholdMeters)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String titleKey,  AchievementKind kind,  int thresholdMeters,  String? journeyId)  $default,) {final _that = this;
 switch (_that) {
 case _AchievementDef():
-return $default(_that.id,_that.titleKey,_that.kind,_that.thresholdMeters);case _:
+return $default(_that.id,_that.titleKey,_that.kind,_that.thresholdMeters,_that.journeyId);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -197,10 +208,10 @@ return $default(_that.id,_that.titleKey,_that.kind,_that.thresholdMeters);case _
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String titleKey,  AchievementKind kind,  int thresholdMeters)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String titleKey,  AchievementKind kind,  int thresholdMeters,  String? journeyId)?  $default,) {final _that = this;
 switch (_that) {
 case _AchievementDef() when $default != null:
-return $default(_that.id,_that.titleKey,_that.kind,_that.thresholdMeters);case _:
+return $default(_that.id,_that.titleKey,_that.kind,_that.thresholdMeters,_that.journeyId);case _:
   return null;
 
 }
@@ -212,7 +223,7 @@ return $default(_that.id,_that.titleKey,_that.kind,_that.thresholdMeters);case _
 
 
 class _AchievementDef implements AchievementDef {
-  const _AchievementDef({required this.id, required this.titleKey, required this.kind, required this.thresholdMeters});
+  const _AchievementDef({required this.id, required this.titleKey, required this.kind, required this.thresholdMeters, this.journeyId});
   
 
 @override final  String id;
@@ -221,6 +232,17 @@ class _AchievementDef implements AchievementDef {
 @override final  String titleKey;
 @override final  AchievementKind kind;
 @override final  int thresholdMeters;
+/// `null` — a generic milestone that applies to whichever quest is
+/// active (e.g. "First Steps"); a catalog id — this entry only makes
+/// sense for that one quest (its `landmarkReached` entries above all,
+/// since a threshold there is literally a specific quest's own
+/// landmark meters, but also a `distanceReached` one picked to land on
+/// a specific quest's own milestone, like "halfway through *this*
+/// route"). Added when the catalog grew a second quest (§14,
+/// 2026-09-05) — before that every entry's threshold happened to
+/// exceed any other quest's length, so the absence of scoping never
+/// showed. [achievementsForJourney] is the one place that reads this.
+@override final  String? journeyId;
 
 /// Create a copy of AchievementDef
 /// with the given fields replaced by the non-null parameter values.
@@ -232,16 +254,16 @@ _$AchievementDefCopyWith<_AchievementDef> get copyWith => __$AchievementDefCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AchievementDef&&(identical(other.id, id) || other.id == id)&&(identical(other.titleKey, titleKey) || other.titleKey == titleKey)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.thresholdMeters, thresholdMeters) || other.thresholdMeters == thresholdMeters));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _AchievementDef&&(identical(other.id, id) || other.id == id)&&(identical(other.titleKey, titleKey) || other.titleKey == titleKey)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.thresholdMeters, thresholdMeters) || other.thresholdMeters == thresholdMeters)&&(identical(other.journeyId, journeyId) || other.journeyId == journeyId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,titleKey,kind,thresholdMeters);
+int get hashCode => Object.hash(runtimeType,id,titleKey,kind,thresholdMeters,journeyId);
 
 @override
 String toString() {
-  return 'AchievementDef(id: $id, titleKey: $titleKey, kind: $kind, thresholdMeters: $thresholdMeters)';
+  return 'AchievementDef(id: $id, titleKey: $titleKey, kind: $kind, thresholdMeters: $thresholdMeters, journeyId: $journeyId)';
 }
 
 
@@ -252,7 +274,7 @@ abstract mixin class _$AchievementDefCopyWith<$Res> implements $AchievementDefCo
   factory _$AchievementDefCopyWith(_AchievementDef value, $Res Function(_AchievementDef) _then) = __$AchievementDefCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String titleKey, AchievementKind kind, int thresholdMeters
+ String id, String titleKey, AchievementKind kind, int thresholdMeters, String? journeyId
 });
 
 
@@ -269,13 +291,14 @@ class __$AchievementDefCopyWithImpl<$Res>
 
 /// Create a copy of AchievementDef
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? titleKey = null,Object? kind = null,Object? thresholdMeters = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? titleKey = null,Object? kind = null,Object? thresholdMeters = null,Object? journeyId = freezed,}) {
   return _then(_AchievementDef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,titleKey: null == titleKey ? _self.titleKey : titleKey // ignore: cast_nullable_to_non_nullable
 as String,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as AchievementKind,thresholdMeters: null == thresholdMeters ? _self.thresholdMeters : thresholdMeters // ignore: cast_nullable_to_non_nullable
-as int,
+as int,journeyId: freezed == journeyId ? _self.journeyId : journeyId // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

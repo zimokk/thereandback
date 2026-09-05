@@ -13,7 +13,8 @@ import 'journey_asset_providers.dart';
 import 'journey_providers.dart';
 
 /// The quest catalog (§6.1, §8): shown on the Путь tab when the user has
-/// not started a quest yet. One card today — the Odyssey (§14).
+/// not started a quest yet. Two cards today — the Odyssey and "The Road to
+/// the Skyfire" (§14).
 class QuestPickerView extends ConsumerWidget {
   const QuestPickerView({super.key});
 

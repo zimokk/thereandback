@@ -268,4 +268,80 @@ void main() {
       await db.close();
     },
   );
+
+  group('per-quest scoping (§14, 2026-09-05 — the catalog now spans two '
+      'quests)', () {
+    testWidgets('the tower-of-lights quest shows its own trophies, never '
+        "odyssey-ithaca's", (tester) async {
+      await tester.pumpWidget(_wrap(const AchievementsTab()));
+
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(AchievementsTab)),
+      );
+      container
+          .read(selectedJourneyProvider.notifier)
+          .start('tower-of-lights', now: DateTime.now());
+      await tester.pump();
+
+      // A generic milestone still applies, visible without scrolling...
+      expect(find.text('First Steps'), findsOneWidget);
+      // ...its own quest-specific entry is further down the grid...
+      await tester.dragUntilVisible(
+        find.text('Left the Tower'),
+        find.byType(GridView),
+        const Offset(0, -300),
+      );
+      expect(find.text('Left the Tower'), findsOneWidget);
+      // ...but odyssey-ithaca's own scoped entries are never built at all,
+      // however far this scrolls — they aren't in the filtered catalog.
+      expect(find.text('Reached Circe'), findsNothing);
+      expect(find.text("Journey's End"), findsNothing);
+    });
+
+    testWidgets(
+      "tapping tower-of-lights' own unlocked tile shows the day it was "
+      'earned, reading its own persisted unlock row',
+      (tester) async {
+        final db = AppDatabase.forTesting();
+        await _seedUnlock(
+          db,
+          achievementId: 'left-the-tower',
+          localDate: DateTime(2026, 3, 10),
+        );
+        await tester.pumpWidget(_wrap(const AchievementsTab(), database: db));
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(AchievementsTab)),
+        );
+        container
+            .read(selectedJourneyProvider.notifier)
+            .start('tower-of-lights', now: DateTime.now());
+        // 'left-the-tower' thresholds at 20 000 m.
+        container
+            .read(selectedJourneyProvider.notifier)
+            .applySyncedProgress(
+              progressMeters: 20000,
+              syncedAt: DateTime.now(),
+            );
+        await tester.pumpAndSettle();
+
+        await tester.dragUntilVisible(
+          find.text('Left the Tower'),
+          find.byType(GridView),
+          const Offset(0, -300),
+        );
+        // The dragged-to element can land right at the viewport edge —
+        // settle once more before tapping, so the offset `tap()` derives is
+        // fully on-screen (same fix `settings_tab_test.dart` needed for the
+        // same reason).
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Left the Tower'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Dates reached'), findsOneWidget);
+        expect(find.text('Mar 10, 2026'), findsOneWidget);
+        await db.close();
+      },
+    );
+  });
 }

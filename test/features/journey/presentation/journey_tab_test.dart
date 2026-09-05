@@ -5,6 +5,7 @@ import 'package:thereandback/app/database_provider.dart';
 import 'package:thereandback/app/theme.dart';
 import 'package:thereandback/core/local_owner.dart';
 import 'package:thereandback/data/drift/database.dart';
+import 'package:thereandback/features/journey/data/journey_catalog.dart';
 import 'package:thereandback/features/journey/presentation/journey_providers.dart';
 import 'package:thereandback/features/journey/presentation/journey_tab.dart';
 import 'package:thereandback/features/steps/data/step_sample_repository.dart';
@@ -25,6 +26,14 @@ class _FixedStepsSync extends StepsSync {
   StepsSyncState build() => _state;
 }
 
+/// The real catalog's Odyssey entry, alone (§14, 2026-09-05 — the catalog
+/// now ships two quests). Several tests below only care about a *single*
+/// catalog card's behavior (exactly one "Start quest" button, "Troy →
+/// Ithaca" appearing once) — pinning the catalog to just this one real
+/// entry keeps that assertion meaningful without inventing a fake fixture
+/// journey, the same way `quest_picker_view_test.dart` pins its own.
+final _singleQuestCatalog = [findJourney('odyssey-ithaca')!];
+
 Widget _app(Widget child) {
   return MaterialApp(
     theme: buildAppTheme(),
@@ -43,6 +52,7 @@ void main() {
       ProviderScope(
         overrides: [
           appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+          journeyCatalogEntriesProvider.overrideWithValue(_singleQuestCatalog),
         ],
         child: _app(const JourneyTab()),
       ),
@@ -127,6 +137,9 @@ void main() {
         ProviderScope(
           overrides: [
             appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+            journeyCatalogEntriesProvider.overrideWithValue(
+              _singleQuestCatalog,
+            ),
             stepsSyncProvider.overrideWith(
               () => _FixedStepsSync(
                 const StepsSyncState(
@@ -194,6 +207,7 @@ void main() {
       ProviderScope(
         overrides: [
           appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+          journeyCatalogEntriesProvider.overrideWithValue(_singleQuestCatalog),
         ],
         child: _app(const JourneyTab()),
       ),

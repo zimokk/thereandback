@@ -20,6 +20,18 @@ abstract class AchievementDef with _$AchievementDef {
     required String titleKey,
     required AchievementKind kind,
     required int thresholdMeters,
+
+    /// `null` — a generic milestone that applies to whichever quest is
+    /// active (e.g. "First Steps"); a catalog id — this entry only makes
+    /// sense for that one quest (its `landmarkReached` entries above all,
+    /// since a threshold there is literally a specific quest's own
+    /// landmark meters, but also a `distanceReached` one picked to land on
+    /// a specific quest's own milestone, like "halfway through *this*
+    /// route"). Added when the catalog grew a second quest (§14,
+    /// 2026-09-05) — before that every entry's threshold happened to
+    /// exceed any other quest's length, so the absence of scoping never
+    /// showed. [achievementsForJourney] is the one place that reads this.
+    String? journeyId,
   }) = _AchievementDef;
 }
 
@@ -99,5 +111,29 @@ List<AchievementState> evaluateAchievements({
             );
         }
       })
+      .toList(growable: false);
+}
+
+/// Narrows [catalog] to what's meaningful for [journeyId] (§14, 2026-09-05 —
+/// the catalog now spans more than one quest, and a landmark threshold from
+/// one quest is nonsense progress to show against another).
+///
+/// [journeyId] `null` — no quest selected yet — returns the **whole**
+/// [catalog] unchanged, generic and quest-specific entries alike: this is
+/// the catalog-browsing preview shown before a quest is even picked
+/// (`achievements_tab.dart`'s own "no quest selected" case), where showing
+/// every trophy that exists is the point, not a specific one's relevance.
+/// Once a quest **is** selected, only its own scoped entries
+/// ([AchievementDef.journeyId] equal to it) plus every generic one
+/// ([AchievementDef.journeyId] `null`) apply — a different quest's entries
+/// are filtered out rather than shown forever-locked, since their thresholds
+/// don't describe anything on this route at all.
+List<AchievementDef> achievementsForJourney(
+  List<AchievementDef> catalog,
+  String? journeyId,
+) {
+  if (journeyId == null) return catalog;
+  return catalog
+      .where((def) => def.journeyId == null || def.journeyId == journeyId)
       .toList(growable: false);
 }

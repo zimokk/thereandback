@@ -231,6 +231,27 @@ class AppLocalizationsRu extends AppLocalizations {
   String get achievementJourneysEndTitle => 'Конец пути';
 
   @override
+  String get achievementLeftTheTowerTitle => 'Покинул башню';
+
+  @override
+  String get achievementCrossedThePinesTitle => 'Пересёк Поющие сосны';
+
+  @override
+  String get achievementTowerHalfwayTitle => 'На полпути к небесному огню';
+
+  @override
+  String get achievementReachedMountainGateTitle => 'Дошёл до Горных Врат';
+
+  @override
+  String get achievementReachedSeaHorizonTitle => 'Увидел морской горизонт';
+
+  @override
+  String get achievementReachedLanternHillTitle => 'Поднялся на Фонарный холм';
+
+  @override
+  String get achievementUnderTheSkyfireTitle => 'Под небесным огнём';
+
+  @override
   String get achievementUnlockedLabel => 'Получено';
 
   @override
@@ -365,7 +386,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsThemeClassic => 'Классическая';
 
   @override
-  String get settingsThemeOdyssey => 'Одиссея (активный поход)';
+  String get settingsThemeOdyssey => 'Одиссея';
 
   @override
   String get settingsLockScreenSectionTitle => 'Экран блокировки';

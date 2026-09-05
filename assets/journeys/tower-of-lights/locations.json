@@ -1,0 +1,552 @@
+{
+  "$schemaNote": "Draft content for There and Back — Journey catalog, second catalog entry (CLAUDE.md §14, this quest added 2026-09-05). See §4/§6.2 for target schema and `assets/journeys/odyssey-ithaca/locations.json` for the field-by-field precedent this file follows. `narrative` is the in-fiction traveler's line (what the app shows); this quest has no real-world setting, so it carries no `historicalNote` field at all (contrast odyssey-ithaca, where about half the landmarks do) — there is nothing to anchor one to. Each segment carries `departureHour` (0-24, the in-fiction local hour at `fromMeters`) and `durationDays` (in-fiction days elapsed crossing to `toMeters`) — CLAUDE.md §6.1's fictional sky reads these, via `fictionalHourFor`, to show the story's own time of day at the route position the 'Путь' scene is scrolled to. `durationDays` is capped by a pace-safety rule (`journey_timing_repository.dart`): at most 1 in-fiction day per 10 000 real meters of the segment — every segment below already sits at or under that cap without needing any compression (contrast odyssey-ithaca's mythic, multi-year stays), so no `timeNote` is needed to explain a shortened duration; the `timeNote` a few segments do carry only glosses the story reason a stretch feels longer or shorter than its real distance.",
+  "journey": {
+    "id": "tower-of-lights",
+    "name": "The Road to the Skyfire",
+    "pointA": "The Bellglass Tower",
+    "pointB": "The Lantern Fields",
+    "totalMeters": 240000,
+    "source": "Original fantasy content, no external IP",
+    "landmarkCount": 56
+  },
+  "segments": [
+    {
+      "id": "the-open-door",
+      "name": "The Open Door",
+      "biome": "tower_cliffs",
+      "fromMeters": 0,
+      "toMeters": 20000,
+      "landmarkCount": 5,
+      "departureHour": 6,
+      "durationDays": 2,
+      "timeNote": "The first stretch feels slow and overwhelming to her, but the journey's story-time is compressed to two days."
+    },
+    {
+      "id": "the-singing-pines",
+      "name": "The Singing Pines",
+      "biome": "pine_forest",
+      "fromMeters": 20000,
+      "toMeters": 50000,
+      "landmarkCount": 7,
+      "departureHour": 8,
+      "durationDays": 3,
+      "timeNote": "The forest crossing represents several days of wandering, compressed into three journey-days."
+    },
+    {
+      "id": "the-golden-fields",
+      "name": "The Golden Fields",
+      "biome": "open_fields",
+      "fromMeters": 50000,
+      "toMeters": 85000,
+      "landmarkCount": 8,
+      "departureHour": 7,
+      "durationDays": 3,
+      "timeNote": "The long road through the farming country is condensed into three days."
+    },
+    {
+      "id": "the-river-of-mills",
+      "name": "The River of Mills",
+      "biome": "river_valley",
+      "fromMeters": 85000,
+      "toMeters": 115000,
+      "landmarkCount": 7,
+      "departureHour": 9,
+      "durationDays": 3,
+      "timeNote": "The river settlements are crossed quickly despite the many small villages along the water."
+    },
+    {
+      "id": "the-sunken-road",
+      "name": "The Sunken Road",
+      "biome": "marsh_ruins",
+      "fromMeters": 115000,
+      "toMeters": 145000,
+      "landmarkCount": 7,
+      "departureHour": 6,
+      "durationDays": 3,
+      "timeNote": "The marsh seems endless, but the playable journey compresses the crossing to three days."
+    },
+    {
+      "id": "the-blue-mountains",
+      "name": "The Blue Mountains",
+      "biome": "mountain_pass",
+      "fromMeters": 145000,
+      "toMeters": 180000,
+      "landmarkCount": 8,
+      "departureHour": 5,
+      "durationDays": 3,
+      "timeNote": "The mountain ascent would take much longer for ordinary travelers, but the story compresses it to three days."
+    },
+    {
+      "id": "the-salt-coast",
+      "name": "The Salt Coast",
+      "biome": "rocky_coast",
+      "fromMeters": 180000,
+      "toMeters": 215000,
+      "landmarkCount": 7,
+      "departureHour": 8,
+      "durationDays": 3,
+      "timeNote": "The coast road is long but unusually direct, allowing the journey to remain within three days."
+    },
+    {
+      "id": "the-lantern-fields",
+      "name": "The Lantern Fields",
+      "biome": "night_meadow",
+      "fromMeters": 215000,
+      "toMeters": 240000,
+      "landmarkCount": 7,
+      "departureHour": 16,
+      "durationDays": 2,
+      "timeNote": "The final approach is timed around the annual release of skyfire."
+    }
+  ],
+  "landmarks": [
+    {
+      "id": "001-bellglass-window",
+      "order": 1,
+      "name": "The Bellglass Window",
+      "meters": 0,
+      "segmentId": "the-open-door",
+      "narrative": "For the first time, I can see the whole valley without bars between us."
+    },
+    {
+      "id": "002-empty-stair",
+      "order": 2,
+      "name": "The Empty Stair",
+      "meters": 4500,
+      "segmentId": "the-open-door",
+      "narrative": "My footsteps sound strange on the stairs because no one is waiting below."
+    },
+    {
+      "id": "003-thorn-gate",
+      "order": 3,
+      "name": "The Thorn Gate",
+      "meters": 9000,
+      "segmentId": "the-open-door",
+      "narrative": "The old iron gate is tangled in thorns, yet it opens with barely a touch."
+    },
+    {
+      "id": "004-first-road",
+      "order": 4,
+      "name": "The First Road",
+      "meters": 14500,
+      "segmentId": "the-open-door",
+      "narrative": "I keep looking back at the tower as though it might call my name."
+    },
+    {
+      "id": "005-stone-marker",
+      "order": 5,
+      "name": "The Stone Marker",
+      "meters": 20000,
+      "segmentId": "the-open-door",
+      "narrative": "A weathered stone points toward places I have only ever read about."
+    },
+    {
+      "id": "006-pine-arch",
+      "order": 6,
+      "name": "The Pine Arch",
+      "meters": 24000,
+      "segmentId": "the-singing-pines",
+      "narrative": "The forest closes around me, and every tree seems taller than the tower."
+    },
+    {
+      "id": "007-mossy-bell",
+      "order": 7,
+      "name": "The Mossy Bell",
+      "meters": 28500,
+      "segmentId": "the-singing-pines",
+      "narrative": "A little bronze bell hangs from a branch, ringing whenever the wind turns."
+    },
+    {
+      "id": "008-foxglove-hollow",
+      "order": 8,
+      "name": "Foxglove Hollow",
+      "meters": 33000,
+      "segmentId": "the-singing-pines",
+      "narrative": "Purple flowers cover the hollow like tiny cups waiting for rain."
+    },
+    {
+      "id": "009-whispering-bridge",
+      "order": 9,
+      "name": "The Whispering Bridge",
+      "meters": 37500,
+      "segmentId": "the-singing-pines",
+      "narrative": "The wooden bridge creaks beneath me, but the river below is perfectly calm."
+    },
+    {
+      "id": "010-old-campfire",
+      "order": 10,
+      "name": "The Old Campfire",
+      "meters": 42000,
+      "segmentId": "the-singing-pines",
+      "narrative": "Someone once slept here beneath the pines, and I wonder what they dreamed about."
+    },
+    {
+      "id": "011-sunlit-clearing",
+      "order": 11,
+      "name": "The Sunlit Clearing",
+      "meters": 46500,
+      "segmentId": "the-singing-pines",
+      "narrative": "I step into the clearing and realize I have stopped being afraid of the open sky."
+    },
+    {
+      "id": "012-last-pine",
+      "order": 12,
+      "name": "The Last Pine",
+      "meters": 50000,
+      "segmentId": "the-singing-pines",
+      "narrative": "Beyond the last pine, the world suddenly becomes impossibly wide."
+    },
+    {
+      "id": "013-golden-grass",
+      "order": 13,
+      "name": "The Golden Grass",
+      "meters": 54500,
+      "segmentId": "the-golden-fields",
+      "narrative": "The grass reaches my knees and brushes against me like warm water."
+    },
+    {
+      "id": "014-windmill-hill",
+      "order": 14,
+      "name": "Windmill Hill",
+      "meters": 59000,
+      "segmentId": "the-golden-fields",
+      "narrative": "Seven windmills turn slowly on the hill, all facing the same distant horizon."
+    },
+    {
+      "id": "015-red-roof-farm",
+      "order": 15,
+      "name": "The Red-Roof Farm",
+      "meters": 63500,
+      "segmentId": "the-golden-fields",
+      "narrative": "The smell of fresh bread reaches me long before I see the farmhouse."
+    },
+    {
+      "id": "016-field-of-blue-corn",
+      "order": 16,
+      "name": "The Blue Corn",
+      "meters": 68000,
+      "segmentId": "the-golden-fields",
+      "narrative": "Blue-tipped grain ripples across the field, shining whenever the wind bends it."
+    },
+    {
+      "id": "017-lonely-oak",
+      "order": 17,
+      "name": "The Lonely Oak",
+      "meters": 72500,
+      "segmentId": "the-golden-fields",
+      "narrative": "I rest beneath the oak and find a whole world of insects moving through its roots."
+    },
+    {
+      "id": "018-ribbon-road",
+      "order": 18,
+      "name": "The Ribbon Road",
+      "meters": 77000,
+      "segmentId": "the-golden-fields",
+      "narrative": "The road winds through the fields like a ribbon someone dropped from the sky."
+    },
+    {
+      "id": "019-crow-fence",
+      "order": 19,
+      "name": "The Crow Fence",
+      "meters": 81500,
+      "segmentId": "the-golden-fields",
+      "narrative": "Black birds line the fence posts and watch me pass without making a sound."
+    },
+    {
+      "id": "020-river-view",
+      "order": 20,
+      "name": "The First River View",
+      "meters": 85000,
+      "segmentId": "the-golden-fields",
+      "narrative": "At the edge of the fields, I finally see the silver river cutting through the valley."
+    },
+    {
+      "id": "021-millwheel",
+      "order": 21,
+      "name": "The Millwheel",
+      "meters": 89500,
+      "segmentId": "the-river-of-mills",
+      "narrative": "A huge wooden wheel turns in the current with a rhythm I could almost dance to."
+    },
+    {
+      "id": "022-stone-ford",
+      "order": 22,
+      "name": "The Stone Ford",
+      "meters": 94000,
+      "segmentId": "the-river-of-mills",
+      "narrative": "I cross the river on flat stones while minnows flash between my feet."
+    },
+    {
+      "id": "023-riverside-market",
+      "order": 23,
+      "name": "The Riverside Market",
+      "meters": 98500,
+      "segmentId": "the-river-of-mills",
+      "narrative": "Voices, bells, spices, and bright cloth crowd together in the riverside market."
+    },
+    {
+      "id": "024-three-bridges",
+      "order": 24,
+      "name": "The Three Bridges",
+      "meters": 103000,
+      "segmentId": "the-river-of-mills",
+      "narrative": "Three bridges cross the river here, and for once I am glad there are too many choices."
+    },
+    {
+      "id": "025-heron-bank",
+      "order": 25,
+      "name": "The Heron Bank",
+      "meters": 107500,
+      "segmentId": "the-river-of-mills",
+      "narrative": "A grey heron stands perfectly still beside the water as if it has been waiting for me."
+    },
+    {
+      "id": "026-watergate",
+      "order": 26,
+      "name": "The Old Watergate",
+      "meters": 111000,
+      "segmentId": "the-river-of-mills",
+      "narrative": "The old watergate groans in the current, its stones covered in pale river moss."
+    },
+    {
+      "id": "027-marsh-road",
+      "order": 27,
+      "name": "The Marsh Road",
+      "meters": 115000,
+      "segmentId": "the-river-of-mills",
+      "narrative": "The firm road disappears into wet ground, and the air suddenly smells of reeds."
+    },
+    {
+      "id": "028-reed-gate",
+      "order": 28,
+      "name": "The Reed Gate",
+      "meters": 119500,
+      "segmentId": "the-sunken-road",
+      "narrative": "Tall reeds hide the path until I notice a row of white stones beneath them."
+    },
+    {
+      "id": "029-sunken-statue",
+      "order": 29,
+      "name": "The Sunken Statue",
+      "meters": 124000,
+      "segmentId": "the-sunken-road",
+      "narrative": "A stone face rises from the water with moss covering its forgotten smile."
+    },
+    {
+      "id": "030-blackwater-pool",
+      "order": 30,
+      "name": "The Blackwater Pool",
+      "meters": 128500,
+      "segmentId": "the-sunken-road",
+      "narrative": "The pool is dark enough to reflect the clouds even when the sun is bright."
+    },
+    {
+      "id": "031-broken-causeway",
+      "order": 31,
+      "name": "The Broken Causeway",
+      "meters": 133000,
+      "segmentId": "the-sunken-road",
+      "narrative": "Only a few stones remain above the water, forcing me to choose each step carefully."
+    },
+    {
+      "id": "032-drowned-garden",
+      "order": 32,
+      "name": "The Drowned Garden",
+      "meters": 137000,
+      "segmentId": "the-sunken-road",
+      "narrative": "Half-submerged statues and flowering vines reveal that this marsh was once someone's garden."
+    },
+    {
+      "id": "033-dry-ground",
+      "order": 33,
+      "name": "The Dry Ground",
+      "meters": 141000,
+      "segmentId": "the-sunken-road",
+      "narrative": "The mud finally gives way to dry stone, and I realize I have been holding my breath."
+    },
+    {
+      "id": "034-mountain-gate",
+      "order": 34,
+      "name": "The Mountain Gate",
+      "meters": 145000,
+      "segmentId": "the-sunken-road",
+      "narrative": "Two dark peaks frame the road ahead like the entrance to another country."
+    },
+    {
+      "id": "035-blue-stone-path",
+      "order": 35,
+      "name": "The Blue Stone Path",
+      "meters": 149500,
+      "segmentId": "the-blue-mountains",
+      "narrative": "Blue-grey stones mark the mountain path, each one polished smooth by countless travelers."
+    },
+    {
+      "id": "036-cloud-shelf",
+      "order": 36,
+      "name": "The Cloud Shelf",
+      "meters": 154000,
+      "segmentId": "the-blue-mountains",
+      "narrative": "I climb high enough for the clouds to drift beneath the trail."
+    },
+    {
+      "id": "037-goat-bells",
+      "order": 37,
+      "name": "The Goat Bells",
+      "meters": 158500,
+      "segmentId": "the-blue-mountains",
+      "narrative": "Tiny bells echo somewhere above me, though I cannot see what carries them."
+    },
+    {
+      "id": "038-echo-cave",
+      "order": 38,
+      "name": "The Echo Cave",
+      "meters": 163000,
+      "segmentId": "the-blue-mountains",
+      "narrative": "Inside the cave, even my smallest breath returns to me from the dark."
+    },
+    {
+      "id": "039-high-meadow",
+      "order": 39,
+      "name": "The High Meadow",
+      "meters": 167500,
+      "segmentId": "the-blue-mountains",
+      "narrative": "Small white flowers grow between the rocks where I expected to find nothing."
+    },
+    {
+      "id": "040-wind-carved-arch",
+      "order": 40,
+      "name": "The Wind-Carved Arch",
+      "meters": 172000,
+      "segmentId": "the-blue-mountains",
+      "narrative": "The wind has carved a perfect arch through the stone, framing a strip of distant sea."
+    },
+    {
+      "id": "041-last-ascent",
+      "order": 41,
+      "name": "The Last Ascent",
+      "meters": 176000,
+      "segmentId": "the-blue-mountains",
+      "narrative": "I take the final steep steps and feel the mountains falling away behind me."
+    },
+    {
+      "id": "042-sea-horizon",
+      "order": 42,
+      "name": "The Sea Horizon",
+      "meters": 180000,
+      "segmentId": "the-blue-mountains",
+      "narrative": "The sea stretches farther than I ever imagined the world could stretch."
+    },
+    {
+      "id": "043-salt-road",
+      "order": 43,
+      "name": "The Salt Road",
+      "meters": 184500,
+      "segmentId": "the-salt-coast",
+      "narrative": "White salt dust covers the road and sparkles beneath my boots."
+    },
+    {
+      "id": "044-driftwood-camp",
+      "order": 44,
+      "name": "The Driftwood Camp",
+      "meters": 189000,
+      "segmentId": "the-salt-coast",
+      "narrative": "Someone has built a tiny shelter from driftwood where the cliffs meet the beach."
+    },
+    {
+      "id": "045-sea-caves",
+      "order": 45,
+      "name": "The Sea Caves",
+      "meters": 193500,
+      "segmentId": "the-salt-coast",
+      "narrative": "Waves rush into the caves below me and return carrying clouds of silver foam."
+    },
+    {
+      "id": "046-white-lighthouse",
+      "order": 46,
+      "name": "The White Lighthouse",
+      "meters": 198000,
+      "segmentId": "the-salt-coast",
+      "narrative": "A lonely white lighthouse turns its beam across the evening sea."
+    },
+    {
+      "id": "047-shell-stairs",
+      "order": 47,
+      "name": "The Shell Stairs",
+      "meters": 202500,
+      "segmentId": "the-salt-coast",
+      "narrative": "Shells have been pressed into the old cliff stairs until every step shines."
+    },
+    {
+      "id": "048-tide-pool",
+      "order": 48,
+      "name": "The Tide Pool",
+      "meters": 207000,
+      "segmentId": "the-salt-coast",
+      "narrative": "Tiny creatures move through the tide pool, completely unaware of how large the world is."
+    },
+    {
+      "id": "049-lantern-hill",
+      "order": 49,
+      "name": "Lantern Hill",
+      "meters": 215000,
+      "segmentId": "the-salt-coast",
+      "narrative": "Beyond the final rise, I see warm lights scattered across a distant meadow."
+    },
+    {
+      "id": "050-field-gate",
+      "order": 50,
+      "name": "The Field Gate",
+      "meters": 219000,
+      "segmentId": "the-lantern-fields",
+      "narrative": "A simple wooden gate stands open, covered in hundreds of little painted stars."
+    },
+    {
+      "id": "051-gathering-meadow",
+      "order": 51,
+      "name": "The Gathering Meadow",
+      "meters": 223000,
+      "segmentId": "the-lantern-fields",
+      "narrative": "People are gathering quietly in the meadow, carrying covered glass vessels."
+    },
+    {
+      "id": "052-glassfire-tables",
+      "order": 52,
+      "name": "The Glassfire Tables",
+      "meters": 227000,
+      "segmentId": "the-lantern-fields",
+      "narrative": "Inside the glass vessels, tiny golden lights pulse like distant stars."
+    },
+    {
+      "id": "053-circle-of-stones",
+      "order": 53,
+      "name": "The Circle of Stones",
+      "meters": 231000,
+      "segmentId": "the-lantern-fields",
+      "narrative": "I enter a circle of standing stones where everyone has fallen silent."
+    },
+    {
+      "id": "054-first-skyfire",
+      "order": 54,
+      "name": "The First Skyfire",
+      "meters": 235000,
+      "segmentId": "the-lantern-fields",
+      "narrative": "One golden light rises above the meadow, and I forget to breathe."
+    },
+    {
+      "id": "055-river-of-lights",
+      "order": 55,
+      "name": "The River of Lights",
+      "meters": 238000,
+      "segmentId": "the-lantern-fields",
+      "narrative": "Hundreds of glowing motes climb into the darkness until the sky looks like a second river."
+    },
+    {
+      "id": "056-under-the-skyfire",
+      "order": 56,
+      "name": "Under the Skyfire",
+      "meters": 240000,
+      "segmentId": "the-lantern-fields",
+      "narrative": "I stand beneath the lights and finally understand that the world was never as small as my tower."
+    }
+  ]
+}
