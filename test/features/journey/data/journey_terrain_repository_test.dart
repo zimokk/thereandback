@@ -5,10 +5,25 @@ import 'package:test/test.dart';
 import 'package:thereandback/features/journey/data/journey_terrain_repository.dart';
 import 'package:thereandback/features/journey/data/journey_timing_repository.dart';
 import 'package:thereandback/features/journey/domain/scene_prop_anchor.dart';
+import 'package:thereandback/features/journey/domain/segment_biomes.dart';
 
-String _json(List<Map<String, Object?>> landmarks, {int totalMeters = 1000}) {
+String _json(
+  List<Map<String, Object?>> landmarks, {
+  int totalMeters = 1000,
+  List<Map<String, Object?>>? segments,
+}) {
   return jsonEncode({
     'journey': {'totalMeters': totalMeters},
+    'segments':
+        segments ??
+        [
+          {
+            'id': 'only',
+            'biome': 'open_fields',
+            'fromMeters': 0,
+            'toMeters': totalMeters,
+          },
+        ],
     'landmarks': landmarks,
   });
 }
@@ -97,12 +112,9 @@ void main() {
     });
 
     test('rejects a non-numeric terrainHeight', () {
-      final source = jsonEncode({
-        'journey': {'totalMeters': 1000},
-        'landmarks': [
-          {'id': 'a', 'meters': 100, 'terrainHeight': 'high'},
-        ],
-      });
+      final source = _json([
+        {'id': 'a', 'meters': 100, 'terrainHeight': 'high'},
+      ]);
       expect(() => parseJourneyTerrainContent(source), throwsFormatException);
     });
 
@@ -141,6 +153,123 @@ void main() {
     });
   });
 
+  group('biome spans (§6.1 — which biome\'s art is drawn where)', () {
+    test('parses every segment in order', () {
+      final content = parseJourneyTerrainContent(
+        _json(
+          const [],
+          segments: [
+            {
+              'id': 'a',
+              'biome': 'pine_forest',
+              'fromMeters': 0,
+              'toMeters': 600,
+            },
+            {
+              'id': 'b',
+              'biome': 'mountain_pass',
+              'fromMeters': 600,
+              'toMeters': 1000,
+            },
+          ],
+        ),
+      );
+      expect(content.biomes, const [
+        BiomeSpan(
+          segmentId: 'a',
+          biome: 'pine_forest',
+          fromMeters: 0,
+          toMeters: 600,
+        ),
+        BiomeSpan(
+          segmentId: 'b',
+          biome: 'mountain_pass',
+          fromMeters: 600,
+          toMeters: 1000,
+        ),
+      ]);
+    });
+
+    test('rejects a gap between two segments — a stretch of route with no '
+        'art is a content bug, not something to paper over', () {
+      expect(
+        () => parseJourneyTerrainContent(
+          _json(
+            const [],
+            segments: [
+              {'id': 'a', 'biome': 'x', 'fromMeters': 0, 'toMeters': 400},
+              {'id': 'b', 'biome': 'y', 'fromMeters': 600, 'toMeters': 1000},
+            ],
+          ),
+        ),
+        throwsFormatException,
+      );
+    });
+
+    test('rejects overlapping segments', () {
+      expect(
+        () => parseJourneyTerrainContent(
+          _json(
+            const [],
+            segments: [
+              {'id': 'a', 'biome': 'x', 'fromMeters': 0, 'toMeters': 700},
+              {'id': 'b', 'biome': 'y', 'fromMeters': 600, 'toMeters': 1000},
+            ],
+          ),
+        ),
+        throwsFormatException,
+      );
+    });
+
+    test('rejects segments that do not start at point A or reach point B', () {
+      expect(
+        () => parseJourneyTerrainContent(
+          _json(
+            const [],
+            segments: [
+              {'id': 'a', 'biome': 'x', 'fromMeters': 100, 'toMeters': 1000},
+            ],
+          ),
+        ),
+        throwsFormatException,
+      );
+      expect(
+        () => parseJourneyTerrainContent(
+          _json(
+            const [],
+            segments: [
+              {'id': 'a', 'biome': 'x', 'fromMeters': 0, 'toMeters': 900},
+            ],
+          ),
+        ),
+        throwsFormatException,
+      );
+    });
+
+    test('rejects a segment with no biome', () {
+      expect(
+        () => parseJourneyTerrainContent(
+          _json(
+            const [],
+            segments: [
+              {'id': 'a', 'fromMeters': 0, 'toMeters': 1000},
+            ],
+          ),
+        ),
+        throwsFormatException,
+      );
+    });
+
+    test('rejects an empty segments list', () {
+      final source = jsonEncode({
+        'journey': {'totalMeters': 1000},
+        'segments': <Object?>[],
+        'landmarks': <Object?>[],
+      });
+      expect(() => parseJourneyTerrainContent(source), throwsFormatException);
+    });
+  });
+
   group('the shipped Odyssey locations.json', () {
     test('parses today without any authored terrain content — a flat, '
         'two-endpoint profile and no props, since none is authored yet', () {
@@ -150,6 +279,24 @@ void main() {
       expect(content.profile.points.map((p) => p.meters), [0, 2850000]);
       expect(content.profile.points.map((p) => p.height), [0.0, 0.0]);
       expect(content.props, isEmpty);
+    });
+
+    test('its segments tile the whole route, every one with a biome', () {
+      final content = parseJourneyTerrainContent(
+        File(journeyTimingAssetPath('odyssey-ithaca')).readAsStringSync(),
+      );
+      expect(content.biomes, hasLength(19));
+      expect(content.biomes.first.fromMeters, 0);
+      expect(content.biomes.last.toMeters, 2850000);
+      expect(content.biomes.every((span) => span.biome.isNotEmpty), isTrue);
+    });
+
+    test('Tower of Lights parses the same way', () {
+      final content = parseJourneyTerrainContent(
+        File(journeyTimingAssetPath('tower-of-lights')).readAsStringSync(),
+      );
+      expect(content.biomes, hasLength(8));
+      expect(content.biomes.last.toMeters, 240000);
     });
   });
 }

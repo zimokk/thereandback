@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 
 import '../domain/scene_prop_anchor.dart';
+import '../domain/segment_biomes.dart';
 import '../domain/terrain_profile.dart';
 import 'journey_timing_repository.dart' show journeyTimingAssetPath;
 
@@ -14,6 +15,7 @@ import 'journey_timing_repository.dart' show journeyTimingAssetPath;
 typedef JourneyTerrainContent = ({
   TerrainProfile profile,
   List<ScenePropAnchor> props,
+  List<BiomeSpan> biomes,
 });
 
 /// Height (§domain — unitless, scaled to pixels only in presentation)
@@ -85,6 +87,8 @@ JourneyTerrainContent parseJourneyTerrainContent(String source) {
   }
   final totalMeters = _int(journey, 'totalMeters');
 
+  final biomes = _parseBiomeSpans(decoded['segments'], totalMeters);
+
   final rawLandmarks = decoded['landmarks'];
   if (rawLandmarks is! List) {
     throw const FormatException('locations.json needs a "landmarks" list');
@@ -153,7 +157,72 @@ JourneyTerrainContent parseJourneyTerrainContent(String source) {
     );
   }
 
-  return (profile: TerrainProfile(points: terrainPoints), props: props);
+  return (
+    profile: TerrainProfile(points: terrainPoints),
+    props: props,
+    biomes: biomes,
+  );
+}
+
+/// Parses `locations.json`'s `segments[]` into the [BiomeSpan]s that decide
+/// which biome's art is drawn where (§6.1, §9.1).
+///
+/// Both catalog quests have carried a `biome` on every segment since they
+/// were written; this is the first code to read it. The spans must tile the
+/// whole route exactly — start at `0`, each one continuing where the last
+/// ended, the final one reaching [totalMeters] — because
+/// `segment_biomes.dart`'s lookup relies on there being no gaps to fall
+/// into and no overlaps to pick between. A content file that violates that
+/// throws rather than silently leaving a stretch of route with no art, the
+/// same posture the rest of this parser takes.
+List<BiomeSpan> _parseBiomeSpans(Object? rawSegments, int totalMeters) {
+  if (rawSegments is! List || rawSegments.isEmpty) {
+    throw const FormatException(
+      'locations.json needs a non-empty "segments" list',
+    );
+  }
+
+  final spans = <BiomeSpan>[];
+  for (final entry in rawSegments) {
+    if (entry is! Map<String, dynamic>) {
+      throw const FormatException('every "segments" entry must be an object');
+    }
+
+    final id = _string(entry, 'id');
+    final biome = _string(entry, 'biome');
+    final fromMeters = _int(entry, 'fromMeters');
+    final toMeters = _int(entry, 'toMeters');
+    if (toMeters <= fromMeters) {
+      throw FormatException('segment "$id" has toMeters <= fromMeters');
+    }
+
+    final expectedFrom = spans.isEmpty ? 0 : spans.last.toMeters;
+    if (fromMeters != expectedFrom) {
+      throw FormatException(
+        'segment "$id" starts at $fromMeters m but the previous segment '
+        'ends at $expectedFrom m — segments must tile the route without '
+        'gaps or overlaps',
+      );
+    }
+
+    spans.add(
+      BiomeSpan(
+        segmentId: id,
+        biome: biome,
+        fromMeters: fromMeters,
+        toMeters: toMeters,
+      ),
+    );
+  }
+
+  if (spans.last.toMeters != totalMeters) {
+    throw FormatException(
+      'the last segment ends at ${spans.last.toMeters} m but the route is '
+      '$totalMeters m long',
+    );
+  }
+
+  return spans;
 }
 
 /// Matches a `prop.layer` string against [ScenePropLayer]'s own names

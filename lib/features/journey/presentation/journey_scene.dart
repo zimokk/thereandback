@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flame/game.dart';
 
 import '../../../design/colors.dart';
+import '../domain/segment_biomes.dart';
 import 'environment_layer.dart';
 import 'friend_component.dart';
 import 'journey_scene_controller.dart';
@@ -33,6 +34,11 @@ class JourneyScene extends FlameGame {
   Future<void> onLoad() async {
     await super.onLoad();
 
+    // Under the horizon line and every figure: the biome's drawn ground
+    // (§6.1, §9.1). Added before them so its own `priority` never has to
+    // fight the order children happen to be added in.
+    await world.add(GroundArtLayer(controller: controller));
+
     _terrain = HorizonTerrainLayer(controller: controller);
     await world.add(_terrain);
 
@@ -43,6 +49,11 @@ class JourneyScene extends FlameGame {
     )..priority = travelerPriority;
     await world.add(solidTraveler);
 
+    // Behind the ground art (priority -10), which is itself behind the
+    // horizon line and every figure: distant hills belong further back than
+    // the ground the traveler stands on, and the foreground layer in front
+    // of everything.
+    await world.add(EnvironmentLayer.distant(controller));
     await world.add(EnvironmentLayer.behind(controller));
     await world.add(EnvironmentLayer.front(controller));
 
@@ -76,6 +87,22 @@ class JourneyScene extends FlameGame {
       terrainMidY,
     );
     _syncFriends();
+    _requestVisibleBiomes();
+  }
+
+  /// Tells the art loader which biome(s) the view is on, every tick.
+  ///
+  /// Here rather than in the hosting widget because the answer depends on
+  /// `panMeters`, which changes on every drag frame without a Riverpod
+  /// rebuild — a widget-side hook would either miss most of those or force a
+  /// rebuild per frame. The loader itself ignores a repeat, so calling this
+  /// unconditionally costs two string comparisons.
+  void _requestVisibleBiomes() {
+    final request = controller.requestBiomes;
+    if (request == null) return;
+    final blend = biomeBlendAt(controller.biomes, controller.panMeters.round());
+    if (blend == null) return;
+    request(current: blend.current.biome, next: blend.next?.biome);
   }
 
   /// Adds/removes one [FriendMarkerComponent] per currently-visible friend

@@ -97,14 +97,7 @@ class TravelerComponent extends PositionComponent {
     // `.setValues` on the existing `position` Vector2, not a fresh
     // `Vector2(...)` every tick — `flame-scene`'s own "no per-frame
     // allocation" rule.
-    position.setValues(
-      worldX,
-      terrainHeightAt(
-        worldX,
-        controller.terrainProfile,
-        controller.pixelsPerMeter,
-      ),
-    );
+    position.setValues(worldX, terrainHeightAt(worldX, controller));
   }
 
   @override
@@ -172,10 +165,7 @@ class GhostTravelerComponent extends PositionComponent {
     final panWorldX = worldXFor(controller.panMeters, pixelsPerMeter);
     // `.setValues` on the existing `position` Vector2 — same
     // no-per-frame-allocation rule [TravelerComponent.update] follows.
-    position.setValues(
-      panWorldX,
-      terrainHeightAt(panWorldX, controller.terrainProfile, pixelsPerMeter),
-    );
+    position.setValues(panWorldX, terrainHeightAt(panWorldX, controller));
   }
 
   @override

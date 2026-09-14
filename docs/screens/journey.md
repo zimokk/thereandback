@@ -64,12 +64,17 @@ Architecture, `lib/features/journey/presentation/`:
 - **`friend_component.dart`** — `FriendMarkerComponent`: a `TravelerComponent`
   + nickname `TextComponent`, one per row in `controller.friendRows`
   (§6.5's "Друзья на карте" toggle, off by default).
-- **`environment_layer.dart`** — `EnvironmentLayer.behind`/`.front`: the "2
-  environment layers, one behind the characters, one in front" — silhouette
-  placeholder shapes moving at their own `velocityMultiplier`, deliberately
-  **not** `World` children (the real camera transform is uniform 1:1; these
-  reproduce `ParallaxComponent`'s effect by hand via `parallaxScreenX`,
-  since there's no bitmap art yet to feed a real `ParallaxComponent`).
+- **`environment_layer.dart`** — `EnvironmentLayer.distant`/`.behind`/
+  `.front`: three parallax depths, each drawing its biome's own tile (see
+  "Biome art" below) and falling back to procedural silhouette blobs where
+  no art exists. `World` children like everything else — their z-order has
+  to interleave with the traveler and the ground, which a direct game child
+  cannot do — so they buy their parallax back through `parallaxWorldX`,
+  the manual equivalent of `ParallaxComponent`'s `velocityMultiplier`.
+  (Hand-rolled rather than a real `ParallaxComponent`, which §3 names,
+  because the art changes per biome and cross-fades at every segment
+  boundary; `ParallaxComponent` takes a fixed layer set for the life of the
+  component.)
   Decorations are generated procedurally per visible window
   (`math.Random(bucket)`), never stored as a list spanning the whole route.
   Alongside those, each instance also draws the subset of
@@ -196,19 +201,90 @@ tower-of-lights additionally ships a `ru` translation overlay
 is `ru`; odyssey-ithaca has none yet (CLAUDE.md §14's still-open item), so
 it always shows its base English text regardless of app language.
 
+## Biome art & the ground the traveler walks on
+
+The scene's parallax layers render real drawn tiles per biome, and the
+route's small-scale relief is read back out of the ground tile's own
+silhouette — so the traveler walks on exactly the hills the illustration
+draws, rather than on a curve tuned separately from it (CLAUDE.md §6.1,
+§9.1).
+
+### Where the art lives
+
+`assets/journeys/{journeyId}/segments/{biome}_{far|mid|ground|front}.webp`
+(`data/scene_art_catalog.dart`). Under the quest's own `segments/` folder,
+which §4 already reserves for exactly this; file names, not folders, carry
+the biome, because Flutter's asset directories do not recurse and a folder
+per biome would need a `pubspec.yaml` line per biome.
+
+One tile covers exactly one screen width of route (`sceneArtTileMeters` =
+the quest's own `metersPerScreenWidthFor`) and repeats for as long as its
+biome lasts — which is how a 150 km segment is drawn without a 150 km-wide
+illustration.
+
+The committed tiles are **procedurally generated placeholders**
+(`tools/generate_scene_art.py`), not final art: §9.1's art source is still
+open. They exist so the pipeline is real and testable now, and every layer
+falls back to the old procedural placeholder when its file is absent — so a
+real illustration can replace any single file with no code change.
+
+### The two halves of the ground line
+
+`terrain_layer.dart`'s `terrainHeightAt(worldX, controller)` is the one
+function every figure on the path agrees on (the drawn ground, the
+traveler's feet, friend markers, the trophy guide-lines), so they cannot end
+up on four subtly different curves. It adds:
+
+| Half | Source | Amplitude |
+|---|---|---|
+| Small-scale relief | the ground tile's own silhouette, read column by column (`data/ground_heightmap_extractor.dart` → `domain/ground_heightmap.dart`) | `sceneHeight * groundArtTileHeightFactor / 2` — i.e. exactly how tall the tile is drawn |
+| Route-scale climb | the quest's authored `landmarks[].terrainHeight` (`domain/terrain_profile.dart`) | `macroTerrainAmplitude` (90 px) |
+
+Either may be absent: a quest with no authored `terrainHeight` still gets
+the art's relief, a biome whose art has not loaded still gets the authored
+climb, and with neither the line falls back to the original placeholder sine
+wave unchanged.
+
+The drawn tile is positioned from the same numbers — hung by its own mean
+ground level (`GroundHeightmap.centerFraction`) on the line, then warped by
+the authored profile through a `drawVertices` triangle strip with an
+`ImageShader(TileMode.repeated)` texture. That is why the drawing coincides
+with the walking line instead of sitting near it, and
+`ground_art_layer_test.dart` asserts exactly that by rendering the layer
+offscreen and comparing its top edge against `terrainHeightAt`.
+
+### Biomes and crossing between them
+
+`locations.json`'s `segments[].biome` — carried by both catalog quests since
+they were written, and first read by this — becomes `domain/
+segment_biomes.dart`'s `BiomeSpan`s. The spans must tile the route exactly;
+a gap or overlap is a `FormatException`, not a stretch of route with no art.
+
+Over the last `biomeTransitionMeters` (2 000 m) of a segment, the next
+biome's layers cross-fade in *and* its relief blends into the line
+(`blendedGroundHeight`), both on the same `easeGroundBlend` smoothstep — so
+the drawn hills and the line the traveler walks never lead or trail each
+other, and the figure does not step up or down at a segment boundary.
+
+### Loading
+
+`presentation/scene_art_loader.dart` keeps the biome under the view (and,
+mid-transition, the one being crossed into) loaded, and lets go of the rest;
+`data/scene_art_repository.dart` does the decoding and extraction and owns
+the `ui.Image`s. Driven from the game loop, not from `build` — what is on
+screen changes with every drag frame, which is not a Riverpod rebuild. A
+frame never waits on a load: it draws whatever is ready and the placeholder
+for the rest.
+
 ## Terrain profile & anchored scene props
 
-Mechanism only (CLAUDE.md §14, "Решено 2026-09-05" — data-driven terrain
-profile and anchored scene props) — no quest today authors any
-`terrainHeight`/`prop` content, so the visible scene is unchanged for both
-catalog quests; this is the plumbing a future quest's `locations.json` can
-opt into without any further code changes.
+`landmarks[].terrainHeight` and `landmarks[].prop` are two independently
+optional fields on the same `locations.json` landmark entries the narrative
+line and `fictional_time.dart` already read. No quest authors either today,
+so this remains the plumbing a future quest can opt into; `terrainHeight`
+feeds the route-scale half of the ground line above.
 
-- `landmarks[].terrainHeight` (a unitless `-1..1` number) and
-  `landmarks[].prop` (`{asset, layer: "behind"|"front"}`) are two new,
-  independently-optional fields on the same `locations.json` landmark
-  entries the narrative line and `fictional_time.dart` already read —
-  parsed by `data/journey_terrain_repository.dart`'s
+- Parsed by `data/journey_terrain_repository.dart`'s
   `tryLoadJourneyTerrainContent`/`parseJourneyTerrainContent`, same
   `null`-when-no-file / `FormatException`-when-malformed contract as
   `journey_timing_repository.dart`.
@@ -223,14 +299,17 @@ opt into without any further code changes.
   far-apart authored points.
 - A prop's `meters` is the *only* value shared with a terrain point at the
   same landmark — each side converts it through its own already-existing
-  formula (`terrainHeightAt` for the ground line, `parallaxScreenX` for the
-  prop's screen position), so ground shape and prop placement can never be
-  edited into disagreement by hand-tuning two separate numbers.
+  formula, so ground shape and prop placement can never be edited into
+  disagreement by hand-tuning two separate numbers. A prop is drawn as its
+  own sprite (`ScenePropAnchor.asset`, resolved through
+  `SceneArtRepository.propSprite`) standing on the ground line at its
+  landmark's own meters, and as an oversized placeholder circle until that
+  file exists.
 - Wiring: `selectedJourneyTerrainContentProvider`
   (`journey_terrain_providers.dart`) loads it for the selected quest;
-  `journey_flame_scene_view.dart` pushes `.profile`/`.props` into
-  `JourneySceneController.terrainProfile`/`.sceneProps` every rebuild, the
-  same seam `friendRows`/`showFriends` already use.
+  `journey_flame_scene_view.dart` pushes `.profile`/`.props`/`.biomes` into
+  the controller every rebuild, the same seam `friendRows`/`showFriends`
+  already use.
 
 ## Empty / permission states
 
@@ -269,6 +348,22 @@ function): camera-position linearity in `panMeters`, the horizon height
 function's world-position-only invariant, per-layer parallax linearity, the
 solid/ghost traveler's positioning and visibility rules, and friend marker
 placement/labeling.
+
+`test/features/journey/presentation/ground_art_layer_test.dart` is the one
+that pins the whole biome-art feature down: it renders the ground layer
+offscreen through the real camera and compares the drawn silhouette's top
+edge, column by column, against `terrainHeightAt` — including under an
+authored climb, which must carry the drawing with it and not just the line.
+`test/features/journey/data/scene_art_assets_test.dart` holds the *shipped*
+tiles to the contract the renderer relies on (all four layers present for
+every biome both quests use, a mean row in the tile's upper half, relief
+that cannot carry the traveler off screen, a seam no sharper than the
+tile's own steepest slope), so a hand-drawn replacement that breaks one of
+those fails here rather than on a device.
+`test/features/journey/data/ground_heightmap_extractor_test.dart` and
+`domain/ground_heightmap_test.dart`/`scene_ground_test.dart`/
+`segment_biomes_test.dart` cover the extraction and the pure math beneath
+it.
 
 `test/features/journey/presentation/journey_scene_lifecycle_test.dart`
 covers the game-loop pause: paused on a bottom-nav tab switch and on app

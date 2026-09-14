@@ -1,6 +1,12 @@
+import 'dart:ui' show Image;
+
 import '../../friends/domain/friend_progress.dart';
+import '../data/scene_art_catalog.dart';
+import '../data/scene_art_repository.dart';
+import '../domain/ground_heightmap.dart';
 import '../domain/route_scale.dart';
 import '../domain/scene_prop_anchor.dart';
+import '../domain/segment_biomes.dart';
 import '../domain/terrain_profile.dart';
 
 /// Mutable scene state, read by [JourneyScene]'s components every `update()`
@@ -79,6 +85,44 @@ class JourneySceneController {
   /// Empty exactly when [terrainProfile] is `null` or the quest authors no
   /// `prop` fields — `EnvironmentLayer` draws nothing extra in that case.
   List<ScenePropAnchor> sceneProps = const [];
+
+  /// Which biome is drawn over which stretch of the route (§6.1), parsed
+  /// from the quest's own `locations.json` segments. Empty before a quest is
+  /// picked or for a quest with no content file — in which case the scene
+  /// draws its procedural placeholders, exactly as before this existed.
+  List<BiomeSpan> biomes = const [];
+
+  /// The art that has actually finished loading, keyed by biome
+  /// (`scene_art_loader.dart` writes it, every component only reads it).
+  ///
+  /// Sparse by design and on purpose: a biome the loader has not reached
+  /// yet, or one that ships no art, is simply absent and that layer falls
+  /// back to its placeholder. Nothing in the scene waits on a load — a
+  /// frame always draws with whatever is ready.
+  Map<String, BiomeArt> biomeArt = const {};
+
+  /// Asks for a biome's art to be loaded. Called from the game loop with
+  /// the biome(s) currently on screen; repeated calls for the same biome are
+  /// cheap and idempotent (`scene_art_loader.dart` dedupes), so the loop
+  /// does not have to track what it already asked for.
+  void Function({required String current, String? next})? requestBiomes;
+
+  /// How much route one repetition of a biome tile covers
+  /// (`scene_art_catalog.dart`) — one screen width at this quest's own
+  /// scale, so every layer's art is drawn at the size it was authored for.
+  int get artTileMeters => sceneArtTileMeters(journeyId);
+
+  /// Resolves an anchored prop's sprite (`ScenePropAnchor.asset`), or
+  /// `null` while it loads or when the quest ships no such file — in which
+  /// case `environment_layer.dart` draws its placeholder shape instead.
+  /// Set by `journey_flame_scene_view.dart` alongside [requestBiomes].
+  Image? Function(String asset)? propSprite;
+
+  /// The loaded relief for [biome], or `null` when its art is missing or
+  /// still loading — the one lookup `terrain_layer.dart` and the drawn
+  /// ground both go through.
+  GroundHeightmap? groundFor(String? biome) =>
+      biome == null ? null : biomeArt[biome]?.ground;
 
   /// Whether the scene should currently be running its game loop — driven
   /// by tab visibility and app lifecycle (`lib/app/active_tab_index.dart`),

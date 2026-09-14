@@ -41,14 +41,7 @@ void main() {
         expect(traveler.position.x, closeTo(expectedX, 1e-3));
         expect(
           traveler.position.y,
-          closeTo(
-            terrainHeightAt(
-              expectedX,
-              controller.terrainProfile,
-              controller.pixelsPerMeter,
-            ),
-            1e-3,
-          ),
+          closeTo(terrainHeightAt(expectedX, controller), 1e-3),
         );
 
         controller.panMeters = 999999; // pan never affects this figure.
@@ -111,14 +104,7 @@ void main() {
         expect(ghost.position.x, closeTo(expectedX, 1e-3));
         expect(
           ghost.position.y,
-          closeTo(
-            terrainHeightAt(
-              expectedX,
-              controller.terrainProfile,
-              controller.pixelsPerMeter,
-            ),
-            1e-3,
-          ),
+          closeTo(terrainHeightAt(expectedX, controller), 1e-3),
         );
       },
     );

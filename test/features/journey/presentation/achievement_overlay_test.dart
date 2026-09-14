@@ -5,6 +5,7 @@ import 'package:thereandback/features/achievements/data/achievement_catalog.dart
 import 'package:thereandback/features/achievements/domain/achievement.dart';
 import 'package:thereandback/features/achievements/presentation/achievement_titles.dart';
 import 'package:thereandback/features/journey/presentation/achievement_overlay.dart';
+import 'package:thereandback/features/journey/presentation/journey_scene_controller.dart';
 import 'package:thereandback/core/formatters.dart';
 import 'package:thereandback/design/components/distance_text.dart';
 import 'package:thereandback/l10n/app_localizations.dart';
@@ -21,6 +22,14 @@ Widget _app(Widget child) {
 final _firstStepsDef = achievementCatalog.firstWhere(
   (def) => def.id == 'first-steps',
 );
+
+/// A controller at the same 0.04 px/m the overlay used to be handed
+/// directly — the scene's scale is derived from its width and the quest's
+/// own meters-per-screen, so a test fixes it by setting the width.
+JourneySceneController _controller() => JourneySceneController()
+  ..journeyId = 'test-quest'
+  ..sceneWidth = 0.04 * 20000
+  ..sceneHeight = 400;
 
 void main() {
   group('AchievementMarkerOverlay (§6.2/§6.3)', () {
@@ -39,8 +48,7 @@ void main() {
               ),
             ],
             sceneHeight: 400,
-            pixelsPerMeter: 0.04,
-            terrainProfile: null,
+            controller: _controller(),
             l10n: await AppLocalizations.delegate.load(const Locale('en')),
           ),
         ),
@@ -66,8 +74,7 @@ void main() {
               ),
             ],
             sceneHeight: 400,
-            pixelsPerMeter: 0.04,
-            terrainProfile: null,
+            controller: _controller(),
             l10n: await AppLocalizations.delegate.load(const Locale('en')),
           ),
         ),
@@ -96,8 +103,7 @@ void main() {
                 ),
               ],
               sceneHeight: 400,
-              pixelsPerMeter: 0.04,
-              terrainProfile: null,
+              controller: _controller(),
               l10n: l10n,
             ),
           ),
@@ -140,8 +146,7 @@ void main() {
                 ),
               ],
               sceneHeight: 400,
-              pixelsPerMeter: 0.04,
-              terrainProfile: null,
+              controller: _controller(),
               l10n: await AppLocalizations.delegate.load(const Locale('en')),
             ),
           ),

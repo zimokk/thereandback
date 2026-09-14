@@ -4,31 +4,51 @@ import 'dart:ui';
 import 'package:flame/components.dart';
 
 import '../../../design/colors.dart';
+import '../data/scene_art_catalog.dart';
+import '../domain/scene_ground.dart';
 import '../domain/scene_prop_anchor.dart';
+import '../domain/segment_biomes.dart';
 import 'journey_scene_controller.dart';
+import 'terrain_layer.dart';
 
-/// Screen-space x for an object that belongs to a parallax layer moving at
-/// [velocityMultiplier] times the camera's own rate, given the object's own
-/// fixed reference position [objectMeters] and the current [panMeters]/
+/// World-space x at which to place an object that should *appear* to move at
+/// [velocityMultiplier] times the camera's own rate, given its fixed
+/// reference position [objectMeters] and the current [panMeters]/
 /// [pixelsPerMeter].
 ///
+/// The camera already translates every `World` child by the full pan
+/// (`JourneyScene.update`), which is exactly right for anything standing on
+/// the route and exactly wrong for a layer meant to drift at its own speed.
+/// Sliding the layer forward by the part of the pan it is *not* supposed to
+/// feel — `panMeters * (1 - velocityMultiplier)` — leaves the camera to
+/// cancel out the rest, so what lands on screen moves at
+/// [velocityMultiplier]:
+///
+/// - `1.0` cancels nothing: the on-path rate every world-space entity
+///   (terrain, traveler, friends) already moves at.
+/// - Below `1.0` reads as further away, moving less (§6.1's "дальние холмы
+///   медленно"); above `1.0` as closer, moving more ("передний план
+///   быстро").
+///
 /// A pure function, not just [EnvironmentLayer]'s private math — it is what
-/// `environment_layer_test.dart` asserts linearity against
-/// (CLAUDE.md §12: "parallax offset is linear in scroll position") without
-/// needing a running `FlameGame`. `velocityMultiplier: 1.0` is exactly the
-/// on-path formula every world-space entity (terrain, traveler, friends)
-/// already uses; smaller values read as "further away, moves less" (§6.1's
-/// "дальние холмы медленно"), larger as "closer, moves more" ("передний
-/// план быстро").
-double parallaxScreenX({
-  required double centerX,
+/// `environment_layer_test.dart` asserts linearity against (CLAUDE.md §12:
+/// "parallax offset is linear in scroll position") without needing a
+/// running `FlameGame`.
+///
+/// This replaced an earlier screen-space version that these layers used
+/// while being added to the `World` anyway — so the camera's translation
+/// landed on top of the layer's own, every layer ended up moving at the
+/// same rate no matter its multiplier, and the whole point of the parallax
+/// was silently lost. The old function's own doc comment claimed these
+/// layers were not `World` children; the code had them as children. Only
+/// the pure function was under test, which is why nothing caught it.
+double parallaxWorldX({
   required double objectMeters,
   required double panMeters,
   required double velocityMultiplier,
   required double pixelsPerMeter,
 }) {
-  return centerX +
-      (objectMeters - panMeters * velocityMultiplier) * pixelsPerMeter;
+  return (objectMeters + panMeters * (1 - velocityMultiplier)) * pixelsPerMeter;
 }
 
 /// One decorative object's placeholder shape and where it sits, in this
@@ -47,18 +67,19 @@ class _Decoration {
 /// [TravelerComponent]/[FriendMarkerComponent]) and a couple of purely
 /// cosmetic knobs.
 ///
-/// Deliberately **not** a `World` child: [World]'s children are transformed
-/// by [JourneyScene]'s real `CameraComponent` at a uniform 1:1 rate, which
-/// is exactly what the on-path entities (terrain, travelers) want but wrong
-/// for a background/foreground layer that must move at its *own* rate. This
-/// component is added directly to the game instead (screen space,
-/// un-transformed) and reproduces the parallax effect itself via
-/// [parallaxScreenX] — the manual equivalent of `ParallaxComponent`'s
-/// `velocityMultiplier`, chosen over the real thing only because there is
-/// no bitmap art yet to feed it (§9.1); swapping to a real `ParallaxComponent`
-/// later is a self-contained change to this file, since every other
-/// component's contract with this layer (`velocityMultiplier`, `priority`)
-/// stays the same either way.
+/// A `World` child, like every other part of the scene — its z-order has to
+/// interleave with the traveler and the ground, which a direct game child
+/// (drawn either wholly behind or wholly in front of the entire world)
+/// cannot do. It therefore moves at the camera's own 1:1 rate by default and
+/// buys its parallax back through [parallaxWorldX], the manual equivalent of
+/// `ParallaxComponent`'s `velocityMultiplier`.
+///
+/// Hand-rolled rather than a real `ParallaxComponent` (§3 names one) because
+/// the art changes per biome and has to cross-fade at every segment
+/// boundary: `ParallaxComponent` takes a fixed set of layers for the life of
+/// the component, so per-segment swapping would mean rebuilding it mid-scene
+/// anyway. The contract this exposes (`velocityMultiplier`, `priority`) is
+/// the same either way, so the choice stays reversible.
 ///
 /// Decorations are generated **procedurally per visible window**, keyed by
 /// a deterministic "bucket" of this layer's own reference-meters axis
@@ -73,6 +94,7 @@ class EnvironmentLayer extends PositionComponent {
     required this.velocityMultiplier,
     required this.controller,
     required this.scenePropLayer,
+    required this.artLayer,
     required int priority,
     required Color color,
     required this.baselineFraction,
@@ -81,16 +103,17 @@ class EnvironmentLayer extends PositionComponent {
   }) : _paint = Paint()..color = color,
        super(priority: priority);
 
-  /// Behind the characters (priority 10, per the plan's z-order table) —
-  /// distant, slow-moving decoration.
+  /// Behind the characters and behind the ground art (priority -20) —
+  /// middle-distance, slow-moving silhouettes.
   factory EnvironmentLayer.behind(JourneySceneController controller) =>
       EnvironmentLayer._(
         velocityMultiplier: 0.5,
         controller: controller,
         scenePropLayer: ScenePropLayer.behind,
-        priority: 10,
+        artLayer: SceneArtLayer.mid,
+        priority: -20,
         color: AppColors.journeySceneEnvironmentBehind,
-        baselineFraction: 0.35,
+        baselineFraction: 0.47,
         bucketMeters: 420,
         seed: 1,
       );
@@ -102,29 +125,60 @@ class EnvironmentLayer extends PositionComponent {
         velocityMultiplier: 1.6,
         controller: controller,
         scenePropLayer: ScenePropLayer.front,
+        artLayer: SceneArtLayer.front,
         priority: 30,
         color: AppColors.journeySceneEnvironmentFront,
-        baselineFraction: 0.85,
+        baselineFraction: 0.78,
         bucketMeters: 260,
         seed: 2,
+      );
+
+  /// The furthest silhouettes, behind everything (priority -30) — slowest,
+  /// so distant hills barely move while the foreground rushes past (§6.1's
+  /// "небо почти статично, дальние холмы медленно").
+  ///
+  /// Draws art only: it has no procedural placeholder and no anchored props
+  /// of its own, because there was no third depth before the art existed —
+  /// a quest whose biome ships no `far` tile simply has nothing back there,
+  /// exactly as today.
+  factory EnvironmentLayer.distant(JourneySceneController controller) =>
+      EnvironmentLayer._(
+        velocityMultiplier: 0.25,
+        controller: controller,
+        scenePropLayer: null,
+        artLayer: SceneArtLayer.far,
+        priority: -30,
+        color: AppColors.journeySceneEnvironmentBehind,
+        baselineFraction: 0.42,
+        bucketMeters: 0,
+        seed: 3,
       );
 
   final double velocityMultiplier;
   final JourneySceneController controller;
 
+  /// Which of a biome's drawn layers this instance paints
+  /// (`scene_art_catalog.dart`). When the current biome ships that file,
+  /// it replaces this layer's procedural placeholder outright — the
+  /// placeholder is not drawn underneath it.
+  final SceneArtLayer artLayer;
+
   /// Which named/anchored props (`controller.sceneProps`) belong to this
   /// instance — matches [EnvironmentLayer.behind]/[EnvironmentLayer.front]
   /// 1:1, so a [ScenePropAnchor] renders on exactly the one instance whose
-  /// depth its content author picked.
-  final ScenePropLayer scenePropLayer;
+  /// depth its content author picked. `null` on
+  /// [EnvironmentLayer.distant], which content cannot anchor to.
+  final ScenePropLayer? scenePropLayer;
 
   /// Width, in this layer's own reference-meters axis, of one deterministic
   /// "bucket" — one decoration is generated per bucket.
   final double bucketMeters;
 
-  /// Vertical placement as a fraction of scene height (`0` = top, `1` =
-  /// bottom) — the behind layer sits higher (reads as further away), the
-  /// front layer lower (reads as closer to the viewer).
+  /// Where this layer's silhouette ridge sits, as a fraction of scene
+  /// height (`0` = top of the screen, `1` = bottom). The further-away
+  /// layers ridge just above the horizon the ground draws around
+  /// mid-screen; the front layer sits well below it, reading as close
+  /// enough to pass in front of the traveler.
   final double baselineFraction;
 
   /// Seeds each bucket's `math.Random` differently between the two layer
@@ -132,6 +186,11 @@ class EnvironmentLayer extends PositionComponent {
   final int seed;
 
   final Paint _paint;
+
+  /// Reused across frames and tiles — a `Paint` per drawn tile would be an
+  /// allocation per frame per repetition, which is exactly what the scene's
+  /// own perf rule rules out.
+  final Paint _artPaint = Paint();
 
   /// Cached result of the last [_decorationsFor] call, keyed by the exact
   /// bucket range it was built for — most frames pan by nothing at all (the
@@ -171,6 +230,139 @@ class EnvironmentLayer extends PositionComponent {
 
     final centerX = sceneWidth / 2;
     final panMeters = controller.panMeters;
+    // World y, not screen y: the camera's viewfinder sits at world y 0, so
+    // the middle of the screen is 0 and [baselineFraction] has to be
+    // measured from there.
+    final baselineY = sceneHeight * (baselineFraction - 0.5);
+
+    if (!_renderBiomeArt(canvas, panMeters, pixelsPerMeter, baselineY)) {
+      _renderPlaceholderDecorations(
+        canvas,
+        centerX,
+        panMeters,
+        pixelsPerMeter,
+        baselineY,
+      );
+    }
+
+    _renderAnchoredProps(canvas, panMeters, pixelsPerMeter, baselineY);
+  }
+
+  /// Draws the biome tile(s) for this layer, cross-fading across a biome
+  /// boundary. Returns whether anything was drawn — `false` means the
+  /// current biome ships no art for this layer (or none has loaded yet), and
+  /// the caller falls back to the procedural placeholder below.
+  ///
+  /// The tile repeats horizontally, like the ground's, so one drawing covers
+  /// a biome of any length; unlike the ground it is not warped by anything,
+  /// since nothing walks on it.
+  bool _renderBiomeArt(
+    Canvas canvas,
+    double panMeters,
+    double pixelsPerMeter,
+    double baselineY,
+  ) {
+    final blend = biomeBlendAt(controller.biomes, panMeters.round());
+    if (blend == null) return false;
+
+    final current = controller.biomeArt[blend.current.biome]?.layers[artLayer];
+    final next = blend.next == null
+        ? null
+        : controller.biomeArt[blend.next!.biome]?.layers[artLayer];
+    if (current == null && next == null) return false;
+
+    final eased = easeGroundBlend(blend.blend);
+    if (current != null) {
+      _drawLayerTile(
+        canvas,
+        current,
+        panMeters,
+        pixelsPerMeter,
+        baselineY,
+        next == null ? 1.0 : 1.0 - eased,
+      );
+    }
+    if (next != null) {
+      _drawLayerTile(canvas, next, panMeters, pixelsPerMeter, baselineY, eased);
+    }
+    return true;
+  }
+
+  /// Paints one biome tile across the visible width at [opacity].
+  ///
+  /// Tiles are placed by [parallaxScreenX] like everything else on this
+  /// layer, so the art scrolls at exactly the [velocityMultiplier] the
+  /// placeholder decorations used — swapping art in never changes how fast
+  /// a layer moves, only what it shows.
+  void _drawLayerTile(
+    Canvas canvas,
+    Image image,
+    double panMeters,
+    double pixelsPerMeter,
+    double baselineY,
+    double opacity,
+  ) {
+    if (opacity <= 0) return;
+
+    final tileWidth = controller.artTileMeters * pixelsPerMeter;
+    if (tileWidth <= 0) return;
+
+    final drawnHeight = controller.sceneHeight * environmentLayerHeightFactor;
+    // Hung by its middle, which is where the generator centres every
+    // parallax silhouette — so [baselineFraction] means "where this layer's
+    // ridge sits", and the fill below the ridge reaches down past the
+    // horizon to be covered by the ground art.
+    final top = baselineY - drawnHeight / 2;
+
+    // The world x of the tile repetition covering the left edge of the
+    // screen, then one per tile width until the right edge — bounded by
+    // screen width, never by route length.
+    final viewLeft =
+        worldXFor(panMeters, pixelsPerMeter) - controller.sceneWidth / 2;
+    final layerLeft =
+        viewLeft -
+        parallaxWorldX(
+          objectMeters: 0,
+          panMeters: panMeters,
+          velocityMultiplier: velocityMultiplier,
+          pixelsPerMeter: pixelsPerMeter,
+        );
+    final firstIndex = (layerLeft / tileWidth).floor();
+    final lastIndex = ((layerLeft + controller.sceneWidth) / tileWidth).ceil();
+
+    _artPaint
+      ..color = const Color(0xFFFFFFFF).withValues(alpha: opacity.clamp(0, 1))
+      ..filterQuality = FilterQuality.low;
+
+    for (var index = firstIndex; index <= lastIndex; index++) {
+      final left = parallaxWorldX(
+        objectMeters: index * controller.artTileMeters.toDouble(),
+        panMeters: panMeters,
+        velocityMultiplier: velocityMultiplier,
+        pixelsPerMeter: pixelsPerMeter,
+      );
+      canvas.drawImageRect(
+        image,
+        Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+        Rect.fromLTWH(left, top, tileWidth, drawnHeight),
+        _artPaint,
+      );
+    }
+  }
+
+  /// The pre-art placeholder: anonymous silhouette blobs scattered
+  /// deterministically per visible window. Still the behaviour for any biome
+  /// whose art has not landed (§9.1), which is what lets the generated
+  /// tiles be replaced one file at a time.
+  void _renderPlaceholderDecorations(
+    Canvas canvas,
+    double centerX,
+    double panMeters,
+    double pixelsPerMeter,
+    double baselineY,
+  ) {
+    if (bucketMeters <= 0) return;
+
     final halfWidthMeters = centerX / pixelsPerMeter;
     final windowCenterMeters = panMeters * velocityMultiplier;
     final firstBucket = ((windowCenterMeters - halfWidthMeters) / bucketMeters)
@@ -178,46 +370,68 @@ class EnvironmentLayer extends PositionComponent {
     final lastBucket = ((windowCenterMeters + halfWidthMeters) / bucketMeters)
         .ceil();
 
-    final baselineY = sceneHeight * baselineFraction;
     for (final decoration in _decorationsFor(firstBucket, lastBucket)) {
-      final screenX = parallaxScreenX(
-        centerX: centerX,
+      final x = parallaxWorldX(
         objectMeters: decoration.meters,
         panMeters: panMeters,
         velocityMultiplier: velocityMultiplier,
         pixelsPerMeter: pixelsPerMeter,
       );
-      canvas.drawCircle(Offset(screenX, baselineY), decoration.radius, _paint);
+      canvas.drawCircle(Offset(x, baselineY), decoration.radius, _paint);
     }
+  }
 
-    // Named, anchored props (§6.1 — e.g. a cyclops silhouette) — unlike the
-    // procedural decorations above, these are never bucketed/randomized:
-    // each is placed at exactly `anchor.meters * velocityMultiplier`, the
-    // one formula that makes it sit at `centerX` precisely when
-    // `panMeters == anchor.meters`, so it lines up with wherever the
-    // terrain profile shapes the ground for that same landmark without the
-    // two ever being independently tuned. No bitmap art exists yet (§9.1),
-    // so this is the same placeholder-circle rendering the procedural
-    // decorations already use, just larger and content-anchored rather
-    // than randomly scattered — swapping in a real sprite later is
-    // self-contained to this file.
+  /// Named, anchored props (§6.1 — e.g. a cyclops silhouette at its own
+  /// landmark) — unlike the procedural decorations above, these are never
+  /// bucketed or randomized: each sits at exactly its own route position, so
+  /// it lines up with wherever the terrain shapes the ground for that same
+  /// landmark without the two ever being tuned independently.
+  ///
+  /// Drawn as its own sprite once the quest ships one
+  /// (`ScenePropAnchor.asset`), and as an oversized placeholder circle until
+  /// then — larger than any procedural decoration so it reads as deliberate
+  /// rather than scatter.
+  void _renderAnchoredProps(
+    Canvas canvas,
+    double panMeters,
+    double pixelsPerMeter,
+    double baselineY,
+  ) {
     for (final anchor in controller.sceneProps) {
       if (anchor.layer != scenePropLayer) continue;
-      final screenX = parallaxScreenX(
-        centerX: centerX,
-        objectMeters: anchor.meters * velocityMultiplier,
-        panMeters: panMeters,
-        velocityMultiplier: velocityMultiplier,
-        pixelsPerMeter: pixelsPerMeter,
-      );
-      canvas.drawCircle(
-        Offset(screenX, baselineY),
-        _anchoredPropRadius,
-        _paint,
+      // An anchor names a position on the *route*, so it is placed at the
+      // route's own rate — it has to stay over its landmark, not drift with
+      // the layer it happens to be drawn on.
+      final x = worldXFor(anchor.meters.toDouble(), pixelsPerMeter);
+
+      final sprite = controller.propSprite?.call(anchor.asset);
+      if (sprite == null) {
+        // No art for this prop (or it is still loading) — the placeholder
+        // shape, larger than any procedural decoration so it still reads as
+        // a deliberate, named element.
+        canvas.drawCircle(Offset(x, baselineY), _anchoredPropRadius, _paint);
+        continue;
+      }
+
+      // Stood on the ground, not on this layer's baseline: a prop belongs to
+      // its landmark, and the landmark's ground height is what
+      // `terrainHeightAt` already decides for everything else on the route.
+      // Its own drawing is what sets its size — the scene does not scale it.
+      final feet = terrainHeightAt(x, controller);
+      canvas.drawImage(
+        sprite,
+        Offset(x - sprite.width / 2, feet - sprite.height.toDouble()),
+        _artPaint..color = const Color(0xFFFFFFFF),
       );
     }
   }
 }
+
+/// How tall a parallax layer's tile is drawn, as a multiple of the scene's
+/// height. Taller than the screen so a layer whose baseline sits low still
+/// covers everything above it, rather than leaving a band of bare sky under
+/// its silhouette.
+const double environmentLayerHeightFactor = 1.1;
 
 /// Placeholder radius for an anchored [ScenePropAnchor] — larger than any
 /// procedural `_Decoration` (`radius: 6 + random * 10`, so at most `16`) so
