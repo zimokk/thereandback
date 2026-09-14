@@ -185,5 +185,49 @@ void main() {
         expect(drawn, everyElement(isNull));
       },
     );
+
+    testWithGame<JourneyScene>(
+      'covers the full screen width, with no gap at any (interior) pan '
+      'position — guards the invariant behind a real device bug report: a '
+      'screenshot showed the ground missing across exactly the left half '
+      'of the screen, split at the pan position, background showing '
+      'through. `render()` used to read `game.camera.visibleWorldRect` '
+      'for this layer\'s draw window, a value that only refreshes inside '
+      '`JourneyScene.update()` — unlike every other on-path figure '
+      '(traveler, friends, `EnvironmentLayer`\'s own tiling, the '
+      'achievement guide lines), which reads `controller.panMeters` '
+      'directly and is never stale. Reproduced during investigation by '
+      'rendering with a changed `panMeters` and no intervening `update()` '
+      '(the scene is paused while off-screen, §6.1/§12, and an unrelated '
+      'Flutter rebuild can still repaint a paused layer): the window '
+      'stayed centred on the old pan, and its own route-start clamp '
+      'silently ate whichever side of that stale window undershot 0 m. '
+      'Not reproduced here as a literal "render with no update" case — '
+      'that also desyncs Flame\'s own camera transform, an orthogonal '
+      'concern this fix does not touch. Sourcing the window from '
+      '`controller` instead, like every sibling layer already does, '
+      'removes the second, independently-refreshing notion of "visible" '
+      'that could go stale in the first place; this test locks in that '
+      'the ordinary, correctly-updated case it protects stays covered '
+      'edge to edge.',
+      createGame,
+      (game) async {
+        _isolateGround(game);
+        // Interior positions only — near either end of this fixture's short
+        // 60 000 m route, the route's own start/end bounds legitimately clip
+        // the window (nothing exists before point A or after point B), which
+        // is correct behaviour, not this bug.
+        for (final pan in [15000.0, 30000.0, 45000.0]) {
+          controller.panMeters = pan;
+          game.update(0);
+          final drawn = await _drawnGroundTop(game);
+          expect(
+            drawn,
+            everyElement(isNotNull),
+            reason: 'gap in the ground at panMeters=$pan',
+          );
+        }
+      },
+    );
   });
 }
