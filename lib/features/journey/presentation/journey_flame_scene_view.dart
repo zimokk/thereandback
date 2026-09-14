@@ -274,97 +274,114 @@ class _JourneyFlameSceneViewState extends ConsumerState<JourneyFlameSceneView>
       children: [
         const Positioned.fill(child: AppSceneBackdrop()),
         Positioned.fill(child: SkyGradient(fictionalHour: fictionalHour)),
-        Column(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onHorizontalDragUpdate: _onHorizontalDragUpdate,
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final size = constraints.biggest;
-                    _sceneWidth = size.width;
-                    final centerX = size.width / 2;
-                    final pixelsPerMeter =
-                        size.width / metersPerScreenWidthFor(_journeyId);
+        // The scene fills the whole tab now, not just the space above the
+        // day/distance/narrative block below — it used to sit in a `Column`
+        // `Expanded` above that block's own `Padding`, so `sceneHeight`
+        // (`JourneyScene.onGameResize`) was only ever that shrunk region's
+        // height and the ground/parallax art (§9.1) never reached past it:
+        // everything below was `AppSceneBackdrop`'s flat vignette showing
+        // through, a bare gap under the illustration. The info block moves
+        // to a `Positioned` overlay further down instead, painted on top of
+        // the now full-height scene rather than pushing it up — by request,
+        // every art layer has to reach the very bottom of the screen with
+        // nothing left uncovered under it.
+        Positioned.fill(
+          child: GestureDetector(
+            onHorizontalDragUpdate: _onHorizontalDragUpdate,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final size = constraints.biggest;
+                _sceneWidth = size.width;
+                final centerX = size.width / 2;
+                final pixelsPerMeter =
+                    size.width / metersPerScreenWidthFor(_journeyId);
 
-                    final visibleAchievements = [
-                      for (final state in achievementStates)
-                        if (state.def.thresholdMeters <= _totalMeters)
-                          VisibleAchievement(
-                            state: state,
-                            x:
-                                centerX +
-                                (state.def.thresholdMeters - _panMeters) *
-                                    pixelsPerMeter,
-                          ),
-                    ];
+                final visibleAchievements = [
+                  for (final state in achievementStates)
+                    if (state.def.thresholdMeters <= _totalMeters)
+                      VisibleAchievement(
+                        state: state,
+                        x:
+                            centerX +
+                            (state.def.thresholdMeters - _panMeters) *
+                                pixelsPerMeter,
+                      ),
+                ];
 
-                    // Same pixel-threshold "not currently at You" check the
-                    // rewind ghost itself uses (`GhostTravelerComponent`,
-                    // compared against the *displayed*, possibly still
-                    // catching-up position) — shown/hidden in lockstep with
-                    // it.
-                    final showReturnButton =
-                        ((_displayedProgressMeters - _panMeters) *
-                                pixelsPerMeter)
-                            .abs() >
-                        1.0;
+                // Same pixel-threshold "not currently at You" check the
+                // rewind ghost itself uses (`GhostTravelerComponent`,
+                // compared against the *displayed*, possibly still
+                // catching-up position) — shown/hidden in lockstep with
+                // it.
+                final showReturnButton =
+                    ((_displayedProgressMeters - _panMeters) * pixelsPerMeter)
+                        .abs() >
+                    1.0;
 
-                    return Stack(
-                      key: const Key('journeyFlameScene'),
-                      children: [
-                        GameWidget(game: _scene),
-                        AchievementMarkerOverlay(
-                          achievements: visibleAchievements,
-                          sceneHeight: size.height,
-                          controller: _sceneController,
-                          l10n: l10n,
+                return Stack(
+                  key: const Key('journeyFlameScene'),
+                  children: [
+                    GameWidget(game: _scene),
+                    AchievementMarkerOverlay(
+                      achievements: visibleAchievements,
+                      sceneHeight: size.height,
+                      controller: _sceneController,
+                      l10n: l10n,
+                    ),
+                    // Top-right, not the scene's bottom-right corner it used
+                    // to sit in — now that the scene spans the full screen,
+                    // that corner sits directly under the info block overlay
+                    // below instead of clear of it. §6.1 only asks for "a
+                    // corner of the scene", not that specific one.
+                    if (showReturnButton)
+                      Positioned(
+                        top: AppSpacing.md,
+                        right: AppSpacing.md,
+                        child: _ReturnToYouButton(
+                          key: const Key('returnToYouButton'),
+                          label: l10n.journeyReturnToYouButton,
+                          onTap: _returnToYou,
                         ),
-                        if (showReturnButton)
-                          Positioned(
-                            right: AppSpacing.sm,
-                            bottom: AppSpacing.sm,
-                            child: _ReturnToYouButton(
-                              key: const Key('returnToYouButton'),
-                              label: l10n.journeyReturnToYouButton,
-                              onTap: _returnToYou,
-                            ),
-                          ),
-                      ],
-                    );
-                  },
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: AppSpacing.lg,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(l10n.journeyDayCounter(day), style: AppTypography.label),
+                const SizedBox(height: AppSpacing.md),
+                Text(distance.value, style: AppTypography.distanceHero),
+                Text(
+                  localizedUnitLabel(l10n, distance),
+                  style: AppTypography.distanceUnit,
                 ),
-              ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  '${journey.pointA} → ${journey.pointB}',
+                  style: AppTypography.bodySecondary,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  narrativeText,
+                  style: AppTypography.narrative,
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.lg,
-              ),
-              child: Column(
-                children: [
-                  Text(l10n.journeyDayCounter(day), style: AppTypography.label),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(distance.value, style: AppTypography.distanceHero),
-                  Text(
-                    localizedUnitLabel(l10n, distance),
-                    style: AppTypography.distanceUnit,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    '${journey.pointA} → ${journey.pointB}',
-                    style: AppTypography.bodySecondary,
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    narrativeText,
-                    style: AppTypography.narrative,
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
         Positioned(
           top: AppSpacing.md,
