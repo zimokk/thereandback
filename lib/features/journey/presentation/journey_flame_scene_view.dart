@@ -23,7 +23,9 @@ import 'achievement_overlay.dart';
 import 'journey_narrative_providers.dart';
 import 'journey_providers.dart';
 import 'journey_scene.dart';
+import 'journey_scene_art_providers.dart';
 import 'journey_scene_controller.dart';
+import 'scene_art_loader.dart';
 import 'journey_terrain_providers.dart';
 import 'journey_timing_providers.dart';
 import 'sky_gradient.dart';
@@ -57,6 +59,12 @@ class _JourneyFlameSceneViewState extends ConsumerState<JourneyFlameSceneView>
   late final JourneySceneController _sceneController;
   late final JourneyScene _scene;
 
+  /// Keeps the biome art the scene draws loaded (§6.1, §9.1). Created once
+  /// alongside the scene and driven from its game loop, not from `build` —
+  /// what is on screen changes with every drag frame, which is not a
+  /// Riverpod rebuild.
+  late final SceneArtLoader _artLoader;
+
   /// The route position, in meters, currently centered on screen —
   /// ephemeral view state (see [JourneySceneController.panMeters]'s own
   /// doc comment; this field is the source of truth, pushed into the
@@ -83,6 +91,10 @@ class _JourneyFlameSceneViewState extends ConsumerState<JourneyFlameSceneView>
     super.initState();
     _sceneController = JourneySceneController();
     _scene = JourneyScene(controller: _sceneController);
+    _artLoader = SceneArtLoader(
+      repository: ref.read(sceneArtRepositoryProvider),
+      controller: _sceneController,
+    );
   }
 
   @override
@@ -249,7 +261,10 @@ class _JourneyFlameSceneViewState extends ConsumerState<JourneyFlameSceneView>
       ..showFriends = showFriends
       ..friendRows = friendRows
       ..terrainProfile = terrainContent?.profile
-      ..sceneProps = terrainContent?.props ?? const [];
+      ..sceneProps = terrainContent?.props ?? const []
+      ..biomes = terrainContent?.biomes ?? const []
+      ..requestBiomes = _artLoader.ensureFor
+      ..propSprite = ref.read(sceneArtRepositoryProvider).propSprite;
 
     // §12: "game loop stops on inactive tab" — a plain field mutation on
     // the already-created game, safe to repeat on every build.
@@ -302,8 +317,7 @@ class _JourneyFlameSceneViewState extends ConsumerState<JourneyFlameSceneView>
                         AchievementMarkerOverlay(
                           achievements: visibleAchievements,
                           sceneHeight: size.height,
-                          pixelsPerMeter: pixelsPerMeter,
-                          terrainProfile: _sceneController.terrainProfile,
+                          controller: _sceneController,
                           l10n: l10n,
                         ),
                         if (showReturnButton)

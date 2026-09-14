@@ -10,7 +10,7 @@ import '../../../design/typography.dart';
 import '../../../l10n/app_localizations.dart';
 import '../../achievements/domain/achievement.dart';
 import '../../achievements/presentation/achievement_titles.dart';
-import '../domain/terrain_profile.dart' hide terrainHeightAt;
+import 'journey_scene_controller.dart';
 import 'terrain_layer.dart';
 
 /// One achievement marker's already-resolved screen `x` (from its meters
@@ -65,28 +65,19 @@ class AchievementMarkerOverlay extends StatelessWidget {
     super.key,
     required this.achievements,
     required this.sceneHeight,
-    required this.pixelsPerMeter,
-    required this.terrainProfile,
+    required this.controller,
     required this.l10n,
   });
 
   final List<VisibleAchievement> achievements;
   final double sceneHeight;
 
-  /// Same scale `journey_flame_scene_view.dart` already computes
-  /// (`route_scale.dart`'s `metersPerScreenWidthFor`) — needed here to
-  /// convert a marker's `thresholdMeters` to the same world-space x
-  /// [terrainHeightAt] expects, so the guide line ends exactly on the
-  /// horizon line instead of at an arbitrary height.
-  final double pixelsPerMeter;
-
-  /// The active quest's terrain profile (§6.1) — `null` for a quest with no
-  /// authored terrain content, in which case [terrainHeightAt] falls back to
-  /// the placeholder sine wave, same as `terrain_layer.dart` itself. Passed
-  /// through unchanged from `JourneySceneController.terrainProfile` so the
-  /// guide line always ends on the exact same horizon `HorizonTerrainLayer`
-  /// draws, never a second, independently-computed one.
-  final TerrainProfile? terrainProfile;
+  /// The very same scene controller the Flame components read (§6.1) — the
+  /// quest's scale, authored terrain and loaded biome art all at once, so
+  /// the guide line ends on exactly the ground line `HorizonTerrainLayer`
+  /// draws rather than on a second one computed from a subset of the same
+  /// inputs.
+  final JourneySceneController controller;
 
   final AppLocalizations l10n;
 
@@ -99,8 +90,7 @@ class AchievementMarkerOverlay extends StatelessWidget {
             painter: _AchievementGuidesPainter(
               achievements: achievements,
               sceneHeight: sceneHeight,
-              pixelsPerMeter: pixelsPerMeter,
-              terrainProfile: terrainProfile,
+              controller: controller,
             ),
           ),
         ),
@@ -193,14 +183,12 @@ class _AchievementGuidesPainter extends CustomPainter {
   const _AchievementGuidesPainter({
     required this.achievements,
     required this.sceneHeight,
-    required this.pixelsPerMeter,
-    required this.terrainProfile,
+    required this.controller,
   });
 
   final List<VisibleAchievement> achievements;
   final double sceneHeight;
-  final double pixelsPerMeter;
-  final TerrainProfile? terrainProfile;
+  final JourneySceneController controller;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -217,11 +205,10 @@ class _AchievementGuidesPainter extends CustomPainter {
       // uses to place itself relative to the viewport.
       final terrainWorldX = worldXFor(
         achievement.state.def.thresholdMeters.toDouble(),
-        pixelsPerMeter,
+        controller.pixelsPerMeter,
       );
       final lineY =
-          sceneHeight / 2 +
-          terrainHeightAt(terrainWorldX, terrainProfile, pixelsPerMeter);
+          sceneHeight / 2 + terrainHeightAt(terrainWorldX, controller);
       final from = Offset(achievement.x, markerGuideStartY);
       final to = Offset(achievement.x, lineY);
       _drawDashedLine(canvas, from, to, paint);
@@ -231,7 +218,7 @@ class _AchievementGuidesPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _AchievementGuidesPainter oldDelegate) =>
       oldDelegate.sceneHeight != sceneHeight ||
-      oldDelegate.pixelsPerMeter != pixelsPerMeter ||
+      !identical(oldDelegate.controller, controller) ||
       !identical(oldDelegate.achievements, achievements);
 }
 

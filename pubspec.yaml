@@ -63,6 +63,13 @@ flutter:
   assets:
     - assets/journeys/odyssey-ithaca/
     - assets/journeys/tower-of-lights/
+    # The per-biome parallax tiles (§6.1, §9.1). A separate entry per quest
+    # because Flutter's asset directories do not recurse — the parent entry
+    # above does not reach into this folder. One entry covers every biome a
+    # quest has or will have, since the files are named, not foldered, by
+    # biome (`scene_art_catalog.dart`).
+    - assets/journeys/odyssey-ithaca/segments/
+    - assets/journeys/tower-of-lights/segments/
     # The app's one background track (§6.5) — kept separate from
     # assets/journeys/{id}/ (§4) because it isn't quest content, it's a
     # single app-wide asset. Listed as a directory, same reasoning as the

@@ -109,7 +109,7 @@ class FriendMarkerComponent extends PositionComponent {
     // `.setValues` on the existing Vector2 — no fresh allocation per tick.
     _label.position.setValues(
       worldX,
-      terrainHeightAt(worldX, controller.terrainProfile, pixelsPerMeter) -
+      terrainHeightAt(worldX, controller) -
           travelerIconSize / 2 -
           friendLabelGap,
     );
