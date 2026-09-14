@@ -11,7 +11,6 @@ import '../domain/ground_heightmap.dart';
 import '../domain/scene_ground.dart';
 import '../domain/segment_biomes.dart';
 import '../domain/terrain_profile.dart' as domain;
-import 'journey_scene.dart';
 import 'journey_scene_controller.dart';
 
 /// Converts a route position ([meters], point A = 0) to the world-space x
@@ -141,10 +140,9 @@ const double _terrainStep = 4.0;
 /// offset math here (contrast [EnvironmentLayer], which deliberately opts
 /// out of the camera transform to move at a *different* rate).
 ///
-/// Renders only the currently visible window
-/// (`game.camera.visibleWorldRect`), not the whole route: a quest can span
-/// on the order of a hundred screen-widths (§ "Рендер в окне" in the
-/// implementation plan), so caching one `Path` for the entire route in
+/// Renders only the currently visible window, not the whole route: a quest
+/// can span on the order of a hundred screen-widths (§ "Рендер в окне" in
+/// the implementation plan), so caching one `Path` for the entire route in
 /// [onLoad] would mean either a path with an enormous coordinate range or,
 /// worse, silently wrong geometry once the route is longer than whatever
 /// arbitrary bound got baked in. Only the [Paint] is a long-lived field —
@@ -152,8 +150,26 @@ const double _terrainStep = 4.0;
 /// length, so building a fresh one every [render] is the same bounded cost
 /// the old `CustomPainter` already paid per frame, not a new allocation
 /// concern.
-class HorizonTerrainLayer extends PositionComponent
-    with HasGameReference<JourneyScene> {
+///
+/// The visible window is computed straight from [controller] (pan, scene
+/// size, scale) — the same inputs [EnvironmentLayer] already uses for its
+/// own window — rather than `game.camera.visibleWorldRect`. That getter
+/// only refreshes inside [JourneyScene.update], so a `render()` that runs
+/// without a preceding `update()` (the game is paused — §6.1/§12 "паузим,
+/// когда экран не виден" — while an unrelated Flutter rebuild still
+/// repaints this layer) sees a stale window left over from whatever
+/// `panMeters` was current at the *last* update, while every other figure
+/// on the path (the traveler, friends, the achievement guide lines) reads
+/// `controller.panMeters` directly and is never stale. When that stale
+/// window happened to sit near route start, the `math.max(0.0, ...)` clamp
+/// below (meant only for the route's own left edge) silently ate half of
+/// it too — which is what actually produced the bug this doc comment
+/// describes: a real device screenshot showing this layer half missing,
+/// split exactly down the middle of the screen, background visible on one
+/// side. Reproduced in a test by rendering with a changed `panMeters` and
+/// no intervening `update()` call; computing the window from [controller]
+/// removes the second, independently-stale source entirely.
+class HorizonTerrainLayer extends PositionComponent {
   HorizonTerrainLayer({required this.controller}) : super(priority: 0);
 
   final JourneySceneController controller;
@@ -165,15 +181,20 @@ class HorizonTerrainLayer extends PositionComponent
 
   @override
   void render(Canvas canvas) {
-    final visible = game.camera.visibleWorldRect;
+    final pixelsPerMeter = controller.pixelsPerMeter;
+    final sceneWidth = controller.sceneWidth;
+    if (pixelsPerMeter <= 0 || sceneWidth <= 0) return;
+
+    final viewLeft =
+        worldXFor(controller.panMeters, pixelsPerMeter) - sceneWidth / 2;
     // Clip to the route's own bounds — the line only exists between point A
     // (0 m) and point B (totalMeters), same as the CustomPaint placeholder.
     final routeRight = worldXFor(
       controller.totalMeters.toDouble(),
-      controller.pixelsPerMeter,
+      pixelsPerMeter,
     );
-    final left = math.max(0.0, visible.left);
-    final right = math.min(routeRight, visible.right);
+    final left = math.max(0.0, viewLeft);
+    final right = math.min(routeRight, viewLeft + sceneWidth);
     if (right <= left) return;
 
     final path = Path()..moveTo(left, terrainHeightAt(left, controller));
@@ -204,8 +225,12 @@ class HorizonTerrainLayer extends PositionComponent
 /// placed from [terrainHeightAt] and the tile's own
 /// [GroundHeightmap.centerFraction], which is why the drawn silhouette lands
 /// on the line the traveler walks rather than near it.
-class GroundArtLayer extends PositionComponent
-    with HasGameReference<JourneyScene> {
+///
+/// The visible window is computed straight from [controller], not from
+/// `game.camera.visibleWorldRect` — see [HorizonTerrainLayer]'s doc comment
+/// for why that getter can go stale relative to `controller.panMeters` and
+/// what that stale window did to this exact layer on a real device.
+class GroundArtLayer extends PositionComponent {
   GroundArtLayer({required this.controller}) : super(priority: -10);
 
   final JourneySceneController controller;
@@ -222,17 +247,19 @@ class GroundArtLayer extends PositionComponent
   @override
   void render(Canvas canvas) {
     final pixelsPerMeter = controller.pixelsPerMeter;
+    final sceneWidth = controller.sceneWidth;
     final sceneHeight = controller.sceneHeight;
-    if (pixelsPerMeter <= 0 || sceneHeight <= 0) return;
+    if (pixelsPerMeter <= 0 || sceneWidth <= 0 || sceneHeight <= 0) return;
     if (controller.biomes.isEmpty) return;
 
-    final visible = game.camera.visibleWorldRect;
+    final viewLeft =
+        worldXFor(controller.panMeters, pixelsPerMeter) - sceneWidth / 2;
     final routeRight = worldXFor(
       controller.totalMeters.toDouble(),
       pixelsPerMeter,
     );
-    final left = math.max(0.0, visible.left);
-    final right = math.min(routeRight, visible.right);
+    final left = math.max(0.0, viewLeft);
+    final right = math.min(routeRight, viewLeft + sceneWidth);
     if (right <= left) return;
 
     // Each biome on screen is drawn over its own stretch of world x, with
