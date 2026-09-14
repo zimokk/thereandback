@@ -33,17 +33,31 @@ class JourneyTab extends ConsumerWidget {
     // never-started quest does, without touching the active quest itself.
     final browsing = ref.watch(browsingCatalogProvider);
 
+    final showingScene = !(selected == null || journey == null || browsing);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      // The scene's own backdrop (`AppSceneBackdrop`) paints a warm
+      // near-black bronze (`AppColors.journeySceneBackground`, §9), not this
+      // Scaffold's neutral pure-black `AppColors.background` — with the
+      // scene active, that mismatch showed as a stark black strip in the
+      // safe-area inset above it (status bar/notch), right where
+      // `AppSceneBackdrop`/`SkyGradient`'s own `Positioned.fill` start.
+      // Matching the Scaffold's color to the scene's own whenever the scene
+      // is what is showing fills that strip with the same tone the art
+      // itself starts with, simplest fix for the seam (2026-09-14 follow-up:
+      // "заполнить цветом верхнего арта").
+      backgroundColor: showingScene
+          ? AppColors.journeySceneBackground
+          : AppColors.background,
       body: SafeArea(
-        child: (selected == null || journey == null || browsing)
-            ? const QuestPickerView()
-            : const Column(
+        child: showingScene
+            ? const Column(
                 children: [
                   StepsPermissionGate(),
                   Expanded(child: JourneyFlameSceneView()),
                 ],
-              ),
+              )
+            : const QuestPickerView(),
       ),
     );
   }
