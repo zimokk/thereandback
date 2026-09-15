@@ -1955,6 +1955,91 @@ this stays procedural like every other placeholder in `generate_scene_art.py`
   of reverting it after the fact again; `git status` after generating
   showed only the two files this change actually touches.
 
+Решено 2026-09-15, later the same day (§6.1, §9.1 — Troy's start art is now
+a real illustration, not generated, by direct request "используй это
+изображение как стартовое для Одиссеи"):
+
+- **`odyssey-ithaca`'s `start_art.webp` is a real hand-drawn/AI illustration
+  supplied by the repository owner** — twin gate towers, a crenellated wall
+  and "ΤΡΟΙΑ" lettered over the gate, on a rocky clifftop — not
+  `_troy_start_art`'s procedural output. **Deliberately colored, not a flat
+  silhouette** — asked explicitly, since this is the one file §9's
+  "silhouettes in flat fill, no internal gradients" rule and this exact
+  file's own history (the same-day entries above: a redraw, then a hard
+  alpha-threshold pass) had twice reinforced. Accepted as an open,
+  documented style compromise, same posture as `assets/media/README.md`'s
+  own "source not yet chosen" note for the shared track — not a quiet
+  reinterpretation of §9, and not applied to any other layer: every biome
+  tile and `tower-of-lights`' own start art stay flat silhouettes.
+- **The uploaded file had no real alpha channel** — its "transparent" area
+  was a literal checkerboard-pattern PNG (`colortype 2`/RGB, confirmed by
+  reading its own `IHDR` chunk), the common result of a design tool
+  flattening its transparency-preview instead of exporting real alpha.
+  Matted by flood-filling from the image's four edges through
+  near-neutral-gray pixels (max channel spread ≤ 12, luminance 12–148 — one
+  continuous band covering both checker tones *and* the anti-aliased blend
+  between them, discovered by sampling: a two-band threshold left a faint
+  ghost grid of blend pixels behind) — connectivity-based, not a global
+  color threshold, specifically so it cannot eat into the castle's own gray
+  stonework, which sits behind unbroken black outline strokes the flood
+  fill cannot cross. Verified over both a dark and a light backing color
+  (no halo/fringe either way) before committing. A small isolated
+  sparkle/UI icon in the empty sky area (no connection to the castle or
+  cliff — almost certainly a design-tool artifact, not scene content) was
+  cleared separately by its own bounding box.
+- **Cropped twice, both times for reasons specific to how
+  `start_art_layer.dart` places this file, not taste:**
+  1. Trimmed to the illustration's own opaque bounding box first. The
+     source, uncropped, was landscape (1374×768) with a wide empty margin
+     past the cliff on the right — and `start_art_layer.dart` anchors an
+     image's own **right edge** to the route's start (world x `0`, per
+     `journeyStartArtAssetPath`'s and this file's own doc comments). With
+     that margin still attached, the image's actual content (the castle)
+     computed as landing entirely off-screen to the left at `panMeters: 0`
+     — nothing but empty sky would have been visible at the route's very
+     start. Cropping to the opaque bounding box (dropping the dead margin)
+     puts real content back at the edge that matters.
+  2. Trimmed further, from 1000 px wide down to 821, after
+     `start_art_layer_test.dart`'s own coverage test still failed at one
+     column. The cause: this image's cliff face tapers into a thin, low
+     ledge toward its own right edge (the artist's own perspective choice,
+     receding toward a vanishing point) — and CLAUDE.md's own
+     "Решено 2026-09-15" entry earlier the same day (§6.1, lowering the
+     horizon 20% for more sky) had shrunk the screen space visible *below*
+     the ground line from half the screen to 30% of it. The combination
+     pushed that thin ledge's own opaque pixels below the visible window at
+     the smallest scene height the test exercises. Not a bug in the horizon
+     change (680 tests were green against the old placeholder art right
+     before this one landed) — this specific illustration's own tapering
+     edge needed a tighter crop to clear the now-smaller margin. Re-cropped
+     to the last column whose content reaches comfortably above that
+     margin (a real safety buffer, not the exact boundary), verified by
+     running the actual test against it rather than computing by hand and
+     trusting the arithmetic.
+- **`tools/generate_scene_art.py` no longer generates this file.**
+  `_troy_start_art`, `_TROY_WALL_COLOR` and `_flatten_silhouette` (all three
+  existed only to draw this one placeholder) are deleted, and
+  `START_ART_GENERATORS` no longer has an `odyssey-ithaca` entry — the same
+  "becomes not needed once real art lands" retirement
+  `assets/journeys/tower-of-lights/README.md` already documents for
+  `generate_map.py`, applied here because this script is *shared* across
+  quests (the biome tiles, `tower-of-lights`' own start art) rather than a
+  quest-local one-off, so the dead generator was removed instead of left
+  keeping only a stale docstring. `--check` simply has nothing left to
+  verify for `odyssey-ithaca`'s start art now — verified running normally
+  (`--quest odyssey-ithaca`, no `--check`) leaves `start_art.webp` untouched
+  (same md5 before/after); it still regenerates that quest's biome tiles as
+  always (byte-different in this sandbox's Pillow build, same as every
+  earlier entry above — reverted with `git checkout --` before committing,
+  not part of this change).
+- **Verified against the real Flutter SDK, not just by reasoning about the
+  numbers.** This session had network access (downloaded Flutter 3.47.2):
+  `start_art_layer_test.dart`'s coverage assertion actually caught the
+  first crop attempt's real bug (content clipped below the visible window)
+  before it reached the repo, and the full gate —
+  `dart format`/`flutter analyze`/`flutter test` — all green (680 tests)
+  after the fix.
+
 Остаётся нерешённым:
 
 - [x] Первый квест каталога — «The Odyssey: Troy to Ithaca» (§1.1). Черновик

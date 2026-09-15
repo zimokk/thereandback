@@ -1,7 +1,10 @@
-/// Per-quest "start art" (§6.1, §9.1) — a silhouette illustration anchored
-/// at the route's own start (point A, 0 m) that fills the dead space
-/// between the screen's left edge and the route start whenever the scene is
-/// scrolled near the beginning.
+/// Per-quest "start art" (§6.1, §9.1) — an illustration anchored at the
+/// route's own start (point A, 0 m) that fills the dead space between the
+/// screen's left edge and the route start whenever the scene is scrolled
+/// near the beginning. Normally a flat silhouette like every biome tile
+/// (§9) — `odyssey-ithaca`'s own file is a documented exception (CLAUDE.md
+/// §14, 2026-09-15: a real colored illustration, by direct request), not a
+/// change to that rule for every quest.
 ///
 /// That dead space exists by design elsewhere in this feature:
 /// `terrain_layer.dart`'s ground/horizon layers stop exactly at 0 m
