@@ -7,6 +7,7 @@ import '../domain/segment_biomes.dart';
 import 'environment_layer.dart';
 import 'friend_component.dart';
 import 'journey_scene_controller.dart';
+import 'start_art_layer.dart';
 import 'terrain_layer.dart';
 import 'traveler_component.dart';
 
@@ -56,6 +57,13 @@ class JourneyScene extends FlameGame {
     await world.add(EnvironmentLayer.distant(controller));
     await world.add(EnvironmentLayer.behind(controller));
     await world.add(EnvironmentLayer.front(controller));
+
+    // Above every EnvironmentLayer instance (its own priority sits just
+    // past EnvironmentLayer.front's) so the quest's own start art — Troy's
+    // walls, the Bellglass Tower — wins wherever it overlaps their
+    // deliberately unclipped tiles (`start_art_layer.dart`'s own doc
+    // comment).
+    await world.add(StartArtLayer(controller: controller));
 
     // Same `world`/priority level as [solidTraveler] and every friend marker
     // (§ [travelerPriority]'s doc comment) — not `camera.viewport`, which

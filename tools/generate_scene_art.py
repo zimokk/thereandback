@@ -11,6 +11,14 @@ Writes four seamless silhouette tiles per biome into a quest's own
                          back, column by column, and the traveler walks on it)
     {biome}_front.webp   close foreground, drawn over the traveler
 
+Plus, for a quest listed in ``START_ART_GENERATORS``, one more file directly
+under the quest's own folder (not ``segments/`` — it is one named place, never
+tiled):
+
+    start_art.webp       fills the space left of the route's own start (0 m)
+                         — Troy's walls, the Bellglass Tower
+                         (`start_art_layer.dart`)
+
 These are placeholders, not final art: the art source is still open (§9.1).
 They exist so the whole pipeline — extraction, tiling, cross-fading, the
 traveler following the drawn hills — is real and testable now, and so a real
@@ -266,6 +274,110 @@ def _biomes_of(quest_dir: Path) -> list[str]:
     return seen
 
 
+# The "start art" fills the space left of the route's own start (0 m) —
+# `start_art_layer.dart` — with one named illustration per quest, never
+# tiled. Sized the same 2:3 portrait as the ground tile (`GROUND_HEIGHT`/
+# `TILE_WIDTH`) for the same reason: tall enough, once the app scales it by
+# scene height, to reach comfortably past both edges of the screen.
+START_ART_WIDTH = TILE_WIDTH
+START_ART_HEIGHT = GROUND_HEIGHT
+
+
+def _start_art_color(quest_dir: Path) -> tuple[int, int, int]:
+    """The quest's own front-layer colour, at its first segment's biome.
+
+    "The darkest, topmost layer" by direct request — `front` is both:
+    `LAYER_NAMES`' own z-order puts it drawn last (topmost), and every
+    family in `PALETTES` ramps darkest at that same index. Reading it from
+    the quest's *first* segment, rather than picking one family by hand,
+    keeps the start art in the same palette the traveler's first steps are
+    actually drawn in.
+    """
+    locations = json.loads((quest_dir / "locations.json").read_text())
+    first_biome = locations["segments"][0]["biome"]
+    family, _roughness, _peaks = BIOMES[first_biome]
+    return PALETTES[family][LAYER_NAMES.index("front")]
+
+
+def _troy_start_art(color: tuple[int, int, int]) -> Image.Image:
+    """Troy: a crenellated wall the width of the tile, a tall gate tower
+    near the right edge (closest to the route's own start, so it is the
+    first — and, on an ordinary phone, the only — part of this art actually
+    on screen), and one smaller tower further back. All flat fill, no
+    internal gradient (§9) — same rule the biome tiles above follow.
+    """
+    width, height = START_ART_WIDTH, START_ART_HEIGHT
+    image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    fill = (*color, 255)
+
+    wall_top = int(height * 0.62)
+    merlon = width // 14
+    x = 0
+    raised = True
+    while x < width:
+        top = wall_top if raised else wall_top + merlon // 2
+        draw.rectangle([x, top, x + merlon, height], fill=fill)
+        x += merlon
+        raised = not raised
+
+    gate_w = int(width * 0.16)
+    gate_x = int(width * 0.74)
+    gate_top = int(height * 0.30)
+    draw.rectangle([gate_x, gate_top, gate_x + gate_w, height], fill=fill)
+    apex_y = gate_top - int(width * 0.07)
+    draw.polygon(
+        [(gate_x, gate_top), (gate_x + gate_w // 2, apex_y), (gate_x + gate_w, gate_top)],
+        fill=fill,
+    )
+
+    tower_w = int(width * 0.09)
+    tower_x = int(width * 0.30)
+    tower_top = int(height * 0.44)
+    draw.rectangle([tower_x, tower_top, tower_x + tower_w, height], fill=fill)
+
+    return image
+
+
+def _tower_start_art(color: tuple[int, int, int]) -> Image.Image:
+    """The Bellglass Tower — "just a tower" by direct request: a single
+    tall tower with a pointed roof over a low wall, simpler than Troy's
+    full skyline above.
+    """
+    width, height = START_ART_WIDTH, START_ART_HEIGHT
+    image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    fill = (*color, 255)
+
+    base_top = int(height * 0.70)
+    draw.rectangle([0, base_top, width, height], fill=fill)
+
+    tower_w = int(width * 0.22)
+    tower_x = int(width * 0.68)
+    tower_top = int(height * 0.16)
+    draw.rectangle([tower_x, tower_top, tower_x + tower_w, height], fill=fill)
+    apex_y = tower_top - int(width * 0.10)
+    draw.polygon(
+        [
+            (tower_x, tower_top),
+            (tower_x + tower_w // 2, apex_y),
+            (tower_x + tower_w, tower_top),
+        ],
+        fill=fill,
+    )
+
+    return image
+
+
+# One generator per quest that ships start art — a quest missing from here
+# simply draws nothing (`start_art_layer.dart`'s own fallback), the same
+# "not every quest has one" shape `journeyThemeTrackAssetPath` already uses.
+START_ART_GENERATORS = {
+    "odyssey-ithaca": _troy_start_art,
+    "tower-of-lights": _tower_start_art,
+}
+
+
 def _seam_error(image: Image.Image) -> tuple[int, int]:
     """How sharp the wrap-around joint is, against the tile's own roughness.
 
@@ -323,6 +435,20 @@ def generate(quests: list[str], *, check_only: bool) -> int:
                         problems += 1
                 else:
                     _tile(biome, layer).save(path, "WEBP", lossless=True, quality=90)
+
+        start_art_generator = START_ART_GENERATORS.get(quest)
+        if start_art_generator is not None:
+            path = quest_dir / "start_art.webp"
+            if check_only:
+                if not path.exists():
+                    print(f"  ! missing {path.relative_to(REPO_ROOT)}")
+                    problems += 1
+            else:
+                color = _start_art_color(quest_dir)
+                start_art_generator(color).save(
+                    path, "WEBP", lossless=True, quality=90
+                )
+
         print(f"  {quest}: {len(_biomes_of(quest_dir)) * len(LAYER_NAMES)} tiles")
     return problems
 
