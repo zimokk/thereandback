@@ -50,8 +50,11 @@ const double terrainMidY = 0;
 /// background art to show. [JourneyScene.onLoad] applies this to the
 /// camera's own `viewfinder.anchor`, which shifts every `World` child
 /// (ground, traveler, friends, environment layers, start art) down
-/// together in one place, rather than each layer separately.
-const double horizonLoweringFraction = 0.2;
+/// together in one place, rather than each layer separately. Originally
+/// `0.2`, brought back up to `0.13` the same day (CLAUDE.md §14 — "too
+/// low now") once the full `0.2` lowering read as too much on a real
+/// illustration.
+const double horizonLoweringFraction = 0.13;
 
 /// Fraction of the scene's height, from the top, at which the horizon
 /// (world y [terrainMidY]) actually renders on screen once
