@@ -13,19 +13,32 @@ import 'traveler_component.dart';
 /// height — taller than the screen (like [environmentLayerHeightFactor]'s
 /// own comment explains) so it still covers everything above/below its
 /// own hung baseline rather than leaving a band of bare sky or ground
-/// showing past its edges.
-const double startArtHeightFactor = 1.6;
+/// showing past its edges. Originally `1.6`, tuned for the old procedural
+/// Troy placeholder (any crop of a repeating silhouette still "worked");
+/// brought down once a real illustration replaced it (CLAUDE.md §14,
+/// 2026-09-15 — at `1.6` only a small, heavily zoomed-in corner of the art
+/// was ever visible). Lower reads as more of the illustration at once;
+/// too low re-opens a bare gap below the ground line (verified against
+/// `start_art_layer_test.dart`'s own coverage assertion, not eyeballed).
+const double startArtHeightFactor = 1.0;
 
 /// Where the art's own silhouette sits down its source image, as a
 /// fraction of the drawn tile's height (`0` = top, `1` = bottom) — mirrors
 /// `groundArtTileHeightFactor`'s `GroundHeightmap.centerFraction`, except
 /// fixed rather than measured: this art is never re-extracted for relief,
-/// so there is nothing to read the value back from. Matches
-/// `tools/generate_scene_art.py`'s own start-art generator, which draws
-/// each silhouette's roofline starting well above this row so the fixed
-/// value stays a safe upper bound regardless of which quest's art is
-/// loaded.
-const double startArtMeanRow = 0.62;
+/// so there is nothing to read the value back from. Originally `0.62`,
+/// matching `tools/generate_scene_art.py`'s old procedural Troy
+/// placeholder's own `wall_top`; lowered to `0.46` alongside
+/// [startArtHeightFactor] above once a real illustration replaced that
+/// placeholder (CLAUDE.md §14, 2026-09-15) — `0.46` is close to where this
+/// specific image's own clifftop path actually sits down its (cropped)
+/// frame, so less of [startArtHeightFactor]'s scale is spent on the part
+/// of the image above the ground line that this row doesn't need to cover.
+/// `tower-of-lights`' own procedural placeholder still renders correctly
+/// at this lower value too (its own drawn base sits even further down its
+/// frame than this row, so it only gains extra safety margin below the
+/// line, not a gap).
+const double startArtMeanRow = 0.46;
 
 /// Fills the space between the screen's left edge and the route's own
 /// start (0 m, point A) with a per-quest illustration (§6.1, §9.1) — Troy's

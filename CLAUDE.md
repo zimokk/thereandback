@@ -2040,6 +2040,51 @@ a real illustration, not generated, by direct request "используй это
   `dart format`/`flutter analyze`/`flutter test` — all green (680 tests)
   after the fix.
 
+Решено 2026-09-15, later still the same day (§6.1, §9.1 — two follow-up
+adjustments to the changes above, by direct request "картинка стартовая
+слишком большая, уменьши масштаб... И подними всю линию на 7% выше"):
+
+- **The horizon is raised back up by 7 points.** `horizonLoweringFraction`
+  (`terrain_layer.dart`) goes from `0.2` to `0.13` — the ground line (and
+  every `World` child riding on the same camera anchor: traveler, friends,
+  environment layers, start art) now renders at 63% down the screen instead
+  of 70%. Still lower than the pre-2026-09-15 dead-centre default (`0.5`,
+  "too high" per that same day's earlier entry) — this is a correction to
+  how far that first change went, not a reversal of it.
+- **Troy's real illustration was drawn at `startArtHeightFactor: 1.6` and
+  `startArtMeanRow: 0.62`** (`start_art_layer.dart`) — both tuned for the
+  old *procedural* placeholder, where any crop of a repeating silhouette
+  looked fine. On the real illustration, `1.6` meant the whole image was
+  stretched to 160% of the scene's height and hung from a row (62% down)
+  well below where this specific art's own clifftop sits (measured directly
+  off the cropped file: ≈46%) — the combined effect was a small, heavily
+  zoomed-in corner of the castle, exactly the report ("виден только
+  маленький кусок"). Brought down to `startArtHeightFactor: 1.0` and
+  `startArtMeanRow: 0.46` — the second change matters as much as the first:
+  lowering the mean row to match where this art's own ground level actually
+  sits means less of `startArtHeightFactor`'s scale is spent on padding
+  above the line that this row doesn't need to cover, so the same "no bare
+  gap below the ground line" guarantee holds at a much less zoomed-in
+  scale. Both constants are still global (shared with `tower-of-lights`'
+  own procedural start art, whose drawn base sits even lower in its own
+  frame than `0.46`, so it only gains extra safety margin, not a gap) —
+  not made per-quest, since one real value and one placeholder value both
+  still work at the same settings; a genuine per-quest need would be the
+  point to split them, not this one.
+- **Tuned empirically against the real renderer, not by eye on a static
+  export.** This session re-downloaded Flutter 3.47.2 and rendered
+  `StartArtLayer` alone through the actual `JourneyScene`/camera pipeline
+  at `panMeters: 0` (the worst-case widest gap) for a few candidate values,
+  inspecting each PNG before choosing — `0.85`/default mean row left a bare
+  black gap under the cliff (fails the "no bare strip" invariant even
+  though nothing automated caught it at that exact scene size); `1.25` at
+  the old mean row closed the gap but pushed the gate back off-frame
+  sideways instead. `1.0`/`0.46` was the first combination with neither
+  problem, confirmed by both the visual render and a real
+  `flutter test test/features/journey/presentation/start_art_layer_test.dart`
+  pass, then the full gate (`dart format`/`flutter analyze`/`flutter test`,
+  680 tests) after landing on it.
+
 Остаётся нерешённым:
 
 - [x] Первый квест каталога — «The Odyssey: Troy to Ithaca» (§1.1). Черновик
