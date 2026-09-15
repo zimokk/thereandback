@@ -1864,6 +1864,58 @@ CI на PR с обоими треками выше):
   (`velocityMultiplier`, `priority`) одинаков в обоих случаях, так что
   решение обратимо.
 
+Решено 2026-09-15 (§6.1, §9.1 — Troy's start art redrawn, by direct request
+"the route starts abruptly in the mountains, add a recognizable Troy
+silhouette with walls and a gate that the golden route line visibly starts
+from"):
+
+- **`StartArtLayer`/`start_art.webp` (§6.1, «Решено 2026-09-14» above —
+  `journey_start_art.dart`, merged just before this session started) was
+  never documented here** — this entry is the first §14 record of that
+  mechanism as well as of this change to it. It already filled the gap left
+  of the route's own start with a per-quest illustration; what it drew for
+  Troy read as a generic building silhouette (one tall tower, one gate
+  block set noticeably back from the tile's own right edge — i.e. short of
+  world x 0, the exact point the route line starts from) in the same
+  near-black tone every biome tile already uses, which is what still read
+  as "mountains starting abruptly" in spite of the layer existing.
+- **`tools/generate_scene_art.py`'s `_troy_start_art` redrawn**: twin gate
+  towers now flank a pointed archway, the outer tower's own right edge
+  landing exactly on the tile's right edge — the route's start — so the
+  gate is the last thing on screen before the walked line picks up, not a
+  stretch of plain wall. The crenellated wall and the smaller rear
+  watchtower are otherwise the same shapes as before.
+- **Troy gets its own fixed colour, `_TROY_WALL_COLOR` (`0x19, 0x13, 0x07`),
+  instead of `_start_art_color`'s usual "blend with the first segment's
+  biome" pick** — by direct request for a gold/dark-gold reading. It is
+  `AppColors.gold` (§9, `0xE0AE3F`) scaled down to the same order of
+  darkness the front-layer palette entries already sit at (`PALETTES`'
+  front column tops out around `0x12`), so it still reads as a flat, dark
+  silhouette at night alongside the mountains (§9's "почти чёрный",
+  "силуэты сплошной заливкой") rather than a lit UI element, while keeping
+  gold's own hue — no biome family in `PALETTES` is actually gold, so this
+  is the one deliberate exception, scoped to this one named illustration,
+  not a second accent colour entering the biome art system. `tower-of-
+  lights`'s own start art (the Bellglass Tower) is untouched — this was a
+  Troy-specific request, not a change to `_start_art_color` itself.
+- **Regenerating asked for more than intended.**
+  `generate_scene_art.py`'s `generate()` rewrites every biome tile for a
+  quest whenever it runs un-checked for that quest, not just the one file
+  actually being changed — running it to refresh `start_art.webp` alone
+  also re-rendered all 64 already-shipped `odyssey-ithaca` biome tiles,
+  byte-different from what was committed (this sandbox's Pillow build does
+  not reproduce the original bytes pixel-for-pixel, even with the same
+  seeded `random` calls). Those were reverted (`git checkout --`) before
+  committing — only `start_art.webp` and the script itself are part of this
+  change. A future content-only tweak to one generator should check
+  `git status` after running the script for exactly this reason, rather
+  than assume an unrelated diff is safe to commit.
+- **No Flutter SDK in this sandbox** (recurring theme through §14) — this
+  change touches no Dart code, so `flutter analyze`/`flutter test` have
+  nothing new to catch; verified instead with `tools/generate_scene_art.py
+  --check` (clean) and by rendering `start_art.webp` to PNG for visual
+  review outside the app.
+
 Остаётся нерешённым:
 
 - [x] Первый квест каталога — «The Odyssey: Troy to Ithaca» (§1.1). Черновик

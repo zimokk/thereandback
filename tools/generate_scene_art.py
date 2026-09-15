@@ -299,17 +299,32 @@ def _start_art_color(quest_dir: Path) -> tuple[int, int, int]:
     return PALETTES[family][LAYER_NAMES.index("front")]
 
 
-def _troy_start_art(color: tuple[int, int, int]) -> Image.Image:
-    """Troy: a crenellated wall the width of the tile, a tall gate tower
-    near the right edge (closest to the route's own start, so it is the
-    first — and, on an ordinary phone, the only — part of this art actually
-    on screen), and one smaller tower further back. All flat fill, no
-    internal gradient (§9) — same rule the biome tiles above follow.
+# Troy's own colour — by direct request, not `_start_art_color`'s usual
+# "blend with the first segment's biome" pick: AppColors.gold (§9,
+# 0xE0AE3F) scaled down to the same order of darkness the front-layer
+# palette entries already sit at (PALETTES' front column tops out around
+# 0x12), so it reads as "a dark, flat silhouette" alongside the mountains
+# rather than a lit-up UI element, while still keeping gold's own hue —
+# unlike every biome family above, which are all cool/neutral or ember-warm
+# but never actually gold.
+_TROY_WALL_COLOR = (0x19, 0x13, 0x07)
+
+
+def _troy_start_art(_color: tuple[int, int, int]) -> Image.Image:
+    """Troy: a crenellated wall the width of the tile, twin gate towers
+    flanking a pointed archway right at the tile's own right edge — the
+    route's own start (0 m) — so the walked line reads as beginning at the
+    gate itself, not a stretch of plain wall before it, and one smaller
+    watchtower further back for skyline variety. All flat fill, no internal
+    gradient (§9) — same rule the biome tiles above follow. Uses its own
+    fixed dark-gold colour (`_TROY_WALL_COLOR`), not the [color] every other
+    start-art generator blends with its quest's first biome — see that
+    constant's own doc comment.
     """
     width, height = START_ART_WIDTH, START_ART_HEIGHT
     image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
-    fill = (*color, 255)
+    fill = (*_TROY_WALL_COLOR, 255)
 
     wall_top = int(height * 0.62)
     merlon = width // 14
@@ -321,20 +336,40 @@ def _troy_start_art(color: tuple[int, int, int]) -> Image.Image:
         x += merlon
         raised = not raised
 
-    gate_w = int(width * 0.16)
-    gate_x = int(width * 0.74)
-    gate_top = int(height * 0.30)
+    # Twin gate towers, the outer one's right edge exactly on the tile's own
+    # right edge (world x 0, the route's start) — the last thing on screen
+    # before the golden route line picks up is the gate itself.
+    tower_w = int(width * 0.11)
+    gate_w = int(width * 0.22)
+    outer_x = width - tower_w
+    gate_x = outer_x - gate_w
+    inner_x = gate_x - tower_w
+    for tower_x, tower_top in ((inner_x, int(height * 0.30)), (outer_x, int(height * 0.24))):
+        draw.rectangle([tower_x, tower_top, tower_x + tower_w, height], fill=fill)
+        apex_y = tower_top - int(tower_w * 0.9)
+        draw.polygon(
+            [
+                (tower_x, tower_top),
+                (tower_x + tower_w // 2, apex_y),
+                (tower_x + tower_w, tower_top),
+            ],
+            fill=fill,
+        )
+
+    # The archway between the towers: shorter than both (reads as the
+    # entrance, not a third tower), taller than the plain wall either side.
+    gate_top = int(height * 0.46)
     draw.rectangle([gate_x, gate_top, gate_x + gate_w, height], fill=fill)
-    apex_y = gate_top - int(width * 0.07)
+    apex_y = gate_top - int(gate_w * 0.5)
     draw.polygon(
         [(gate_x, gate_top), (gate_x + gate_w // 2, apex_y), (gate_x + gate_w, gate_top)],
         fill=fill,
     )
 
-    tower_w = int(width * 0.09)
-    tower_x = int(width * 0.30)
-    tower_top = int(height * 0.44)
-    draw.rectangle([tower_x, tower_top, tower_x + tower_w, height], fill=fill)
+    tower_w2 = int(width * 0.08)
+    tower_x2 = int(width * 0.28)
+    tower_top2 = int(height * 0.48)
+    draw.rectangle([tower_x2, tower_top2, tower_x2 + tower_w2, height], fill=fill)
 
     return image
 
