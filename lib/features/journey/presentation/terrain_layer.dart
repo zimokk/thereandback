@@ -42,6 +42,26 @@ const double terrainWaveWavelength = 260;
 /// scene's vertical centre is.
 const double terrainMidY = 0;
 
+/// How much lower than dead centre the horizon renders, as a fraction of
+/// [JourneySceneController.sceneHeight] — CLAUDE.md §6.1 (2026-09-15
+/// request): at the previous `Anchor.center` default, the traveler and
+/// ground sat at exactly 50% down the screen, reading as "visually very
+/// high" and leaving too little sky above for the sky gradient/future
+/// background art to show. [JourneyScene.onLoad] applies this to the
+/// camera's own `viewfinder.anchor`, which shifts every `World` child
+/// (ground, traveler, friends, environment layers, start art) down
+/// together in one place, rather than each layer separately.
+const double horizonLoweringFraction = 0.2;
+
+/// Fraction of the scene's height, from the top, at which the horizon
+/// (world y [terrainMidY]) actually renders on screen once
+/// [horizonLoweringFraction] is applied — `0.5` (dead centre) plus that
+/// lowering. Every `World` child gets this for free through the camera's
+/// own transform; `achievement_overlay.dart`'s guide-line painter is the
+/// one screen-space calculation that sits *outside* that transform, so it
+/// repeats this exact fraction to land on the same line the camera draws.
+const double horizonScreenYFraction = 0.5 + horizonLoweringFraction;
+
 /// Height of the horizon line at world position [worldX], for a quest whose
 /// [profile] is `null` — the original placeholder sine wave (§9.1: no real
 /// per-biome elevation art yet), kept exactly as it always rendered so a

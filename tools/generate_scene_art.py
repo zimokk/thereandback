@@ -16,15 +16,17 @@ under the quest's own folder (not ``segments/`` — it is one named place, never
 tiled):
 
     start_art.webp       fills the space left of the route's own start (0 m)
-                         — Troy's walls, the Bellglass Tower
-                         (`start_art_layer.dart`)
+                         — the Bellglass Tower (`start_art_layer.dart`)
 
 These are placeholders, not final art: the art source is still open (§9.1).
 They exist so the whole pipeline — extraction, tiling, cross-fading, the
 traveler following the drawn hills — is real and testable now, and so a real
 illustration can replace any single file later with no code change. The app
 already treats a missing file as "fall back to the procedural placeholder",
-so replacing them one at a time is the expected path, not a migration.
+so replacing them one at a time is the expected path, not a migration —
+`odyssey-ithaca`'s own start_art.webp already made that swap (CLAUDE.md §14,
+2026-09-15: a real illustration of Troy's gate, not this script's output),
+which is why it no longer has an entry in ``START_ART_GENERATORS``.
 
 ## What a replacement file must satisfy
 
@@ -299,132 +301,6 @@ def _start_art_color(quest_dir: Path) -> tuple[int, int, int]:
     return PALETTES[family][LAYER_NAMES.index("front")]
 
 
-# Troy's own colour — by direct request, not `_start_art_color`'s usual
-# "blend with the first segment's biome" pick: AppColors.gold (§9,
-# 0xE0AE3F) scaled down to the same order of darkness the front-layer
-# palette entries already sit at (PALETTES' front column tops out around
-# 0x12), so it reads as "a dark, flat silhouette" alongside the mountains
-# rather than a lit-up UI element, while still keeping gold's own hue —
-# unlike every biome family above, which are all cool/neutral or ember-warm
-# but never actually gold.
-_TROY_WALL_COLOR = (0x19, 0x13, 0x07)
-
-
-def _flatten_silhouette(image: Image.Image, color: tuple[int, int, int]) -> Image.Image:
-    """Forces [image] to exactly two pixel states: fully transparent, or
-    fully opaque in [color] — no in-between alpha, no blended edge colour.
-    `ImageDraw`'s rectangle/polygon fills are already hard-edged (no
-    anti-aliasing), so this is normally a no-op; it exists as an explicit,
-    unconditional guarantee (direct request) rather than something left
-    implicit in "how `ImageDraw` happens to behave", so it still holds if a
-    future revision of this generator adds a drawing call that *can*
-    anti-alias (an ellipse, a rotated shape, a resize).
-    """
-    alpha = image.split()[3].point(lambda a: 255 if a >= 128 else 0)
-    solid = Image.new("RGBA", image.size, (*color, 255))
-    flattened = Image.new("RGBA", image.size, (0, 0, 0, 0))
-    flattened.paste(solid, mask=alpha)
-    return flattened
-
-
-def _troy_start_art(_color: tuple[int, int, int]) -> Image.Image:
-    """Troy: a dense fortified skyline filling the full left and bottom of
-    the tile — a crenellated curtain wall the width of the tile, a stepped
-    acropolis/keep rising well above it at the left-centre, a pitched-roof
-    building for skyline variety, and twin gate towers flanking a pointed
-    archway right at the tile's own right edge — the route's own start
-    (0 m) — so the walked line reads as beginning at the gate itself, never
-    a stretch of plain wall before it. All flat fill, no internal gradient
-    (§9) — same rule the biome tiles above follow — with the drawing itself
-    hung from the same `wall_top` mean row (§0.62) `start_art_layer.dart`'s
-    `startArtMeanRow` expects, so bigger/taller shapes than the previous
-    version still map and clip correctly. Uses its own fixed dark-gold
-    colour (`_TROY_WALL_COLOR`), not the [color] every other start-art
-    generator blends with its quest's first biome — see that constant's own
-    doc comment. Passed through `_flatten_silhouette` before returning, per
-    direct request for a hard-thresholded, single-colour result.
-    """
-    width, height = START_ART_WIDTH, START_ART_HEIGHT
-    image = Image.new("RGBA", (width, height), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(image)
-    fill = (*_TROY_WALL_COLOR, 255)
-
-    def h(fraction: float) -> int:
-        return int(height * fraction)
-
-    def w(fraction: float) -> int:
-        return int(width * fraction)
-
-    # The base curtain wall: crenellated, spans the full tile width, solid
-    # from its own top down to the tile's bottom edge — this alone already
-    # satisfies "opaque across the entire bottom" everywhere else on the
-    # tile just builds further up from it.
-    wall_top = h(0.62)
-    merlon = width // 16
-    x = 0
-    raised = True
-    while x < width:
-        top = wall_top if raised else wall_top + merlon // 2
-        draw.rectangle([x, top, x + merlon, height], fill=fill)
-        x += merlon
-        raised = not raised
-
-    # Stepped acropolis/keep, left-of-centre — three receding terraces
-    # topped by a pointed central tower, plus one smaller flanking tower,
-    # so the left half of the tile reads as a dense hill city rather than
-    # empty wall.
-    draw.rectangle([w(0.12), h(0.58), w(0.42), height], fill=fill)
-    draw.rectangle([w(0.17), h(0.50), w(0.37), height], fill=fill)
-    keep_x0, keep_x1, keep_top = w(0.24), w(0.32), h(0.30)
-    draw.rectangle([keep_x0, keep_top, keep_x1, height], fill=fill)
-    draw.polygon(
-        [(keep_x0, keep_top), ((keep_x0 + keep_x1) // 2, h(0.20)), (keep_x1, keep_top)],
-        fill=fill,
-    )
-    flank_x0, flank_x1, flank_top = w(0.34), w(0.40), h(0.42)
-    draw.rectangle([flank_x0, flank_top, flank_x1, height], fill=fill)
-    draw.polygon(
-        [(flank_x0, flank_top), ((flank_x0 + flank_x1) // 2, h(0.34)), (flank_x1, flank_top)],
-        fill=fill,
-    )
-
-    # A pitched-roof building bridging the acropolis and the gate cluster —
-    # breaks up the skyline so it does not read as two isolated clusters
-    # with dead flat wall between them.
-    roof_x0, roof_x1, roof_top = w(0.45), w(0.58), h(0.54)
-    draw.rectangle([roof_x0, roof_top, roof_x1, height], fill=fill)
-    draw.polygon(
-        [(roof_x0, roof_top), ((roof_x0 + roof_x1) // 2, h(0.44)), (roof_x1, roof_top)],
-        fill=fill,
-    )
-
-    # Twin gate towers flanking a pointed archway, the outer tower's right
-    # edge landing exactly on the tile's own right edge (world x 0, the
-    # route's start) — the last thing on screen before the golden route
-    # line picks up is the gate itself.
-    inner_x0, inner_x1, inner_top = w(0.66), w(0.775), h(0.22)
-    arch_x0, arch_x1, arch_top = w(0.775), w(0.895), h(0.36)
-    outer_x0, outer_x1, outer_top = w(0.895), width, h(0.17)
-
-    draw.rectangle([inner_x0, inner_top, inner_x1, height], fill=fill)
-    draw.polygon(
-        [(inner_x0, inner_top), ((inner_x0 + inner_x1) // 2, h(0.09)), (inner_x1, inner_top)],
-        fill=fill,
-    )
-    draw.rectangle([arch_x0, arch_top, arch_x1, height], fill=fill)
-    draw.polygon(
-        [(arch_x0, arch_top), ((arch_x0 + arch_x1) // 2, h(0.23)), (arch_x1, arch_top)],
-        fill=fill,
-    )
-    draw.rectangle([outer_x0, outer_top, outer_x1, height], fill=fill)
-    draw.polygon(
-        [(outer_x0, outer_top), ((outer_x0 + outer_x1) // 2, h(0.05)), (outer_x1, outer_top)],
-        fill=fill,
-    )
-
-    return _flatten_silhouette(image, _TROY_WALL_COLOR)
-
-
 def _tower_start_art(color: tuple[int, int, int]) -> Image.Image:
     """The Bellglass Tower — "just a tower" by direct request: a single
     tall tower with a pointed roof over a low wall, simpler than Troy's
@@ -455,11 +331,18 @@ def _tower_start_art(color: tuple[int, int, int]) -> Image.Image:
     return image
 
 
-# One generator per quest that ships start art — a quest missing from here
-# simply draws nothing (`start_art_layer.dart`'s own fallback), the same
-# "not every quest has one" shape `journeyThemeTrackAssetPath` already uses.
+# One generator per quest that ships *placeholder* start art — a quest
+# missing from here simply draws nothing (`start_art_layer.dart`'s own
+# fallback), the same "not every quest has one" shape
+# `journeyThemeTrackAssetPath` already uses. `odyssey-ithaca` is
+# deliberately absent (CLAUDE.md §14, 2026-09-15): its `start_art.webp` is
+# now a real hand-drawn illustration, not this generator's output, so this
+# script must never regenerate it — the same "becomes not needed" retirement
+# `assets/journeys/tower-of-lights/README.md` already documents for
+# `generate_map.py` once real art lands. Running this script un-checked
+# for `odyssey-ithaca` still refreshes its biome tiles; `--check` simply has
+# nothing left to verify for its start art.
 START_ART_GENERATORS = {
-    "odyssey-ithaca": _troy_start_art,
     "tower-of-lights": _tower_start_art,
 }
 

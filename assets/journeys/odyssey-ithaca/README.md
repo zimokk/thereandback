@@ -6,6 +6,7 @@
 | `map.json` | Route overlay for the drawn map: polyline + landmark hotspots (§6.2) | yes |
 | `map.webp` | The drawn map illustration itself (§9.1) | yes — 1024 × 1536, ~330 KB |
 | `theme.mp3` | This quest's own background-music track (§6.5, §14 "background music") | yes — see below |
+| `start_art.webp` | Troy's gate — fills the space before the route start (§6.1, `start_art_layer.dart`) | yes — see below |
 
 ## `map.webp` — what the file is
 
@@ -97,6 +98,40 @@ the path in `journey_theme_track.dart`).
 
 It loops (`ReleaseMode.loop`, same as the shared default) — a source that
 doesn't already start/end cleanly will click at the seam every loop.
+
+## `start_art.webp` — a real illustration, not generated
+
+Unlike every biome tile (§9.1, `tools/generate_scene_art.py`) and unlike
+`tower-of-lights`' own start art, this one is **not** a flat silhouette —
+it's a real, colored illustration (line art, shading) of Troy's gate,
+supplied by the repository owner (CLAUDE.md §14, 2026-09-15). Using it as-is
+was an explicit, direct request against §9's usual "silhouettes in flat
+fill, no internal gradients" rule — a deliberate, documented exception
+scoped to this one file, not a change to the design system itself.
+`tools/generate_scene_art.py`'s `START_ART_GENERATORS` no longer has an
+`odyssey-ithaca` entry, so running the script (with or without `--check`)
+never touches this file again.
+
+The source file, as supplied, had two problems this asset does not have
+today, in case it is ever replaced again:
+
+- **No real alpha channel.** What looked like transparency was a literal
+  checkerboard pattern baked into an RGB (not RGBA) PNG — a design tool's
+  transparency preview, flattened on export. Had to be matted (flood-filled
+  from the edges through near-neutral gray) before it could be used as a
+  transparent overlay at all.
+- **A wide empty margin past the cliff, and a thin low tapering ledge right
+  at its own edge.** `start_art_layer.dart` anchors an image's own **right
+  edge** to the route's start — the empty margin put the actual castle
+  off-screen at the very start of the quest, and the tapering ledge (after
+  cropping the margin away) still clipped below the visible window under
+  CLAUDE.md's 2026-09-15 "lower the horizon" change. Both fixed by cropping
+  tighter, verified against `start_art_layer_test.dart` rather than by eye.
+
+A future replacement only needs to satisfy `start_art_layer.dart`'s own
+contract: real RGBA transparency, and enough opaque content near the
+image's own right edge, reaching high enough up the frame, to pass that
+test at the smallest scene size it exercises.
 
 ## Known gap
 

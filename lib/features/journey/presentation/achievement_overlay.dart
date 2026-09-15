@@ -199,16 +199,18 @@ class _AchievementGuidesPainter extends CustomPainter {
     for (final achievement in achievements) {
       if (achievement.x < 0 || achievement.x > size.width) continue;
 
-      // The terrain sits at screen y = sceneHeight/2 + its world-space
-      // height offset — the camera's own viewfinder never moves off world
-      // y 0 (`JourneyScene`), so this is the same mapping the rewind ghost
-      // uses to place itself relative to the viewport.
+      // The terrain sits at screen y = sceneHeight * horizonScreenYFraction
+      // + its world-space height offset — the camera's own viewfinder never
+      // moves off world y 0 and is anchored at that fraction, not dead
+      // centre (`JourneyScene.onLoad`), so this is the same mapping the
+      // rewind ghost uses to place itself relative to the viewport.
       final terrainWorldX = worldXFor(
         achievement.state.def.thresholdMeters.toDouble(),
         controller.pixelsPerMeter,
       );
       final lineY =
-          sceneHeight / 2 + terrainHeightAt(terrainWorldX, controller);
+          sceneHeight * horizonScreenYFraction +
+          terrainHeightAt(terrainWorldX, controller);
       final from = Offset(achievement.x, markerGuideStartY);
       final to = Offset(achievement.x, lineY);
       _drawDashedLine(canvas, from, to, paint);

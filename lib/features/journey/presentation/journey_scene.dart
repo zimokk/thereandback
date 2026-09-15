@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flame/components.dart' show Anchor;
 import 'package:flame/game.dart';
 
 import '../../../design/colors.dart';
@@ -34,6 +35,14 @@ class JourneyScene extends FlameGame {
   @override
   Future<void> onLoad() async {
     await super.onLoad();
+
+    // Lowers where world y `terrainMidY` (0) lands on screen from dead
+    // centre to `horizonScreenYFraction` (CLAUDE.md §6.1, 2026-09-15) —
+    // shifts every `World` child (ground, traveler, friends, environment
+    // layers, start art) down together through the camera's own transform,
+    // freeing more of the top of the screen for sky. See
+    // `terrain_layer.dart`'s `horizonLoweringFraction` doc comment.
+    camera.viewfinder.anchor = const Anchor(0.5, horizonScreenYFraction);
 
     // Under the horizon line and every figure: the biome's drawn ground
     // (§6.1, §9.1). Added before them so its own `priority` never has to

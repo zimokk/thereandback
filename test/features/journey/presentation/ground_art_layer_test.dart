@@ -123,7 +123,8 @@ void main() {
               x -
               _sceneWidth / 2;
           final expected =
-              terrainHeightAt(worldX, controller) + _sceneHeight / 2;
+              terrainHeightAt(worldX, controller) +
+              _sceneHeight * horizonScreenYFraction;
           // Within a few pixels: the strip is sampled every 16 px and the
           // tile is resampled to screen scale, so an exact match would be
           // asserting away antialiasing, not correctness.
