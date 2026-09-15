@@ -231,8 +231,13 @@ class EnvironmentLayer extends PositionComponent {
     final centerX = sceneWidth / 2;
     final panMeters = controller.panMeters;
     // World y, not screen y: the camera's viewfinder sits at world y 0, so
-    // the middle of the screen is 0 and [baselineFraction] has to be
-    // measured from there.
+    // [baselineFraction] has to be measured from there. Deliberately still
+    // `- 0.5`, not `- horizonScreenYFraction` (`terrain_layer.dart`) —
+    // leaving this at the old dead-centre reference means this layer's
+    // drawn position shifts down by exactly `horizonLoweringFraction` too,
+    // same as the ground and every on-path figure, through the camera's own
+    // transform, keeping hills and horizon moving as one composition rather
+    // than only the ground shifting under a fixed backdrop.
     final baselineY = sceneHeight * (baselineFraction - 0.5);
 
     if (!_renderBiomeArt(canvas, panMeters, pixelsPerMeter, baselineY)) {
