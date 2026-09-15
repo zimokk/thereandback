@@ -1916,6 +1916,45 @@ from"):
   --check` (clean) and by rendering `start_art.webp` to PNG for visual
   review outside the app.
 
+Решено 2026-09-15, same day (§9.1 — Troy's start art made denser, plus an
+explicit hard-threshold pass, by direct follow-up request for "an epic
+silhouette filling the whole left and bottom of the canvas" and a
+guarantee against soft/anti-aliased edges): no real text-to-image model is
+reachable from this sandbox (no such tool is wired into this session), so
+this stays procedural like every other placeholder in `generate_scene_art.py`
+— denser and taller, not a different technique.
+
+- **`_troy_start_art` redrawn again**: a stepped acropolis/keep (three
+  receding terraces, a pointed central tower, one flanking tower) fills the
+  left-of-centre skyline, a pitched-roof building bridges the gap to the
+  gate cluster, and the twin gate towers/archway from the same-day entry
+  above are taller and closer to the top of the tile. The base crenellated
+  wall (unchanged shape) already covered the entire bottom and left of the
+  canvas below `wall_top`; the added structures fill in what used to be
+  bare sky above it so the tile reads as one dense fortified city rather
+  than a low skyline with a big empty gap on top. Still hung from the same
+  `wall_top = 0.62 * height` row `startArtMeanRow` expects — taller
+  shapes just rise further above that row, they do not move it.
+- **New `_flatten_silhouette` helper**, called at the end of
+  `_troy_start_art`: thresholds the drawn image's alpha channel to exactly
+  `0` or `255` and repaints every opaque pixel to one exact flat colour.
+  `ImageDraw`'s rectangle/polygon fills were already hard-edged with no
+  anti-aliasing, so this is a no-op on today's output — it is there as an
+  explicit, unconditional guarantee (direct request) rather than something
+  left to depend on "which drawing calls happen not to blend edges", so it
+  keeps holding if a future revision of this generator adds a shape that
+  *can* anti-alias. Verified directly (not just by eye): the saved file's
+  distinct alpha values are exactly `{0, 255}` and its only opaque colour is
+  exactly `(25, 19, 7)` = `#190D07`.
+- **Regenerated via a standalone call to `_troy_start_art` directly**, not
+  `tools/generate_scene_art.py`'s own `generate()` — the same-day entry
+  above already found that running the script normally re-renders every
+  biome tile for the quest, byte-different from what is committed, in this
+  sandbox's Pillow build. Calling the generator function directly and
+  saving only `start_art.webp` avoided that class of diff entirely instead
+  of reverting it after the fact again; `git status` after generating
+  showed only the two files this change actually touches.
+
 Остаётся нерешённым:
 
 - [x] Первый квест каталога — «The Odyssey: Troy to Ithaca» (§1.1). Черновик
