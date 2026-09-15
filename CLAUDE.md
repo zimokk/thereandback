@@ -1864,6 +1864,97 @@ CI на PR с обоими треками выше):
   (`velocityMultiplier`, `priority`) одинаков в обоих случаях, так что
   решение обратимо.
 
+Решено 2026-09-15 (§6.1, §9.1 — Troy's start art redrawn, by direct request
+"the route starts abruptly in the mountains, add a recognizable Troy
+silhouette with walls and a gate that the golden route line visibly starts
+from"):
+
+- **`StartArtLayer`/`start_art.webp` (§6.1, «Решено 2026-09-14» above —
+  `journey_start_art.dart`, merged just before this session started) was
+  never documented here** — this entry is the first §14 record of that
+  mechanism as well as of this change to it. It already filled the gap left
+  of the route's own start with a per-quest illustration; what it drew for
+  Troy read as a generic building silhouette (one tall tower, one gate
+  block set noticeably back from the tile's own right edge — i.e. short of
+  world x 0, the exact point the route line starts from) in the same
+  near-black tone every biome tile already uses, which is what still read
+  as "mountains starting abruptly" in spite of the layer existing.
+- **`tools/generate_scene_art.py`'s `_troy_start_art` redrawn**: twin gate
+  towers now flank a pointed archway, the outer tower's own right edge
+  landing exactly on the tile's right edge — the route's start — so the
+  gate is the last thing on screen before the walked line picks up, not a
+  stretch of plain wall. The crenellated wall and the smaller rear
+  watchtower are otherwise the same shapes as before.
+- **Troy gets its own fixed colour, `_TROY_WALL_COLOR` (`0x19, 0x13, 0x07`),
+  instead of `_start_art_color`'s usual "blend with the first segment's
+  biome" pick** — by direct request for a gold/dark-gold reading. It is
+  `AppColors.gold` (§9, `0xE0AE3F`) scaled down to the same order of
+  darkness the front-layer palette entries already sit at (`PALETTES`'
+  front column tops out around `0x12`), so it still reads as a flat, dark
+  silhouette at night alongside the mountains (§9's "почти чёрный",
+  "силуэты сплошной заливкой") rather than a lit UI element, while keeping
+  gold's own hue — no biome family in `PALETTES` is actually gold, so this
+  is the one deliberate exception, scoped to this one named illustration,
+  not a second accent colour entering the biome art system. `tower-of-
+  lights`'s own start art (the Bellglass Tower) is untouched — this was a
+  Troy-specific request, not a change to `_start_art_color` itself.
+- **Regenerating asked for more than intended.**
+  `generate_scene_art.py`'s `generate()` rewrites every biome tile for a
+  quest whenever it runs un-checked for that quest, not just the one file
+  actually being changed — running it to refresh `start_art.webp` alone
+  also re-rendered all 64 already-shipped `odyssey-ithaca` biome tiles,
+  byte-different from what was committed (this sandbox's Pillow build does
+  not reproduce the original bytes pixel-for-pixel, even with the same
+  seeded `random` calls). Those were reverted (`git checkout --`) before
+  committing — only `start_art.webp` and the script itself are part of this
+  change. A future content-only tweak to one generator should check
+  `git status` after running the script for exactly this reason, rather
+  than assume an unrelated diff is safe to commit.
+- **No Flutter SDK in this sandbox** (recurring theme through §14) — this
+  change touches no Dart code, so `flutter analyze`/`flutter test` have
+  nothing new to catch; verified instead with `tools/generate_scene_art.py
+  --check` (clean) and by rendering `start_art.webp` to PNG for visual
+  review outside the app.
+
+Решено 2026-09-15, same day (§9.1 — Troy's start art made denser, plus an
+explicit hard-threshold pass, by direct follow-up request for "an epic
+silhouette filling the whole left and bottom of the canvas" and a
+guarantee against soft/anti-aliased edges): no real text-to-image model is
+reachable from this sandbox (no such tool is wired into this session), so
+this stays procedural like every other placeholder in `generate_scene_art.py`
+— denser and taller, not a different technique.
+
+- **`_troy_start_art` redrawn again**: a stepped acropolis/keep (three
+  receding terraces, a pointed central tower, one flanking tower) fills the
+  left-of-centre skyline, a pitched-roof building bridges the gap to the
+  gate cluster, and the twin gate towers/archway from the same-day entry
+  above are taller and closer to the top of the tile. The base crenellated
+  wall (unchanged shape) already covered the entire bottom and left of the
+  canvas below `wall_top`; the added structures fill in what used to be
+  bare sky above it so the tile reads as one dense fortified city rather
+  than a low skyline with a big empty gap on top. Still hung from the same
+  `wall_top = 0.62 * height` row `startArtMeanRow` expects — taller
+  shapes just rise further above that row, they do not move it.
+- **New `_flatten_silhouette` helper**, called at the end of
+  `_troy_start_art`: thresholds the drawn image's alpha channel to exactly
+  `0` or `255` and repaints every opaque pixel to one exact flat colour.
+  `ImageDraw`'s rectangle/polygon fills were already hard-edged with no
+  anti-aliasing, so this is a no-op on today's output — it is there as an
+  explicit, unconditional guarantee (direct request) rather than something
+  left to depend on "which drawing calls happen not to blend edges", so it
+  keeps holding if a future revision of this generator adds a shape that
+  *can* anti-alias. Verified directly (not just by eye): the saved file's
+  distinct alpha values are exactly `{0, 255}` and its only opaque colour is
+  exactly `(25, 19, 7)` = `#190D07`.
+- **Regenerated via a standalone call to `_troy_start_art` directly**, not
+  `tools/generate_scene_art.py`'s own `generate()` — the same-day entry
+  above already found that running the script normally re-renders every
+  biome tile for the quest, byte-different from what is committed, in this
+  sandbox's Pillow build. Calling the generator function directly and
+  saving only `start_art.webp` avoided that class of diff entirely instead
+  of reverting it after the fact again; `git status` after generating
+  showed only the two files this change actually touches.
+
 Остаётся нерешённым:
 
 - [x] Первый квест каталога — «The Odyssey: Troy to Ithaca» (§1.1). Черновик
