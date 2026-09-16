@@ -1,4 +1,5 @@
 import 'package:flame/game.dart';
+import 'package:flutter/gestures.dart' show kMinFlingVelocity;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -78,6 +79,19 @@ class _JourneyFlameSceneViewState extends ConsumerState<JourneyFlameSceneView>
 
   AnimationController? _returnController;
 
+  /// Drives the post-drag momentum scroll (2026-09-16, direct request:
+  /// "as in social-media feeds" — residual motion that decays, not the
+  /// drag stopping dead the instant the finger lifts). Runs a
+  /// [ClampingScrollSimulation] — the same physics `Scrollable`'s own
+  /// default (Android-style) fling uses — in *pixel* space, exactly like
+  /// [_onHorizontalDragUpdate] treats [DragUpdateDetails.delta] as pixels
+  /// before dividing by `pixelsPerMeter`. Simulating in pixels rather than
+  /// meters keeps the feel identical across quests regardless of each
+  /// quest's own [metersPerScreenWidthFor] scale — a fling is "this many
+  /// screens worth of momentum", not "this many meters", the same way it
+  /// is in a feed regardless of how much content one screen holds.
+  AnimationController? _flingController;
+
   /// The traveler's *displayed* position — may still be catching up to
   /// [_progressMeters] via [_travelerCatchUpController]. Starts equal to
   /// the real progress on the very first build (nothing to catch up from
@@ -100,6 +114,7 @@ class _JourneyFlameSceneViewState extends ConsumerState<JourneyFlameSceneView>
   @override
   void dispose() {
     _returnController?.dispose();
+    _flingController?.dispose();
     _travelerCatchUpController?.dispose();
     super.dispose();
   }
@@ -107,6 +122,10 @@ class _JourneyFlameSceneViewState extends ConsumerState<JourneyFlameSceneView>
   void _onHorizontalDragUpdate(DragUpdateDetails details) {
     if (_sceneWidth <= 0) return; // not laid out yet — nothing to scroll.
     _returnController?.stop();
+    // Re-grabbing the scene mid-fling cancels the residual motion, same as
+    // catching a scrolling feed with a finger — see [_flingController]'s
+    // own doc comment.
+    _flingController?.stop();
     final pixelsPerMeter = _sceneWidth / metersPerScreenWidthFor(_journeyId);
     setState(() {
       _panMeters = (_panMeters - details.delta.dx / pixelsPerMeter).clamp(
@@ -116,6 +135,50 @@ class _JourneyFlameSceneViewState extends ConsumerState<JourneyFlameSceneView>
     });
   }
 
+  /// Starts the post-drag momentum scroll — see [_flingController]'s own
+  /// doc comment for why this runs in pixel space and which physics it
+  /// borrows.
+  ///
+  /// Below [kMinFlingVelocity] (the same threshold `Scrollable`'s own drag
+  /// recognizer uses to tell a fling from a drag that merely stopped),
+  /// this is a no-op: the drag already left `_panMeters` exactly where the
+  /// finger lifted, which is the correct "no residual motion" behavior for
+  /// a slow release.
+  void _onHorizontalDragEnd(DragEndDetails details) {
+    if (_sceneWidth <= 0) return;
+    final velocityPxPerSecond = details.primaryVelocity ?? 0.0;
+    if (velocityPxPerSecond.abs() < kMinFlingVelocity) return;
+
+    final pixelsPerMeter = _sceneWidth / metersPerScreenWidthFor(_journeyId);
+
+    _returnController?.stop();
+    _flingController?.dispose();
+    final controller = AnimationController.unbounded(vsync: this);
+    // The simulation's own position is an arbitrary pixel origin — only the
+    // per-frame *delta* off it is meaningful, converted into a meters delta
+    // exactly like a drag frame's `details.delta.dx` already is.
+    var previousPixelOffset = 0.0;
+    controller.addListener(() {
+      final pixelOffset = controller.value;
+      final deltaPixels = pixelOffset - previousPixelOffset;
+      previousPixelOffset = pixelOffset;
+
+      final target = _panMeters - deltaPixels / pixelsPerMeter;
+      final clamped = target.clamp(0.0, _progressMeters.toDouble());
+      setState(() => _panMeters = clamped);
+      if (clamped != target) {
+        // Hit the start or `You` — rewind-only, so there is nothing left
+        // to travel past it; stop rather than let the simulation keep
+        // integrating against a bound it can never cross (§6.1).
+        controller.stop();
+      }
+    });
+    _flingController = controller;
+    controller.animateWith(
+      ClampingScrollSimulation(position: 0, velocity: velocityPxPerSecond),
+    );
+  }
+
   /// Jumps the view back to `You`, animated (§6.1: "прыжок анимированный,
   /// не мгновенный") — ported unchanged from the CustomPaint placeholder.
   void _returnToYou() {
@@ -123,6 +186,7 @@ class _JourneyFlameSceneViewState extends ConsumerState<JourneyFlameSceneView>
     final end = _progressMeters.toDouble();
     if (start == end) return;
 
+    _flingController?.stop();
     _returnController?.dispose();
     final controller = AnimationController(
       vsync: this,
@@ -288,6 +352,7 @@ class _JourneyFlameSceneViewState extends ConsumerState<JourneyFlameSceneView>
         Positioned.fill(
           child: GestureDetector(
             onHorizontalDragUpdate: _onHorizontalDragUpdate,
+            onHorizontalDragEnd: _onHorizontalDragEnd,
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final size = constraints.biggest;
