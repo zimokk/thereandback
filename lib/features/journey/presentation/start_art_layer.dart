@@ -107,14 +107,26 @@ class StartArtLayer extends PositionComponent {
     // Fits the *whole* illustration into the gap — no cropping — rather
     // than pinning height to the scene's own height and letting width fall
     // out of that (CLAUDE.md §14, 2026-09-16 bug-fix): the old formula's
-    // width was tied to `sceneHeight`, never to [gapWidth], so on a screen
+    // width was tied to `sceneHeight`, never to the gap, so on a screen
     // much taller than it is wide it always demanded a width far past the
     // gap, and only the illustration's own rightmost sliver — Troy's
     // tapering cliff edge, not its towers — ever ended up on screen. Fitting
     // by width instead means the castle itself is always what is visible,
     // scaled to whatever the gap actually is, on any device.
+    //
+    // Sized off [gapWidth] *at `panMeters == 0`* — `sceneWidth / 2`, the
+    // widest the gap is ever going to be, since the route start sits at
+    // screen centre there — rather than off the live `gapWidth` above
+    // (CLAUDE.md §14, 2026-09-16 bug-fix): that live value keeps shrinking
+    // as `panMeters` grows even while the art is still fully on screen (the
+    // view's own left edge slides toward the fixed route start), so sizing
+    // the illustration to it every frame made the same picture visibly
+    // shrink while panning right, instead of stay a constant size and slide
+    // off the left edge the way a world-anchored sprite should. The rect
+    // below is anchored purely to `routeStartX` (world x `0`, unaffected by
+    // `panMeters`) — [gapWidth] itself still gates whether to draw at all.
     final aspect = image.width / image.height;
-    final drawnWidth = gapWidth;
+    final drawnWidth = sceneWidth / 2;
     final drawnHeight = drawnWidth / aspect;
 
     final baseline = terrainHeightAt(routeStartX, controller);
