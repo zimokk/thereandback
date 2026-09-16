@@ -1,26 +1,13 @@
-import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flame/components.dart';
 
+import '../../../design/colors.dart';
 import '../domain/journey_start_art.dart';
 import 'environment_layer.dart';
 import 'journey_scene_controller.dart';
 import 'terrain_layer.dart';
 import 'traveler_component.dart';
-
-/// How tall [StartArtLayer] draws its tile, as a multiple of the scene's
-/// height — taller than the screen (like [environmentLayerHeightFactor]'s
-/// own comment explains) so it still covers everything above/below its
-/// own hung baseline rather than leaving a band of bare sky or ground
-/// showing past its edges. Originally `1.6`, tuned for the old procedural
-/// Troy placeholder (any crop of a repeating silhouette still "worked");
-/// brought down once a real illustration replaced it (CLAUDE.md §14,
-/// 2026-09-15 — at `1.6` only a small, heavily zoomed-in corner of the art
-/// was ever visible). Lower reads as more of the illustration at once;
-/// too low re-opens a bare gap below the ground line (verified against
-/// `start_art_layer_test.dart`'s own coverage assertion, not eyeballed).
-const double startArtHeightFactor = 1.0;
 
 /// Where the art's own silhouette sits down its source image, as a
 /// fraction of the drawn tile's height (`0` = top, `1` = bottom) — mirrors
@@ -28,17 +15,31 @@ const double startArtHeightFactor = 1.0;
 /// fixed rather than measured: this art is never re-extracted for relief,
 /// so there is nothing to read the value back from. Originally `0.62`,
 /// matching `tools/generate_scene_art.py`'s old procedural Troy
-/// placeholder's own `wall_top`; lowered to `0.46` alongside
-/// [startArtHeightFactor] above once a real illustration replaced that
-/// placeholder (CLAUDE.md §14, 2026-09-15) — `0.46` is close to where this
-/// specific image's own clifftop path actually sits down its (cropped)
-/// frame, so less of [startArtHeightFactor]'s scale is spent on the part
-/// of the image above the ground line that this row doesn't need to cover.
-/// `tower-of-lights`' own procedural placeholder still renders correctly
-/// at this lower value too (its own drawn base sits even further down its
-/// frame than this row, so it only gains extra safety margin below the
-/// line, not a gap).
+/// placeholder's own `wall_top`; lowered to `0.46` once a real illustration
+/// replaced that placeholder (CLAUDE.md §14, 2026-09-15) — `0.46` is close
+/// to where this specific image's own clifftop path actually sits down its
+/// (cropped) frame. `tower-of-lights`' own procedural placeholder still
+/// renders correctly at this lower value too (its own drawn base sits even
+/// further down its frame than this row, so it only gains extra safety
+/// margin below the line, not a gap).
 const double startArtMeanRow = 0.46;
+
+/// Solid tone each quest's start art is extended with below its own drawn
+/// bottom edge, so a screen taller (relative to [JourneySceneController.
+/// sceneWidth]) than the illustration's own aspect ratio still never shows
+/// a bare strip of backdrop under it (CLAUDE.md §14, 2026-09-16 — see
+/// [_fillBelowIfNeeded]'s own doc comment for why an extension exists at
+/// all). Sampled once from each file's own bottom-edge pixels (the tone the
+/// illustration itself already fades/tapers into), not computed at
+/// runtime — decoding pixels back out of a loaded `ui.Image` on every frame
+/// would cost real time for a value that never changes for a given file. A
+/// quest missing here (any future quest whose own art has not been sampled
+/// yet) falls back to [AppColors.backgroundElevated] — dark enough to read
+/// as "more shadow", not a jarring, oddly-colored patch.
+const Map<String, Color> _startArtFillColor = {
+  'odyssey-ithaca': Color(0xFF664E25),
+  'tower-of-lights': Color(0xFF0E0E12),
+};
 
 /// Fills the space between the screen's left edge and the route's own
 /// start (0 m, point A) with a per-quest illustration (§6.1, §9.1) — Troy's
@@ -79,6 +80,10 @@ class StartArtLayer extends PositionComponent {
     ..filterQuality = FilterQuality.low
     ..isAntiAlias = false;
 
+  /// Painted with a fresh `..color` per frame ([_fillBelowIfNeeded]) rather
+  /// than recreated — one long-lived [Paint], like [_paint].
+  final Paint _fillPaint = Paint()..isAntiAlias = false;
+
   @override
   void render(Canvas canvas) {
     final pixelsPerMeter = controller.pixelsPerMeter;
@@ -99,14 +104,18 @@ class StartArtLayer extends PositionComponent {
     final image = controller.propSprite?.call(assetPath);
     if (image == null) return; // still loading, or this quest ships none.
 
-    final drawnHeight = sceneHeight * startArtHeightFactor;
-    final naturalWidth = drawnHeight * image.width / image.height;
-    // Wider than the widest possible gap on an ordinary phone already (see
-    // the constants' own doc comments), but never narrower than the gap
-    // actually on screen — a device wide enough to need it just stretches
-    // the art's own left margin, which `generate_scene_art.py` draws as
-    // plain flat fill for exactly this reason.
-    final drawnWidth = math.max(naturalWidth, gapWidth);
+    // Fits the *whole* illustration into the gap — no cropping — rather
+    // than pinning height to the scene's own height and letting width fall
+    // out of that (CLAUDE.md §14, 2026-09-16 bug-fix): the old formula's
+    // width was tied to `sceneHeight`, never to [gapWidth], so on a screen
+    // much taller than it is wide it always demanded a width far past the
+    // gap, and only the illustration's own rightmost sliver — Troy's
+    // tapering cliff edge, not its towers — ever ended up on screen. Fitting
+    // by width instead means the castle itself is always what is visible,
+    // scaled to whatever the gap actually is, on any device.
+    final aspect = image.width / image.height;
+    final drawnWidth = gapWidth;
+    final drawnHeight = drawnWidth / aspect;
 
     final baseline = terrainHeightAt(routeStartX, controller);
     final top = baseline - startArtMeanRow * drawnHeight;
@@ -117,6 +126,51 @@ class StartArtLayer extends PositionComponent {
       Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
       Rect.fromLTWH(left, top, drawnWidth, drawnHeight),
       _paint,
+    );
+
+    _fillBelowIfNeeded(
+      canvas,
+      journeyId: controller.journeyId,
+      sceneHeight: sceneHeight,
+      imageBottom: top + drawnHeight,
+      left: left,
+      right: routeStartX,
+    );
+  }
+
+  /// Extends the illustration's own base tone down to the bottom of the
+  /// screen whenever fitting it to the visible gap's width (`render`,
+  /// above) leaves it short of that — unavoidable on a screen tall enough,
+  /// relative to how narrow the gap currently is, that the illustration's
+  /// own aspect ratio cannot reach both edges from a width-only fit.
+  /// Filling with the art's own tone ([_startArtFillColor]) rather than
+  /// leaving the real gap bare keeps the same "no bare strip under the
+  /// illustration" guarantee a height-only fit gave for free, without
+  /// reintroducing the crop that fit caused (this class's own doc comment
+  /// above).
+  void _fillBelowIfNeeded(
+    Canvas canvas, {
+    required String journeyId,
+    required double sceneHeight,
+    required double imageBottom,
+    required double left,
+    required double right,
+  }) {
+    // The one world y that lands on the screen's own bottom edge — fixed
+    // regardless of [JourneySceneController.panMeters], since the camera's
+    // vertical anchor never moves off world y `terrainMidY` (`0`,
+    // `terrain_layer.dart`): world y `0` always renders at
+    // `horizonScreenYFraction * sceneHeight`, so screen y `sceneHeight`
+    // (the bottom edge) is always world y `sceneHeight * (1 -
+    // horizonScreenYFraction)`.
+    final screenBottomWorldY = sceneHeight * (1 - horizonScreenYFraction);
+    if (imageBottom >= screenBottomWorldY) return;
+
+    _fillPaint.color =
+        _startArtFillColor[journeyId] ?? AppColors.backgroundElevated;
+    canvas.drawRect(
+      Rect.fromLTRB(left, imageBottom, right, screenBottomWorldY),
+      _fillPaint,
     );
   }
 }
