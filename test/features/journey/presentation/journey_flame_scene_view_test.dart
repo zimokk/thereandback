@@ -463,5 +463,122 @@ void main() {
         expect(find.text('Test narrative two.'), findsNothing);
       });
     });
+
+    group('momentum scrolling on release (§6.1, §14 — 2026-09-16, direct '
+        'request: "like a social-media feed" — residual motion that decays '
+        'rather than the view stopping dead the instant the finger lifts)', () {
+      testWidgets(
+        'a fast fling keeps rewinding after release, past where the raw '
+        'drag distance alone would land',
+        (tester) async {
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+                journeyNarrativeBundleProvider.overrideWithValue(
+                  _FakeTimingBundle({
+                    'assets/journeys/odyssey-ithaca/locations.json':
+                        _narrativeJson,
+                  }),
+                ),
+              ],
+              child: _app(const JourneyFlameSceneView()),
+            ),
+          );
+
+          final container = ProviderScope.containerOf(
+            tester.element(find.byType(JourneyFlameSceneView)),
+          );
+          final notifier = container.read(selectedJourneyProvider.notifier);
+          notifier.start('odyssey-ithaca', now: DateTime.now());
+          notifier.applySyncedProgress(
+            progressMeters: 5000,
+            syncedAt: DateTime.now(),
+          );
+          await _pumpFrames(tester);
+          expect(find.text('Test narrative two.'), findsOneWidget);
+
+          // The gesture's own raw movement (~150 px, close to the smallest
+          // offset `tester.fling` reports a nonzero `primaryVelocity` for —
+          // smaller offsets round-trip through the touch-slop/velocity-
+          // tracker machinery as exactly 0, verified empirically) converts
+          // to ~3750 m at this screen's 0.04 px/m — from 5000 m that lands
+          // around 1250 m, still inside beat one's range (1000–5000 m), so
+          // a plain `tester.drag` of this same offset would still show
+          // "Test narrative one.", never the placeholder. `tester.fling`
+          // releases at a real, measured velocity (unlike `tester.drag`,
+          // which — per its own doc comment, "the operation happens at
+          // once" — reports 0 and triggers no residual motion at all, the
+          // reason none of the plain-drag tests above ever needed this
+          // distinction), so any further rewind past ~1250 m down to the
+          // placeholder can only be the fling's own momentum.
+          await tester.fling(_scene, const Offset(150, 0), 2000);
+          await _pumpFrames(tester, count: 100);
+
+          final l10n = AppLocalizations.of(
+            tester.element(find.byType(JourneyFlameSceneView)),
+          )!;
+          expect(find.text(l10n.journeyNarrativeComingSoon), findsOneWidget);
+          expect(find.text('Test narrative one.'), findsNothing);
+          expect(find.text('Test narrative two.'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'grabbing the scene again mid-fling cancels the residual motion — '
+        'same as catching a scrolling feed with a finger',
+        (tester) async {
+          await tester.pumpWidget(
+            ProviderScope(
+              overrides: [
+                appDatabaseProvider.overrideWithValue(AppDatabase.forTesting()),
+                journeyNarrativeBundleProvider.overrideWithValue(
+                  _FakeTimingBundle({
+                    'assets/journeys/odyssey-ithaca/locations.json':
+                        _narrativeJson,
+                  }),
+                ),
+              ],
+              child: _app(const JourneyFlameSceneView()),
+            ),
+          );
+
+          final container = ProviderScope.containerOf(
+            tester.element(find.byType(JourneyFlameSceneView)),
+          );
+          final notifier = container.read(selectedJourneyProvider.notifier);
+          notifier.start('odyssey-ithaca', now: DateTime.now());
+          // Far past both fixture beats (5000 m), unlike the test above —
+          // so that this fling's own ~3750 m raw movement, plus the small
+          // interrupting drag below, both land nowhere near either beat's
+          // threshold. Only *uninterrupted* momentum could travel far
+          // enough from here to cross one (the test above's identical
+          // fling, left alone, travels tens of thousands of meters more —
+          // its friction simulation's own total distance at this release
+          // velocity comfortably clears that gap).
+          notifier.applySyncedProgress(
+            progressMeters: 20000,
+            syncedAt: DateTime.now(),
+          );
+          await _pumpFrames(tester);
+          expect(find.text('Test narrative two.'), findsOneWidget);
+
+          // The exact same fling the test above proves travels well past
+          // its own raw ~3750 m once left alone — interrupted here with no
+          // frames pumped in between, before its `AnimationController`
+          // ticker has run even once.
+          await tester.fling(_scene, const Offset(150, 0), 2000);
+          await tester.drag(_scene, const Offset(30, 0));
+          await _pumpFrames(tester, count: 100);
+
+          // Still on the same beat the gesture's own raw ~4200 m
+          // (3750 + 750) of combined drag lands well inside — if the fling
+          // controller had kept running instead of being stopped, this
+          // exact release velocity is proven (test above) to travel far
+          // enough to reach the placeholder several beats further on.
+          expect(find.text('Test narrative two.'), findsOneWidget);
+        },
+      );
+    });
   });
 }

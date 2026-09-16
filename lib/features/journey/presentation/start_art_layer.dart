@@ -67,7 +67,17 @@ class StartArtLayer extends PositionComponent {
   /// comment for why that ordering has to hold.
   static const int _priority = 31;
 
-  final Paint _paint = Paint()..filterQuality = FilterQuality.low;
+  // `isAntiAlias: false` for the same reason `EnvironmentLayer._artPaint`
+  // turns it off (`environment_layer.dart`) — this layer's own right edge
+  // sits exactly at the route's start (world x `0`), directly abutting
+  // whatever `EnvironmentLayer`/`GroundArtLayer` tile is drawn underneath at
+  // that same x. Anti-aliasing that edge blends it against the backdrop
+  // rather than the neighbouring art, which is the same translucent-seam
+  // artifact, just at this layer's one fixed boundary instead of a
+  // repeating tile's many.
+  final Paint _paint = Paint()
+    ..filterQuality = FilterQuality.low
+    ..isAntiAlias = false;
 
   @override
   void render(Canvas canvas) {

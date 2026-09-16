@@ -32,6 +32,10 @@ which is why it no longer has an entry in ``START_ART_GENERATORS``.
 
 * **Seamless horizontally.** The tile repeats for the whole biome, so its
   right edge has to continue into its left. `--check` verifies it.
+* **`SCREENS_PER_TILE` screen widths wide** (CLAUDE.md §14, 2026-09-16 —
+  widened from 1 to 5 so a biome tile repeats far less often; a real
+  illustration replacing a placeholder file should cover the same span, not
+  one screen, or it will simply repeat 5x more often than its neighbours).
 * **Transparent above the silhouette, opaque below it.** The ground layer's
   topmost opaque pixel per column is the relief; a soft or dithered edge
   reads as noise in the walking line.
@@ -64,10 +68,19 @@ from PIL import Image, ImageDraw, ImageFilter
 REPO_ROOT = Path(__file__).resolve().parent.parent
 JOURNEYS = REPO_ROOT / "assets" / "journeys"
 
-# One tile covers exactly one screen width (`scene_art_catalog.dart`'s
-# sceneArtTileMeters). Width is the resolution that relief is read back at —
-# one sample per column — so it is also the relief's horizontal resolution.
-TILE_WIDTH = 1024
+# A repeated content tile (far/mid/ground/front) covers `SCREENS_PER_TILE`
+# screen widths (`scene_art_catalog.dart`'s `sceneArtTileScreens` — the
+# single Dart source of truth this has to match; the app itself reads
+# width/height back off the decoded file, never a hardcoded pixel count, so
+# this constant only has to agree with that one). `PIXELS_PER_SCREEN` is the
+# resolution one screen's worth of tile is drawn at — also the relief's
+# horizontal resolution, one sample per column. Widened from 1 screen
+# (CLAUDE.md §14, 2026-09-16 — at 1 screen the repeat was frequent enough to
+# read as a visible pattern even after the tile-seam anti-aliasing bug was
+# fixed) to 5.
+PIXELS_PER_SCREEN = 1024
+SCREENS_PER_TILE = 5
+TILE_WIDTH = PIXELS_PER_SCREEN * SCREENS_PER_TILE
 
 # The ground tile is drawn 1.5 screens tall (`groundArtTileHeightFactor`);
 # the parallax tiles 1.1 (`environmentLayerHeightFactor`).
@@ -141,6 +154,19 @@ BIOMES = {
 LAYER_NAMES = ("far", "mid", "ground", "front")
 
 
+def _peaks_per_tile(peaks_per_screen: float) -> int:
+    """Scales a `BIOMES`-style peak count — tuned per *screen*, same as
+    before `SCREENS_PER_TILE` existed — up to a count for the whole,
+    now-wider tile.
+
+    Without this, widening the tile alone would spread the same handful of
+    hills over `SCREENS_PER_TILE` screens instead of one, reading as an
+    unnaturally flat, empty stretch between them rather than the same
+    density of terrain repeating less often.
+    """
+    return max(1, round(peaks_per_screen * SCREENS_PER_TILE))
+
+
 def _seamless_profile(
     width: int,
     *,
@@ -206,7 +232,7 @@ def _tile(biome: str, layer: str) -> Image.Image:
 
     if layer == "ground":
         profile = _seamless_profile(
-            TILE_WIDTH, seed=seed, peaks=peaks, roughness=roughness
+            TILE_WIDTH, seed=seed, peaks=_peaks_per_tile(peaks), roughness=roughness
         )
         return _silhouette(
             TILE_WIDTH,
@@ -231,9 +257,12 @@ def _tile(biome: str, layer: str) -> Image.Image:
         "mid": (roughness * 0.8, peaks, 0.20),
         "front": (roughness * 1.1, peaks + 2, 0.13),
     }[layer]
-    layer_roughness, layer_peaks, relief = shape
+    layer_roughness, layer_peaks_per_screen, relief = shape
     profile = _seamless_profile(
-        TILE_WIDTH, seed=seed, peaks=layer_peaks, roughness=min(layer_roughness, 0.95)
+        TILE_WIDTH,
+        seed=seed,
+        peaks=_peaks_per_tile(layer_peaks_per_screen),
+        roughness=min(layer_roughness, 0.95),
     )
     image = _silhouette(
         TILE_WIDTH,
@@ -278,10 +307,12 @@ def _biomes_of(quest_dir: Path) -> list[str]:
 
 # The "start art" fills the space left of the route's own start (0 m) —
 # `start_art_layer.dart` — with one named illustration per quest, never
-# tiled. Sized the same 2:3 portrait as the ground tile (`GROUND_HEIGHT`/
-# `TILE_WIDTH`) for the same reason: tall enough, once the app scales it by
-# scene height, to reach comfortably past both edges of the screen.
-START_ART_WIDTH = TILE_WIDTH
+# tiled, so it has no `SCREENS_PER_TILE` of its own to inherit. Sized the
+# same 2:3 portrait as one screen of the ground tile (`GROUND_HEIGHT`/
+# `PIXELS_PER_SCREEN`, deliberately *not* the now-wider `TILE_WIDTH`) for
+# the same reason: tall enough, once the app scales it by scene height, to
+# reach comfortably past both edges of the screen.
+START_ART_WIDTH = PIXELS_PER_SCREEN
 START_ART_HEIGHT = GROUND_HEIGHT
 
 

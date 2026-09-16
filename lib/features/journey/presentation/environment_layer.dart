@@ -190,7 +190,19 @@ class EnvironmentLayer extends PositionComponent {
   /// Reused across frames and tiles — a `Paint` per drawn tile would be an
   /// allocation per frame per repetition, which is exactly what the scene's
   /// own perf rule rules out.
-  final Paint _artPaint = Paint();
+  ///
+  /// `isAntiAlias: false` — each repetition of a tile is its own
+  /// `drawImageRect` call, and consecutive tiles' rects meet at exactly the
+  /// same world x (`parallaxWorldX`'s own math is already seamless). With
+  /// the default `Paint().isAntiAlias == true`, Skia anti-aliases that
+  /// shared edge on *each* rect independently against whatever is already
+  /// painted, rather than against the neighbouring tile — so a boundary
+  /// that lands off the physical pixel grid gets two partial-coverage
+  /// blends instead of one full one, leaving a thin translucent seam where
+  /// the backdrop shows through even though the tiles are positioned
+  /// exactly edge-to-edge. Turning AA off makes each rect hard-edged, so
+  /// the shared boundary is drawn once, not twice.
+  final Paint _artPaint = Paint()..isAntiAlias = false;
 
   /// Cached result of the last [_decorationsFor] call, keyed by the exact
   /// bucket range it was built for — most frames pan by nothing at all (the
