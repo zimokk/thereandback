@@ -286,11 +286,14 @@ class GroundArtLayer extends PositionComponent {
     if (right <= left) return;
 
     // Each biome on screen is drawn over its own stretch of world x, with
-    // the one being crossed into painted over the one being left at the
-    // transition's own opacity — the same eased fraction the ground's relief
-    // is already blending with (`scene_ground.dart`'s `easeGroundBlend`), so
-    // the hills and the line they belong to never lead or trail each other.
-    for (final span in controller.biomes) {
+    // the one being crossed into painted over the one being left, fading in
+    // across [biomeTransitionMeters] from its own start — see
+    // [_fadeInWindowFor]'s own doc comment for why this fade has to be a
+    // function of world position rather than of [controller.panMeters]
+    // (which is what an earlier version of this method tried, and why that
+    // version still left a hard seam at the boundary itself).
+    for (var index = 0; index < controller.biomes.length; index++) {
+      final span = controller.biomes[index];
       final art = controller.biomeArt[span.biome];
       final image = art?.layers[SceneArtLayer.ground];
       final ground = art?.ground;
@@ -309,8 +312,48 @@ class GroundArtLayer extends PositionComponent {
       );
       if (spanRight <= spanLeft) continue;
 
-      _drawTile(canvas, image, ground, spanLeft, spanRight, sceneHeight);
+      final fadeInWindow = _fadeInWindowFor(index);
+
+      _drawTile(
+        canvas,
+        image,
+        ground,
+        spanLeft,
+        spanRight,
+        sceneHeight,
+        fadeInWindow == null
+            ? null
+            : (
+                start: worldXFor(fadeInWindow.$1.toDouble(), pixelsPerMeter),
+                end: worldXFor(fadeInWindow.$2.toDouble(), pixelsPerMeter),
+              ),
+      );
     }
+  }
+
+  /// The `[startMeters, endMeters)` window over which
+  /// `controller.biomes[index]` fades in from transparent to opaque as the
+  /// route position increases, or `null` when it should simply draw fully
+  /// opaque throughout (the first span, or one whose biome is unchanged from
+  /// the previous span — nothing to fade from).
+  ///
+  /// Capped the same way [biomeBlendAt]'s own transition window already is
+  /// (never more than half of either neighbouring span), so a short segment
+  /// can't be fading in at its start and covered by the *next* fade-in at
+  /// its end at the same time.
+  (int, int)? _fadeInWindowFor(int index) {
+    if (index == 0) return null;
+    final previous = controller.biomes[index - 1];
+    final span = controller.biomes[index];
+    if (previous.biome == span.biome) return null;
+
+    final window = [
+      biomeTransitionMeters,
+      (previous.toMeters - previous.fromMeters) ~/ 2,
+      (span.toMeters - span.fromMeters) ~/ 2,
+    ].reduce((a, b) => a < b ? a : b);
+    if (window <= 0) return null;
+    return (span.fromMeters, span.fromMeters + window);
   }
 
   void _drawTile(
@@ -320,6 +363,7 @@ class GroundArtLayer extends PositionComponent {
     double left,
     double right,
     double sceneHeight,
+    ({double start, double end})? fadeInWindow,
   ) {
     final pixelsPerMeter = controller.pixelsPerMeter;
     final tileWidth = ground.tileMeters * pixelsPerMeter;
@@ -331,6 +375,10 @@ class GroundArtLayer extends PositionComponent {
 
     final positions = <Offset>[];
     final texture = <Offset>[];
+    // Only populated when [fadeInWindow] is set — an opaque `Vertices` with
+    // no `colors` at all draws every pixel the shader itself provides,
+    // which is what every span outside an active transition still needs.
+    final colors = fadeInWindow == null ? null : <Color>[];
     for (var x = left; ; x += _stripStep) {
       final columnX = math.min(x, right);
       // The line at this column, minus the relief the texture itself draws
@@ -355,32 +403,63 @@ class GroundArtLayer extends PositionComponent {
       texture.add(Offset(columnX, 0));
       texture.add(Offset(columnX, drawnHeight));
 
+      if (colors != null) {
+        // `0` at the fade's own start (this span's `fromMeters`, where the
+        // previous span's tile is still fully opaque underneath), ramping
+        // to `1` — fully opaque — over [biomeTransitionMeters]. Only the
+        // vertex *alpha* matters ([BlendMode.dstIn] below discards its own
+        // RGB), so plain white doubles as the mask. `!` is safe: [colors]
+        // is non-null exactly when [fadeInWindow] is (both set together
+        // above).
+        final window = fadeInWindow!;
+        final t = ((columnX - window.start) / (window.end - window.start))
+            .clamp(0.0, 1.0);
+        final alpha = Color.fromARGB((t * 255).round(), 255, 255, 255);
+        colors.add(alpha);
+        colors.add(alpha);
+      }
+
       if (columnX >= right) break;
     }
     if (positions.length < 4) return;
 
-    _paint.shader = ImageShader(
-      image,
-      TileMode.repeated,
-      TileMode.clamp,
-      // The shader's own transform, column-major — written out rather than
-      // built through `Matrix4`, whose Flame-exported flavour stores
-      // float32 while `ImageShader` wants float64.
-      Float64List.fromList([
-        scaleX, 0, 0, 0, //
-        0, scaleY, 0, 0, //
-        0, 0, 1, 0, //
-        0, 0, 0, 1, //
-      ]),
-      filterQuality: FilterQuality.low,
-    );
+    _paint
+      ..color = const Color(0xFFFFFFFF)
+      ..shader = ImageShader(
+        image,
+        TileMode.repeated,
+        TileMode.clamp,
+        // The shader's own transform, column-major — written out rather than
+        // built through `Matrix4`, whose Flame-exported flavour stores
+        // float32 while `ImageShader` wants float64.
+        Float64List.fromList([
+          scaleX, 0, 0, 0, //
+          0, scaleY, 0, 0, //
+          0, 0, 1, 0, //
+          0, 0, 0, 1, //
+        ]),
+        filterQuality: FilterQuality.low,
+      );
     canvas.drawVertices(
       Vertices(
         VertexMode.triangleStrip,
         positions,
+        colors: colors,
         textureCoordinates: texture,
       ),
-      BlendMode.srcOver,
+      // `srcIn` when [colors] carries the fade mask: in this call, the
+      // paint's own shader-sampled pixel is the "source" and the
+      // interpolated vertex color is the "destination" — `srcIn` keeps the
+      // source's color (the actual ground art) and multiplies its alpha by
+      // the destination's alpha (the fade mask), discarding the vertex
+      // colors' own (irrelevant) RGB. Verified empirically, not just by
+      // reading the formula: the reverse (`dstIn`) replaces the art with a
+      // plain white silhouette instead of fading it, which is exactly what
+      // a first attempt at this rendered before the swap. Plain `srcOver`
+      // — compositing the tile onto whatever is already drawn, ignoring
+      // vertex colors entirely since [colors] is `null` — for every span
+      // outside an active transition, unchanged from before this fix.
+      colors == null ? BlendMode.srcOver : BlendMode.srcIn,
       _paint,
     );
   }
