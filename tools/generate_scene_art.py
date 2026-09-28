@@ -260,6 +260,30 @@ def _smooth_circular(values: list[float], *, window: int) -> list[float]:
     ]
 
 
+def _mid_smoothing_window(roughness: float, profile_peaks: float) -> int:
+    """How wide a `_smooth_circular` window a `mid` profile needs to read
+    as rolling hills instead of a picket fence of spikes.
+
+    Not a hand-picked constant, and not roughness alone either — both
+    tried first and both under-smoothed real biomes (CLAUDE.md §14,
+    2026-09-22 stage 3, then 2026-09-23): a box filter of width `W` only
+    meaningfully suppresses wavelengths shorter than roughly `W` itself,
+    so the window has to be sized against the *actual* shortest
+    wavelength `_seamless_profile` can produce for these parameters —
+    `TILE_WIDTH / max_cycles`, mirroring that function's own formula —
+    not guessed from `roughness` and `peaks` as independent knobs.
+    `roughness` still matters, but as *how much of that wavelength* to
+    smooth away: a rough biome (a volcanic crag) is supposed to keep more
+    of its own jagged texture than a calm one (an open field), so a
+    higher roughness keeps a *smaller* fraction of the shortest
+    wavelength as its window, not a larger one.
+    """
+    max_cycles = max(round(profile_peaks * 5), 10)
+    shortest_wavelength = TILE_WIDTH / max_cycles
+    fraction = max(0.25, 0.75 - 0.5 * roughness)
+    return max(15, round(shortest_wavelength * fraction))
+
+
 def _profile_tops(
     profile: list[float], height: int, mean_row: float, relief: float
 ) -> list[float]:
@@ -913,6 +937,296 @@ def _storm_sea_layer(layer: str, seed: int) -> Image.Image:
     raise AssertionError(f"unexpected layer {layer!r}")  # ground routes elsewhere
 
 
+def _draw_boulder(
+    draw: ImageDraw.ImageDraw, x: float, base_y: float, color, obj_seed: int, scale: float
+) -> None:
+    """A jagged standing rock — family-neutral on purpose, unlike the
+    named props above: it stands in for "something rocky on the ridge"
+    across every biome that needs one (a mountain crag, a reef, a
+    volcanic spire), with colour alone doing the differentiating work —
+    the same "family plus a lightness ramp" principle §9 already uses for
+    colour, extended here to a shared shape (CLAUDE.md §14, 2026-09-23).
+    Proportions start from stage 1's own corrected range (chunky, not
+    needle-thin) instead of repeating that mistake."""
+    r = random.Random(obj_seed)
+    height = scale * r.uniform(0.35, 0.65)
+    width = height * r.uniform(0.5, 0.75)
+    peaks = r.randint(3, 5)
+    top_points = []
+    for i in range(peaks):
+        t = i / (peaks - 1)
+        px = x - width / 2 + width * t
+        py = base_y - height * r.uniform(0.5, 1.0)
+        top_points.append((px, py))
+    polygon = (
+        [(x - width / 2, base_y + TERRAIN_OVERLAP)]
+        + top_points
+        + [(x + width / 2, base_y + TERRAIN_OVERLAP)]
+    )
+    draw.polygon(polygon, fill=color)
+
+
+def _draw_lotus(
+    draw: ImageDraw.ImageDraw, x: float, base_y: float, color, obj_seed: int, scale: float
+) -> None:
+    """A lotus blossom on a low stem — the flower that gives the
+    Lotus-Eaters' shore its own name (Odyssey, Book 9), low and wide
+    rather than tall, so a field of them reads as ground cover, not a
+    grove of trees."""
+    r = random.Random(obj_seed)
+    stem_h = scale * r.uniform(0.12, 0.22)
+    draw.line(
+        [(x, base_y + TERRAIN_OVERLAP), (x, base_y - stem_h)],
+        fill=color,
+        width=max(2, int(scale * 0.02)),
+    )
+    bloom_r = scale * r.uniform(0.1, 0.16)
+    bloom_y = base_y - stem_h - bloom_r * 0.5
+    petals = r.randint(4, 6)
+    for i in range(petals):
+        angle = (i / max(1, petals - 1)) * math.pi
+        dx = math.cos(angle) * bloom_r * 0.8
+        dy = -abs(math.sin(angle)) * bloom_r * 0.6
+        draw.ellipse(
+            [x + dx - bloom_r * 0.5, bloom_y + dy - bloom_r * 0.5,
+             x + dx + bloom_r * 0.5, bloom_y + dy + bloom_r * 0.5],
+            fill=color,
+        )
+
+
+# How far a prop's own footprint can reach from its scatter point, as a
+# multiple of the `scale` value passed *to that prop function* — used to
+# size `_scatter_on_ridge`'s `half_extent` (how close to a tile edge an
+# instance has to be before it also gets drawn wrapped, so it doesn't miss
+# its own seam duplicate). Copied from the exact multiples stages 1–3
+# already validated at each call site above, not re-derived from scratch.
+_PROP_HALF_EXTENT_MULT = {
+    _draw_boulder: 0.35,
+    _draw_lotus: 0.3,
+    _draw_olive: 0.7,
+    _draw_cypress: 0.9,
+    _draw_reeds: 0.3,
+    _draw_broken_column: 1.5,
+    _draw_wall_fragment: 1.5,
+    _draw_flotsam: 0.3,
+}
+
+# Which props scatter across which layer, for every biome *not* covered by
+# a bespoke `_xxx_layer` function above. One entry: `(draw_fn, density,
+# scale_mult)` — `density` is peaks-per-screen (same unit `_peaks_per_tile`
+# already scales for every other count in this file), `scale_mult`
+# multiplies the layer's own base scale before it reaches the prop.
+# `_draw_broken_column`/`_draw_wall_fragment` reused here draw the exact
+# same ruins as stage 1's Troy — apt for `underworld`/`marsh_ruins`'s own
+# ruins and for `floating_isle`'s Aeolus's own wall, not a coincidence.
+COMPOSED_BIOME_PROPS: dict[str, dict[str, list[tuple]]] = {
+    # The Odyssey: Troy to Ithaca
+    "dreaming_dunes": {  # the Lotus-Eaters' shore
+        "mid": [(_draw_lotus, 1.0, 1.4)],
+        "front": [(_draw_lotus, 2.2, 1.0)],
+    },
+    "volcanic_crag": {  # the island of the Cyclopes
+        "mid": [(_draw_boulder, 1.1, 1.3)],
+        "front": [(_draw_boulder, 0.7, 1.0)],
+    },
+    "floating_isle": {  # Aeolia — Aeolus's own wall
+        "mid": [(_draw_wall_fragment, 0.4, 0.9)],
+        "front": [(_draw_boulder, 0.4, 0.8)],
+    },
+    "giant_fjord": {  # the Laestrygonian fjord
+        "mid": [(_draw_boulder, 0.9, 1.4)],
+        "front": [(_draw_boulder, 0.5, 1.0)],
+    },
+    "enchanted_forest": {  # Aeaea, Circe's isle
+        "mid": [(_draw_cypress, 0.7, 1.0), (_draw_olive, 0.6, 1.0)],
+        "front": [(_draw_olive, 1.5, 1.0), (_draw_cypress, 0.6, 0.9)],
+    },
+    "underworld": {  # the shore of the dead
+        "mid": [(_draw_wall_fragment, 0.4, 0.9), (_draw_broken_column, 0.7, 1.0)],
+        "front": [(_draw_broken_column, 0.4, 1.0)],
+    },
+    "siren_reef": {  # the Sirens' rock
+        "mid": [(_draw_boulder, 1.0, 1.1)],
+        "front": [(_draw_boulder, 0.6, 0.9)],
+    },
+    "narrow_strait": {  # Scylla and Charybdis
+        "mid": [(_draw_boulder, 1.0, 1.4)],
+        "front": [(_draw_boulder, 0.5, 1.0)],
+    },
+    "sacred_pasture": {  # Thrinacia, pastures of the Sun
+        "mid": [(_draw_reeds, 0.9, 1.0)],
+        "front": [(_draw_reeds, 2.0, 1.0), (_draw_olive, 0.15, 0.8)],
+    },
+    "open_sea": {  # adrift alone
+        "mid": [],
+        "front": [(_draw_flotsam, 0.3, 0.8)],
+    },
+    "grotto_isle": {  # Ogygia, Calypso's isle
+        "mid": [(_draw_boulder, 0.6, 1.0), (_draw_olive, 0.3, 0.9)],
+        "front": [(_draw_olive, 0.6, 0.9), (_draw_boulder, 0.3, 0.8)],
+    },
+    "garden_harbor": {  # Scheria, land of the Phaeacians
+        "mid": [(_draw_olive, 1.0, 1.0)],
+        "front": [(_draw_olive, 1.8, 1.0)],
+    },
+    "moonlit_sea": {  # the night passage home
+        "mid": [],
+        "front": [(_draw_flotsam, 0.2, 0.7)],
+    },
+    "homeland_coast": {  # Ithaca, the homecoming
+        "mid": [(_draw_olive, 0.5, 0.9), (_draw_reeds, 0.5, 0.9)],
+        "front": [(_draw_reeds, 1.4, 1.0), (_draw_olive, 0.3, 0.9)],
+    },
+    # The Road to the Skyfire
+    "tower_cliffs": {
+        "mid": [(_draw_boulder, 0.8, 1.2)],
+        "front": [(_draw_boulder, 0.5, 1.0)],
+    },
+    "pine_forest": {
+        "mid": [(_draw_cypress, 1.1, 1.0)],
+        "front": [(_draw_cypress, 1.8, 1.0)],
+    },
+    "river_valley": {
+        "mid": [(_draw_reeds, 0.7, 1.0), (_draw_olive, 0.2, 0.9)],
+        "front": [(_draw_reeds, 1.5, 1.0)],
+    },
+    "marsh_ruins": {
+        "mid": [(_draw_wall_fragment, 0.4, 0.9), (_draw_broken_column, 0.4, 0.9)],
+        "front": [(_draw_reeds, 1.1, 0.9)],
+    },
+    "mountain_pass": {
+        "mid": [(_draw_boulder, 1.0, 1.3)],
+        "front": [(_draw_boulder, 0.6, 1.0)],
+    },
+    "rocky_coast": {
+        "mid": [(_draw_boulder, 0.7, 1.0)],
+        "front": [(_draw_flotsam, 0.5, 0.9)],
+    },
+    "open_fields": {
+        "mid": [(_draw_reeds, 0.5, 0.9)],
+        "front": [(_draw_reeds, 1.2, 0.9)],
+    },
+    "night_meadow": {
+        "mid": [(_draw_reeds, 0.6, 0.9)],
+        "front": [(_draw_reeds, 1.3, 0.9)],
+    },
+}
+
+
+def _place_prop(
+    image: Image.Image,
+    tops: list[float],
+    draw_fn,
+    *,
+    biome_scale: float,
+    scale_mult: float,
+    density: float,
+    seed: int,
+    color,
+) -> None:
+    """Scatters one recipe entry from `COMPOSED_BIOME_PROPS` — the shared
+    plumbing every prop already needs (`_scatter_on_ridge`'s wraparound
+    duplication, the right `half_extent` for this specific shape, and the
+    extra `tops`/`tile_width` args only the ridge-conforming wall/column
+    need) factored out so `_composed_generic_layer` doesn't repeat it once
+    per prop per biome.
+    """
+    prop_scale = biome_scale * scale_mult
+    half_extent = prop_scale * _PROP_HALF_EXTENT_MULT[draw_fn]
+    if draw_fn in (_draw_broken_column, _draw_wall_fragment):
+        draw_one = lambda d, x, b, s: draw_fn(d, x, b, color, s, prop_scale, tops, TILE_WIDTH)
+    else:
+        draw_one = lambda d, x, b, s: draw_fn(d, x, b, color, s, prop_scale)
+    _scatter_on_ridge(
+        image, tops, TILE_WIDTH,
+        count=_peaks_per_tile(density), seed=seed, half_extent=half_extent,
+        draw_one=draw_one,
+    )
+
+
+def _composed_generic_layer(biome: str, layer: str, seed: int) -> Image.Image:
+    """Every biome *not* covered by a bespoke `_xxx_layer` function above
+    — 22 of them, too many for a hand-written narrative treatment each
+    the way Troy/the Cicones/the storm got (CLAUDE.md §14, 2026-09-23,
+    by direct request to extend the same treatment to every remaining
+    biome). Composed the same way structurally — an organic
+    `_seamless_profile`, `mid` smoothed, props scattered on top — but the
+    *props themselves* come from the shared library above plus
+    `COMPOSED_BIOME_PROPS`'s per-biome recipe, not bespoke ones: the same
+    "family, not per-biome" principle §9's `PALETTES` already applies to
+    colour.
+
+    `ground` is excluded (`_tile` routes it to `_generic_tile` instead)
+    for the same reason as stages 1–3: its top edge is the walking line.
+    """
+    family, roughness, peaks = BIOMES[biome]
+    color = PALETTES[family][LAYER_NAMES.index(layer)]
+    recipe = COMPOSED_BIOME_PROPS.get(biome, {})
+
+    if layer == "far":
+        profile = _seamless_profile(
+            TILE_WIDTH, seed=seed, peaks=_peaks_per_tile(max(peaks * 0.6, 1)),
+            roughness=roughness * 0.6,
+        )
+        image = _silhouette(
+            TILE_WIDTH, LAYER_HEIGHT, profile, color, mean_row=PARALLAX_MEAN_ROW, relief=0.18
+        )
+        return _blur_wrapped(image, 1.3)
+
+    if layer == "mid":
+        # A biome with nothing in its own `mid` recipe (`moonlit_sea`,
+        # `open_sea`) is deliberately bare — open water, nothing standing
+        # on it — and that same signal doubles as "keep the water itself
+        # calm": even a *wider* smoothing window (tried first) couldn't
+        # tame `moonlit_sea`'s own `peaks=4` into anything but a jagged
+        # mountain range, because the profile's underlying harmonic
+        # content was never the problem post-smoothing so much as how
+        # much of it there was to begin with (CLAUDE.md §14, 2026-09-23,
+        # second pass — found by rendering the widened-window attempt and
+        # still not liking it). Fewer harmonics and less relief up front
+        # reads as calm water; biomes that DO carry rock props keep the
+        # full profile — their jaggedness is the point.
+        has_mid_props = bool(recipe.get("mid"))
+        relief = 0.19 if has_mid_props else 0.09
+        profile_peaks = peaks if has_mid_props else max(1, round(peaks * 0.4))
+        profile = _seamless_profile(
+            TILE_WIDTH, seed=seed, peaks=_peaks_per_tile(profile_peaks), roughness=roughness
+        )
+        window = _mid_smoothing_window(roughness, profile_peaks)
+        profile = _smooth_circular(profile, window=window)
+        image = _silhouette(
+            TILE_WIDTH, LAYER_HEIGHT, profile, color, mean_row=PARALLAX_MEAN_ROW, relief=relief
+        )
+        tops = _profile_tops(profile, LAYER_HEIGHT, PARALLAX_MEAN_ROW, relief)
+        scale = LAYER_HEIGHT * 0.16
+        for i, (draw_fn, density, scale_mult) in enumerate(recipe.get("mid", [])):
+            _place_prop(
+                image, tops, draw_fn, biome_scale=scale, scale_mult=scale_mult,
+                density=density, seed=seed + 10 + i, color=color,
+            )
+        return image
+
+    if layer == "front":
+        relief = 0.13
+        profile = _seamless_profile(
+            TILE_WIDTH, seed=seed, peaks=_peaks_per_tile(peaks + 2),
+            roughness=min(roughness * 1.1, 0.95),
+        )
+        image = _silhouette(
+            TILE_WIDTH, LAYER_HEIGHT, profile, color, mean_row=PARALLAX_MEAN_ROW, relief=relief
+        )
+        tops = _profile_tops(profile, LAYER_HEIGHT, PARALLAX_MEAN_ROW, relief)
+        scale = LAYER_HEIGHT * 0.30
+        for i, (draw_fn, density, scale_mult) in enumerate(recipe.get("front", [])):
+            _place_prop(
+                image, tops, draw_fn, biome_scale=scale, scale_mult=scale_mult,
+                density=density, seed=seed + 20 + i, color=color,
+            )
+        return image
+
+    raise AssertionError(f"unexpected layer {layer!r}")  # ground routes elsewhere
+
+
 def _ruined_city_coast_layer(layer: str, seed: int) -> Image.Image:
     """`ruined_city_coast` — segment `troy-departure`, the biome the
     traveler actually walks through right after stepping through the gate
@@ -1050,6 +1364,8 @@ def _tile(biome: str, layer: str) -> Image.Image:
         return _raider_coast_layer(layer, seed)
     if biome == "storm_sea" and layer != "ground":
         return _storm_sea_layer(layer, seed)
+    if biome in COMPOSED_BIOME_PROPS and layer != "ground":
+        return _composed_generic_layer(biome, layer, seed)
     return _generic_tile(biome, layer, seed)
 
 
