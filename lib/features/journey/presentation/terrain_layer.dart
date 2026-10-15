@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flame/components.dart';
@@ -11,6 +10,7 @@ import '../domain/ground_heightmap.dart';
 import '../domain/scene_ground.dart';
 import '../domain/segment_biomes.dart';
 import '../domain/terrain_profile.dart' as domain;
+import 'biome_strip.dart';
 import 'journey_scene_controller.dart';
 
 /// Converts a route position ([meters], point A = 0) to the world-space x
@@ -118,22 +118,33 @@ const double macroTerrainAmplitude = 90;
 /// across a biome boundary, plus the quest's authored profile. Negative
 /// because positive height means higher ground, and world y grows downward.
 ///
-/// Falls back to [_placeholderTerrainHeightAt] only when *neither* half
-/// exists — a quest with no authored terrain whose biome art has not loaded
-/// (today: every quest). A quest with either one gets that one, so art can
-/// land one biome at a time without the rest of the route changing shape.
+/// Falls back to [_placeholderTerrainHeightAt] only for a quest with
+/// neither an authored profile nor any biome content. Where a quest has
+/// biomes, a biome whose art is missing or still loading is flat ground —
+/// see the comment in the body for why never the placeholder wave.
 double terrainHeightAt(double worldX, JourneySceneController controller) {
   final pixelsPerMeter = controller.pixelsPerMeter;
   final profile = controller.terrainProfile;
   final meters = pixelsPerMeter <= 0 ? 0 : (worldX / pixelsPerMeter).round();
 
-  final blend = biomeBlendAt(controller.biomes, meters);
-  final from = controller.groundFor(blend?.current.biome);
-  final to = controller.groundFor(blend?.next?.biome);
-
-  if (profile == null && from == null) {
+  // The placeholder wave is only for a quest with no biome content at all.
+  // A quest that has biomes but whose art for one of them is missing or
+  // still loading gets *flat* ground there instead: switching between the
+  // wave and the art's relief is a jump of tens of pixels wherever the two
+  // meet, both at a biome boundary and at the moment the art finishes
+  // loading under a view that is already on screen.
+  if (profile == null && controller.biomes.isEmpty) {
     return _placeholderTerrainHeightAt(worldX);
   }
+
+  final blend = biomeBlendAt(controller.biomes, meters);
+  final from = controller.groundFor(blend?.current.biome);
+  // Crossing into a biome whose relief is not available fades towards
+  // flat rather than holding the current relief right up to the boundary
+  // and stepping there.
+  final to = blend?.next == null
+      ? null
+      : controller.groundFor(blend!.next!.biome) ?? _flatGround;
 
   final macro = profile == null ? 0.0 : domain.terrainHeightAt(profile, meters);
   final micro = blendedGroundHeight(
@@ -147,6 +158,10 @@ double terrainHeightAt(double worldX, JourneySceneController controller) {
       macroTerrainAmplitude * macro -
       controller.sceneHeight * groundArtTileHeightFactor / 2 * micro;
 }
+
+/// Stands in for a neighbouring biome's relief while its art is missing —
+/// zero everywhere ([groundHeightAt] of an empty map).
+const GroundHeightmap _flatGround = GroundHeightmap(samples: [], tileMeters: 1);
 
 /// A few pixels per sampled point reads as smooth without evaluating `sin()`
 /// at every physical pixel — same step the CustomPaint placeholder used.
@@ -237,8 +252,8 @@ class HorizonTerrainLayer extends PositionComponent {
 /// ground moves with the camera at 1:1, so Flame's own transform already is
 /// the meters→screen conversion it needs.
 ///
-/// One `drawVertices` call per visible biome, not one `drawImageRect` per
-/// column band: the tile has to be *warped* by the authored profile (the
+/// One `drawVertices` call per visible biome ([drawBiomeStrip]), not one
+/// `drawImageRect` per column band: the tile has to be *warped* by the authored profile (the
 /// line it sits under rises and falls across the screen), and a textured
 /// triangle strip does that in a single draw with the texture repeating
 /// horizontally through an [ImageShader]. Per-band image draws would cost
@@ -260,13 +275,6 @@ class GroundArtLayer extends PositionComponent {
 
   final Paint _paint = Paint();
 
-  /// Width, in world pixels, between two columns of the triangle strip.
-  /// Only the authored profile varies between them — the tile's own relief
-  /// is in the texture, at full pixel resolution regardless of this step —
-  /// so a coarse step costs nothing visible while keeping the vertex count
-  /// bounded by screen width.
-  static const double _stripStep = 16;
-
   @override
   void render(Canvas canvas) {
     final pixelsPerMeter = controller.pixelsPerMeter;
@@ -285,13 +293,19 @@ class GroundArtLayer extends PositionComponent {
     final right = math.min(routeRight, viewLeft + sceneWidth);
     if (right <= left) return;
 
-    // Each biome on screen is drawn over its own stretch of world x, with
-    // the one being crossed into painted over the one being left, fading in
-    // across [biomeTransitionMeters] from its own start — see
-    // [_fadeInWindowFor]'s own doc comment for why this fade has to be a
-    // function of world position rather than of [controller.panMeters]
-    // (which is what an earlier version of this method tried, and why that
-    // version still left a hard seam at the boundary itself).
+    final drawnHeight = sceneHeight * groundArtTileHeightFactor;
+
+    // Each biome is drawn over its own stretch of world x, in route order,
+    // so the one being crossed into paints over the one being left. It
+    // starts early — over [biomeFadeInWindow], the *same* stretch of route
+    // `terrainHeightAt` blends the two reliefs over — fading in from
+    // transparent; past its own `toMeters`, where the next span is already
+    // fully opaque, it dissolves away over [biomeFadeOutWindow] rather than
+    // ending in a vertical edge wherever the next tile's ground is drawn
+    // lower than its own. The fade is a
+    // function of world position, never of `controller.panMeters`: the
+    // ground is anchored to the route, so the transition has to stay put on
+    // the route while the view moves over it.
     for (var index = 0; index < controller.biomes.length; index++) {
       final span = controller.biomes[index];
       final art = controller.biomeArt[span.biome];
@@ -299,179 +313,52 @@ class GroundArtLayer extends PositionComponent {
       final ground = art?.ground;
       if (image == null || ground == null) continue;
 
+      final fadeIn = biomeFadeInWindow(controller.biomes, index);
+      final startMeters = fadeIn?.$1 ?? span.fromMeters;
       final spanLeft = math.max(
         left,
-        worldXFor(span.fromMeters.toDouble(), pixelsPerMeter),
+        worldXFor(startMeters.toDouble(), pixelsPerMeter),
       );
-      // A span's art carries on under the next one for as long as the
-      // cross-fade lasts, so the two overlap instead of meeting at a seam.
+      final fadeOut = biomeFadeOutWindow(controller.biomes, index);
       final spanRight = math.min(
         right,
-        worldXFor(span.toMeters.toDouble(), pixelsPerMeter) +
-            biomeTransitionMeters * pixelsPerMeter,
+        worldXFor((fadeOut?.$2 ?? span.toMeters).toDouble(), pixelsPerMeter),
       );
       if (spanRight <= spanLeft) continue;
 
-      final fadeInWindow = _fadeInWindowFor(index);
-
-      _drawTile(
+      drawBiomeStrip(
         canvas,
-        image,
-        ground,
-        spanLeft,
-        spanRight,
-        sceneHeight,
-        fadeInWindow == null
+        _paint,
+        image: image,
+        left: spanLeft,
+        right: spanRight,
+        tileWidth: ground.tileMeters * pixelsPerMeter,
+        // The tile's repetition is phased on world x itself, exactly as
+        // `groundHeightAt` phases its samples on route meters — so the
+        // drawn hills and the sampled relief repeat in step.
+        textureOriginX: 0,
+        drawnHeight: drawnHeight,
+        // The line at this column, minus the relief the texture itself
+        // draws — what is left is where the tile's *mean* ground level
+        // belongs, and the tile is hung from there by its own
+        // centerFraction.
+        topAt: (x) =>
+            terrainHeightAt(x, controller) +
+            drawnHeight / 2 * groundHeightAt(ground, x / pixelsPerMeter) -
+            ground.centerFraction * drawnHeight,
+        fadeIn: fadeIn == null
             ? null
             : (
-                start: worldXFor(fadeInWindow.$1.toDouble(), pixelsPerMeter),
-                end: worldXFor(fadeInWindow.$2.toDouble(), pixelsPerMeter),
+                start: worldXFor(fadeIn.$1.toDouble(), pixelsPerMeter),
+                end: worldXFor(fadeIn.$2.toDouble(), pixelsPerMeter),
+              ),
+        fadeOut: fadeOut == null
+            ? null
+            : (
+                start: worldXFor(fadeOut.$1.toDouble(), pixelsPerMeter),
+                end: worldXFor(fadeOut.$2.toDouble(), pixelsPerMeter),
               ),
       );
     }
-  }
-
-  /// The `[startMeters, endMeters)` window over which
-  /// `controller.biomes[index]` fades in from transparent to opaque as the
-  /// route position increases, or `null` when it should simply draw fully
-  /// opaque throughout (the first span, or one whose biome is unchanged from
-  /// the previous span — nothing to fade from).
-  ///
-  /// Capped the same way [biomeBlendAt]'s own transition window already is
-  /// (never more than half of either neighbouring span), so a short segment
-  /// can't be fading in at its start and covered by the *next* fade-in at
-  /// its end at the same time.
-  (int, int)? _fadeInWindowFor(int index) {
-    if (index == 0) return null;
-    final previous = controller.biomes[index - 1];
-    final span = controller.biomes[index];
-    if (previous.biome == span.biome) return null;
-
-    final window = [
-      biomeTransitionMeters,
-      (previous.toMeters - previous.fromMeters) ~/ 2,
-      (span.toMeters - span.fromMeters) ~/ 2,
-    ].reduce((a, b) => a < b ? a : b);
-    if (window <= 0) return null;
-    return (span.fromMeters, span.fromMeters + window);
-  }
-
-  void _drawTile(
-    Canvas canvas,
-    Image image,
-    GroundHeightmap ground,
-    double left,
-    double right,
-    double sceneHeight,
-    ({double start, double end})? fadeInWindow,
-  ) {
-    final pixelsPerMeter = controller.pixelsPerMeter;
-    final tileWidth = ground.tileMeters * pixelsPerMeter;
-    if (tileWidth <= 0) return;
-
-    final drawnHeight = sceneHeight * groundArtTileHeightFactor;
-    final scaleX = tileWidth / image.width;
-    final scaleY = drawnHeight / image.height;
-
-    final positions = <Offset>[];
-    final texture = <Offset>[];
-    // Only populated when [fadeInWindow] is set — an opaque `Vertices` with
-    // no `colors` at all draws every pixel the shader itself provides,
-    // which is what every span outside an active transition still needs.
-    final colors = fadeInWindow == null ? null : <Color>[];
-    for (var x = left; ; x += _stripStep) {
-      final columnX = math.min(x, right);
-      // The line at this column, minus the relief the texture itself draws
-      // — what is left is where the tile's *mean* ground level belongs, and
-      // the tile is hung from there by its own centerFraction.
-      final lineY = terrainHeightAt(columnX, controller);
-      final microY =
-          drawnHeight / 2 * _microAt(ground, columnX, pixelsPerMeter);
-      final topY = lineY + microY - ground.centerFraction * drawnHeight;
-
-      positions.add(Offset(columnX, topY));
-      positions.add(Offset(columnX, topY + drawnHeight));
-      // Texture coordinates are in the *shader's* space, which the matrix
-      // below scales down into image pixels — so they are given in the same
-      // drawn pixels as the positions, not in image pixels. Horizontally
-      // they run on past one tile's width and the shader's
-      // `TileMode.repeated` wraps them, which is what covers a whole biome
-      // from one drawing without a seam or a modulo jump mid-strip.
-      // Vertically each column maps its own top vertex to the image's top
-      // row, so a column lifted by the authored profile carries the drawing
-      // with it instead of sliding it against the strip.
-      texture.add(Offset(columnX, 0));
-      texture.add(Offset(columnX, drawnHeight));
-
-      if (colors != null) {
-        // `0` at the fade's own start (this span's `fromMeters`, where the
-        // previous span's tile is still fully opaque underneath), ramping
-        // to `1` — fully opaque — over [biomeTransitionMeters]. Only the
-        // vertex *alpha* matters ([BlendMode.dstIn] below discards its own
-        // RGB), so plain white doubles as the mask. `!` is safe: [colors]
-        // is non-null exactly when [fadeInWindow] is (both set together
-        // above).
-        final window = fadeInWindow!;
-        final t = ((columnX - window.start) / (window.end - window.start))
-            .clamp(0.0, 1.0);
-        final alpha = Color.fromARGB((t * 255).round(), 255, 255, 255);
-        colors.add(alpha);
-        colors.add(alpha);
-      }
-
-      if (columnX >= right) break;
-    }
-    if (positions.length < 4) return;
-
-    _paint
-      ..color = const Color(0xFFFFFFFF)
-      ..shader = ImageShader(
-        image,
-        TileMode.repeated,
-        TileMode.clamp,
-        // The shader's own transform, column-major — written out rather than
-        // built through `Matrix4`, whose Flame-exported flavour stores
-        // float32 while `ImageShader` wants float64.
-        Float64List.fromList([
-          scaleX, 0, 0, 0, //
-          0, scaleY, 0, 0, //
-          0, 0, 1, 0, //
-          0, 0, 0, 1, //
-        ]),
-        filterQuality: FilterQuality.low,
-      );
-    canvas.drawVertices(
-      Vertices(
-        VertexMode.triangleStrip,
-        positions,
-        colors: colors,
-        textureCoordinates: texture,
-      ),
-      // `srcIn` when [colors] carries the fade mask: in this call, the
-      // paint's own shader-sampled pixel is the "source" and the
-      // interpolated vertex color is the "destination" — `srcIn` keeps the
-      // source's color (the actual ground art) and multiplies its alpha by
-      // the destination's alpha (the fade mask), discarding the vertex
-      // colors' own (irrelevant) RGB. Verified empirically, not just by
-      // reading the formula: the reverse (`dstIn`) replaces the art with a
-      // plain white silhouette instead of fading it, which is exactly what
-      // a first attempt at this rendered before the swap. Plain `srcOver`
-      // — compositing the tile onto whatever is already drawn, ignoring
-      // vertex colors entirely since [colors] is `null` — for every span
-      // outside an active transition, unchanged from before this fix.
-      colors == null ? BlendMode.srcOver : BlendMode.srcIn,
-      _paint,
-    );
-  }
-
-  /// The relief this one tile contributes at [worldX], without any blend
-  /// towards a neighbouring biome — the part of [terrainHeightAt]'s result
-  /// that this tile's own pixels already draw.
-  double _microAt(
-    GroundHeightmap ground,
-    double worldX,
-    double pixelsPerMeter,
-  ) {
-    return groundHeightAt(ground, worldX / pixelsPerMeter);
   }
 }

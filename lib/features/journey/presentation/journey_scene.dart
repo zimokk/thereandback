@@ -107,19 +107,42 @@ class JourneyScene extends FlameGame {
     _requestVisibleBiomes();
   }
 
-  /// Tells the art loader which biome(s) the view is on, every tick.
+  /// Tells the art loader which stretch of the route the view needs art
+  /// for, every tick.
+  ///
+  /// Every biome on screen is drawn — the ground and every parallax layer
+  /// span the full width — so the load range is the visible width, plus how
+  /// far ahead a biome's art starts fading in before its own boundary
+  /// ([parallaxTransitionMeters], the longest of the fades), plus half a
+  /// screen of prefetch either side so a biome is usually decoded before it
+  /// scrolls into view. The keep range is half a screen wider again
+  /// (hysteresis — see `SceneArtLoader.ensureSpans`).
   ///
   /// Here rather than in the hosting widget because the answer depends on
   /// `panMeters`, which changes on every drag frame without a Riverpod
   /// rebuild — a widget-side hook would either miss most of those or force a
-  /// rebuild per frame. The loader itself ignores a repeat, so calling this
-  /// unconditionally costs two string comparisons.
+  /// rebuild per frame. The loader ignores a repeat of the same four
+  /// indices, so calling this unconditionally allocates nothing.
   void _requestVisibleBiomes() {
-    final request = controller.requestBiomes;
-    if (request == null) return;
-    final blend = biomeBlendAt(controller.biomes, controller.panMeters.round());
-    if (blend == null) return;
-    request(current: blend.current.biome, next: blend.next?.biome);
+    final request = controller.requestBiomeSpans;
+    final spans = controller.biomes;
+    final pixelsPerMeter = controller.pixelsPerMeter;
+    if (request == null || spans.isEmpty || pixelsPerMeter <= 0) return;
+
+    final pan = controller.panMeters;
+    final screenMeters = controller.sceneWidth / pixelsPerMeter;
+    final loadBehind = screenMeters;
+    final loadAhead = screenMeters + parallaxTransitionMeters;
+    final keepMargin = screenMeters / 2;
+
+    int indexAt(double meters) => biomeSpanIndexAt(spans, meters.round()) ?? 0;
+
+    request(
+      indexAt(pan - loadBehind),
+      indexAt(pan + loadAhead),
+      indexAt(pan - loadBehind - keepMargin),
+      indexAt(pan + loadAhead + keepMargin),
+    );
   }
 
   /// Adds/removes one [FriendMarkerComponent] per currently-visible friend

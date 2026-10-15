@@ -177,12 +177,52 @@ void main() {
       expect(withClimb, closeTo(artOnly - macroTerrainAmplitude, 1e-9));
     });
 
-    test('a biome whose art has not loaded falls back to the placeholder '
-        'wave, so art can land one biome at a time', () {
-      expect(
-        terrainHeightAt(500, _controller(biomes: biomes)),
-        terrainHeightAt(500, _controller()),
+    test('a biome whose art has not loaded is flat ground, not the '
+        'placeholder wave — switching between the two is a jump wherever '
+        'they meet', () {
+      expect(terrainHeightAt(500, _controller(biomes: biomes)), terrainMidY);
+    });
+
+    test('crossing into a biome whose art has not loaded eases towards '
+        'flat ground, with no step at the boundary', () {
+      const twoBiomes = [
+        BiomeSpan(
+          segmentId: 'a',
+          biome: 'hills',
+          fromMeters: 0,
+          toMeters: 20000,
+        ),
+        BiomeSpan(
+          segmentId: 'b',
+          biome: 'unloaded',
+          fromMeters: 20000,
+          toMeters: 40000,
+        ),
+      ];
+      const ground = {
+        'hills': GroundHeightmap(samples: [0.5, 0.5], tileMeters: 1000),
+      };
+      final controller = _controller(
+        pixelsPerMeter: pixelsPerMeter,
+        biomes: twoBiomes,
+        ground: ground,
       );
+      double at(int meters) =>
+          terrainHeightAt(meters * pixelsPerMeter, controller);
+
+      final full = terrainMidY - sceneHeight * groundArtTileHeightFactor / 4;
+      // Still the loaded biome's own relief before the transition starts…
+      expect(at(17000), closeTo(full, 1e-9));
+      // …halfway to flat at the transition's midpoint…
+      expect(at(19000), closeTo((full + terrainMidY) / 2, 1e-9));
+      // …and already flat at the boundary itself, so the meter either side
+      // of it lands on the same height instead of a step.
+      expect(at(19999), closeTo(at(20000), 0.01));
+      expect(at(20000), terrainMidY);
+    });
+
+    test('the placeholder wave is only for a quest with no biomes at all', () {
+      expect(terrainHeightAt(500, _controller()), isNot(terrainMidY));
     });
   });
 }

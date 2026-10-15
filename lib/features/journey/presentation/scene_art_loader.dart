@@ -1,4 +1,5 @@
 import '../data/scene_art_repository.dart';
+import '../domain/segment_biomes.dart';
 import 'journey_scene_controller.dart';
 
 /// Keeps the biome art the scene is currently drawing loaded, and lets go
@@ -24,25 +25,53 @@ class SceneArtLoader {
   final JourneySceneController _controller;
 
   String _journeyId = '';
-  String? _current;
-  String? _next;
+  List<BiomeSpan>? _spans;
+  int _loadFirst = -1;
+  int _loadLast = -1;
+  int _keepFirst = -1;
+  int _keepLast = -1;
 
-  /// Declares which biomes the scene needs right now — the one under the
-  /// view and, mid-transition, the one being crossed into.
+  /// Every biome in the keep range — what a load finishing late is checked
+  /// against.
+  Set<String> _keep = const {};
+
+  /// Declares which stretch of the route the scene needs art for, as
+  /// inclusive index ranges into `controller.biomes`:
   ///
-  /// Called every frame. Takes the two biomes as plain strings rather than a
-  /// collection precisely because of that: comparing two fields allocates
-  /// nothing on the overwhelming majority of frames, where nothing has
-  /// changed and this returns immediately (the `flame-scene` skill's "no
-  /// per-frame allocation" rule).
+  /// - `[loadFirst, loadLast]` — every span that is on screen or about to
+  ///   be (the scene adds a prefetch margin). Each one's art is loaded.
+  /// - `[keepFirst, keepLast]` — a wider range, containing the first. Art
+  ///   for anything outside it is released; anything between the two
+  ///   ranges is neither loaded nor released.
   ///
-  /// The quest comes from the controller rather than the caller: the game
-  /// loop that calls this is reading that same controller anyway, and one
-  /// source for "which quest" is one fewer way for the loader and the scene
-  /// to disagree about which folder of art they are on.
-  void ensureFor({required String current, String? next}) {
+  /// Ranges, not "the biome under the view and the next one": the ground
+  /// and every parallax layer draw *every* biome on screen, and a screen at
+  /// 20 km wide routinely shows two or three. Loading only the biome at the
+  /// centre left the rest of the screen without ground or relief until the
+  /// centre reached the boundary — then it popped in, and the line the
+  /// traveler walks jumped by its full relief; crossing the boundary
+  /// released the biome just left while half the screen still showed it.
+  /// The gap between the two ranges is hysteresis: panning back and forth
+  /// across the edge of the load range never evicts and re-decodes the same
+  /// four images on every swing.
+  ///
+  /// Called every frame. Four integer comparisons on the overwhelming
+  /// majority of frames, where nothing has changed (the `flame-scene`
+  /// skill's "no per-frame allocation" rule).
+  ///
+  /// The quest and its spans come from the controller rather than the
+  /// caller: the game loop that calls this is reading that same controller
+  /// anyway, and one source for "which quest" is one fewer way for the
+  /// loader and the scene to disagree about which folder of art they are on.
+  void ensureSpans(int loadFirst, int loadLast, int keepFirst, int keepLast) {
     final journeyId = _controller.journeyId;
-    if (journeyId == _journeyId && current == _current && next == _next) {
+    final spans = _controller.biomes;
+    if (journeyId == _journeyId &&
+        identical(spans, _spans) &&
+        loadFirst == _loadFirst &&
+        loadLast == _loadLast &&
+        keepFirst == _keepFirst &&
+        keepLast == _keepLast) {
       return;
     }
 
@@ -54,30 +83,44 @@ class SceneArtLoader {
       _repository.retainOnly(const []);
     }
 
-    _current = current;
-    _next = next;
+    _spans = spans;
+    _loadFirst = loadFirst;
+    _loadLast = loadLast;
+    _keepFirst = keepFirst;
+    _keepLast = keepLast;
+
+    final load = _biomesIn(spans, loadFirst, loadLast);
+    final keep = _keep = {...load, ..._biomesIn(spans, keepFirst, keepLast)};
 
     // Drop what is no longer drawn *before* asking the repository to
     // dispose it: a frame must never reach a `ui.Image` that has already
     // been disposed, and this map is what the frame reads.
     _controller.biomeArt = {
       for (final entry in _controller.biomeArt.entries)
-        if (entry.key == current || entry.key == next) entry.key: entry.value,
+        if (keep.contains(entry.key)) entry.key: entry.value,
     };
-    _repository.retainOnly([current, ?next]);
+    _repository.retainOnly(keep);
 
-    _load(journeyId, current);
-    if (next != null) _load(journeyId, next);
+    for (final biome in load) {
+      _load(journeyId, biome);
+    }
   }
+
+  static Set<String> _biomesIn(List<BiomeSpan> spans, int first, int last) => {
+    for (var i = first < 0 ? 0 : first; i <= last && i < spans.length; i++)
+      spans[i].biome,
+  };
 
   void _load(String journeyId, String biome) {
     if (_controller.biomeArt.containsKey(biome)) return;
     _repository.loadBiome(journeyId: journeyId, biome: biome).then((art) {
-      // The quest (or the scene) may have moved on while this was in
-      // flight — dropping a late arrival is cheaper than drawing art for a
-      // route the user has left, and the repository has already disposed
-      // it if it was evicted.
-      if (art == null || journeyId != _journeyId) return;
+      // The quest (or the view) may have moved on while this was in
+      // flight. A biome released since then has already had its images
+      // disposed by the repository — publishing it would hand the next
+      // frame a disposed `ui.Image` to draw.
+      if (art == null || journeyId != _journeyId || !_keep.contains(biome)) {
+        return;
+      }
       _controller.biomeArt = {..._controller.biomeArt, biome: art};
     });
   }

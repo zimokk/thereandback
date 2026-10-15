@@ -21,7 +21,7 @@ const _biomeRed = 'red_biome';
 const _biomeBlue = 'blue_biome';
 
 /// Two adjacent spans sharing a boundary at 40 000 m, each long enough that
-/// `_fadeInWindowFor`'s own half-span cap never shrinks the fade below the
+/// `biomeFadeInWindow`'s own half-span cap never shrinks the fade below the
 /// full 2 000 m `biomeTransitionMeters` — otherwise this test would be
 /// asserting against a narrower band than the one every real quest's
 /// segments actually use.
@@ -162,9 +162,10 @@ void main() {
 
         // pixelsPerMeter at this scene width/quest scale (`route_scale.dart`'s
         // default 20 000 m per screen width) is 800/20000 = 0.04, so the
-        // 2 000 m transition window is 80 screen px wide, landing at
-        // screen x 400..480 — this samples its midpoint.
-        final mid = await _colorAt(game, 440);
+        // 2 000 m transition window — 38 000..40 000 m, ending at the
+        // boundary, the same stretch the relief blends over — is 80 screen
+        // px wide, landing at screen x 320..400. This samples its midpoint.
+        final mid = await _colorAt(game, 360);
         expect(
           mid,
           isNot(anyOf(const Color(0xFFFF0000), const Color(0xFF0000FF))),
@@ -199,7 +200,7 @@ void main() {
         game.update(0);
 
         int? previousBlue;
-        for (var x = 395; x <= 485; x += 15) {
+        for (var x = 315; x <= 405; x += 15) {
           final color = await _colorAt(game, x);
           final blue = (color.b * 255).round();
           if (previousBlue != null) {
@@ -251,7 +252,36 @@ void main() {
         controller.panMeters = 40000;
         game.update(0);
 
-        expect(await _colorAt(game, 440), const Color(0xFFFF0000));
+        expect(await _colorAt(game, 360), const Color(0xFFFF0000));
+      },
+    );
+
+    testWithGame<JourneyScene>(
+      'the fade stays put on the route while the view pans over it — the '
+      'transition is a place on the route, not a moment in the scroll',
+      createGame,
+      (game) async {
+        controller.biomeArt = {
+          _biomeRed: await _solidGroundBiome(
+            _biomeRed,
+            const Color(0xFFFF0000),
+          ),
+          _biomeBlue: await _solidGroundBiome(
+            _biomeBlue,
+            const Color(0xFF0000FF),
+          ),
+        };
+        _isolateGround(game);
+        controller.panMeters = 40000;
+        game.update(0);
+        final atBoundary = await _colorAt(game, 360);
+
+        // 1 000 m further on is 40 screen px: the same route position — the
+        // fade's midpoint — is now drawn 40 px further left, in exactly the
+        // same blend.
+        controller.panMeters = 41000;
+        game.update(0);
+        expect(await _colorAt(game, 320), atBoundary);
       },
     );
   });

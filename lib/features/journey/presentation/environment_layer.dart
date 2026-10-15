@@ -5,9 +5,9 @@ import 'package:flame/components.dart';
 
 import '../../../design/colors.dart';
 import '../data/scene_art_catalog.dart';
-import '../domain/scene_ground.dart';
 import '../domain/scene_prop_anchor.dart';
 import '../domain/segment_biomes.dart';
+import 'biome_strip.dart';
 import 'journey_scene_controller.dart';
 import 'terrain_layer.dart';
 
@@ -187,21 +187,10 @@ class EnvironmentLayer extends PositionComponent {
 
   final Paint _paint;
 
-  /// Reused across frames and tiles — a `Paint` per drawn tile would be an
-  /// allocation per frame per repetition, which is exactly what the scene's
-  /// own perf rule rules out.
-  ///
-  /// `isAntiAlias: false` — each repetition of a tile is its own
-  /// `drawImageRect` call, and consecutive tiles' rects meet at exactly the
-  /// same world x (`parallaxWorldX`'s own math is already seamless). With
-  /// the default `Paint().isAntiAlias == true`, Skia anti-aliases that
-  /// shared edge on *each* rect independently against whatever is already
-  /// painted, rather than against the neighbouring tile — so a boundary
-  /// that lands off the physical pixel grid gets two partial-coverage
-  /// blends instead of one full one, leaving a thin translucent seam where
-  /// the backdrop shows through even though the tiles are positioned
-  /// exactly edge-to-edge. Turning AA off makes each rect hard-edged, so
-  /// the shared boundary is drawn once, not twice.
+  /// Reused across frames — a `Paint` per draw would be an allocation per
+  /// frame, which is exactly what the scene's own perf rule rules out. Its
+  /// shader is set per biome strip by [drawBiomeStrip] and cleared after,
+  /// so the anchored props drawn with it below are not textured by it.
   final Paint _artPaint = Paint()..isAntiAlias = false;
 
   /// Cached result of the last [_decorationsFor] call, keyed by the exact
@@ -265,106 +254,121 @@ class EnvironmentLayer extends PositionComponent {
     _renderAnchoredProps(canvas, panMeters, pixelsPerMeter, baselineY);
   }
 
-  /// Draws the biome tile(s) for this layer, cross-fading across a biome
-  /// boundary. Returns whether anything was drawn — `false` means the
-  /// current biome ships no art for this layer (or none has loaded yet), and
-  /// the caller falls back to the procedural placeholder below.
+  /// Draws this layer's biome art across the visible width. Returns whether
+  /// anything was drawn — `false` means no biome on screen ships art for
+  /// this layer (or none has loaded yet), and the caller falls back to the
+  /// procedural placeholder.
   ///
-  /// The tile repeats horizontally, like the ground's, so one drawing covers
-  /// a biome of any length; unlike the ground it is not warped by anything,
-  /// since nothing walks on it.
+  /// Each biome's art covers exactly the stretch of *screen* where the
+  /// ground below it is that biome — its span's own route meters, mapped
+  /// through [worldXFor] like the ground — while the picture inside that
+  /// stretch scrolls at this layer's [velocityMultiplier]. So the change of
+  /// landscape is a soft vertical band that travels across the screen with
+  /// the ground boundary it belongs to, every layer changing at the same
+  /// place.
+  ///
+  /// This replaced a cross-fade driven by `controller.panMeters`: the whole
+  /// layer, across the full screen width, swapped biome while the *centre*
+  /// of the view crossed a 2 km window — a tenth of a screen of scroll, so a
+  /// small drag (or any fling) flashed the entire backdrop from one
+  /// landscape to the other in a few frames, and the swap happened half a
+  /// screen away from where the ground itself changed.
   bool _renderBiomeArt(
     Canvas canvas,
     double panMeters,
     double pixelsPerMeter,
     double baselineY,
   ) {
-    final blend = biomeBlendAt(controller.biomes, panMeters.round());
-    if (blend == null) return false;
-
-    final current = controller.biomeArt[blend.current.biome]?.layers[artLayer];
-    final next = blend.next == null
-        ? null
-        : controller.biomeArt[blend.next!.biome]?.layers[artLayer];
-    if (current == null && next == null) return false;
-
-    final eased = easeGroundBlend(blend.blend);
-    if (current != null) {
-      _drawLayerTile(
-        canvas,
-        current,
-        panMeters,
-        pixelsPerMeter,
-        baselineY,
-        next == null ? 1.0 : 1.0 - eased,
-      );
-    }
-    if (next != null) {
-      _drawLayerTile(canvas, next, panMeters, pixelsPerMeter, baselineY, eased);
-    }
-    return true;
-  }
-
-  /// Paints one biome tile across the visible width at [opacity].
-  ///
-  /// Tiles are placed by [parallaxScreenX] like everything else on this
-  /// layer, so the art scrolls at exactly the [velocityMultiplier] the
-  /// placeholder decorations used — swapping art in never changes how fast
-  /// a layer moves, only what it shows.
-  void _drawLayerTile(
-    Canvas canvas,
-    Image image,
-    double panMeters,
-    double pixelsPerMeter,
-    double baselineY,
-    double opacity,
-  ) {
-    if (opacity <= 0) return;
+    final spans = controller.biomes;
+    if (spans.isEmpty) return false;
 
     final tileWidth = controller.artTileMeters * pixelsPerMeter;
-    if (tileWidth <= 0) return;
+    if (tileWidth <= 0) return false;
 
+    final viewLeft =
+        worldXFor(panMeters, pixelsPerMeter) - controller.sceneWidth / 2;
+    final viewRight = viewLeft + controller.sceneWidth;
     final drawnHeight = controller.sceneHeight * environmentLayerHeightFactor;
     // Hung by its middle, which is where the generator centres every
     // parallax silhouette — so [baselineFraction] means "where this layer's
     // ridge sits", and the fill below the ridge reaches down past the
     // horizon to be covered by the ground art.
     final top = baselineY - drawnHeight / 2;
+    // Where repetition 0 of this layer's tile starts, in world x: the
+    // texture is phased on it, so the art drifts at [velocityMultiplier].
+    final textureOriginX = parallaxWorldX(
+      objectMeters: 0,
+      panMeters: panMeters,
+      velocityMultiplier: velocityMultiplier,
+      pixelsPerMeter: pixelsPerMeter,
+    );
 
-    // The world x of the tile repetition covering the left edge of the
-    // screen, then one per tile width until the right edge — bounded by
-    // screen width, never by route length.
-    final viewLeft =
-        worldXFor(panMeters, pixelsPerMeter) - controller.sceneWidth / 2;
-    final layerLeft =
-        viewLeft -
-        parallaxWorldX(
-          objectMeters: 0,
-          panMeters: panMeters,
-          velocityMultiplier: velocityMultiplier,
-          pixelsPerMeter: pixelsPerMeter,
-        );
-    final firstIndex = (layerLeft / tileWidth).floor();
-    final lastIndex = ((layerLeft + controller.sceneWidth) / tileWidth).ceil();
+    var drew = false;
+    for (var index = 0; index < spans.length; index++) {
+      final span = spans[index];
+      final image = controller.biomeArt[span.biome]?.layers[artLayer];
+      if (image == null) continue;
 
-    _artPaint
-      ..color = const Color(0xFFFFFFFF).withValues(alpha: opacity.clamp(0, 1))
-      ..filterQuality = FilterQuality.low;
-
-    for (var index = firstIndex; index <= lastIndex; index++) {
-      final left = parallaxWorldX(
-        objectMeters: index * controller.artTileMeters.toDouble(),
-        panMeters: panMeters,
-        velocityMultiplier: velocityMultiplier,
-        pixelsPerMeter: pixelsPerMeter,
+      final fadeIn = biomeFadeInWindow(
+        spans,
+        index,
+        transitionMeters: parallaxTransitionMeters,
       );
-      canvas.drawImageRect(
-        image,
-        Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
-        Rect.fromLTWH(left, top, tileWidth, drawnHeight),
+      final fadeOut = biomeFadeOutWindow(
+        spans,
+        index,
+        transitionMeters: parallaxTransitionMeters,
+      );
+      // The first span runs on to the left past point A and the last to the
+      // right past point B: the backdrop does not stop where the route does
+      // (the start art covers what is left of point A).
+      final left = index == 0
+          ? viewLeft
+          : math.max(
+              viewLeft,
+              worldXFor(
+                (fadeIn?.$1 ?? span.fromMeters).toDouble(),
+                pixelsPerMeter,
+              ),
+            );
+      final right = index == spans.length - 1
+          ? viewRight
+          : math.min(
+              viewRight,
+              worldXFor(
+                (fadeOut?.$2 ?? span.toMeters).toDouble(),
+                pixelsPerMeter,
+              ),
+            );
+      if (right <= left) continue;
+
+      drawBiomeStrip(
+        canvas,
         _artPaint,
+        image: image,
+        left: left,
+        right: right,
+        tileWidth: tileWidth,
+        textureOriginX: textureOriginX,
+        drawnHeight: drawnHeight,
+        topAt: (_) => top,
+        fadeIn: fadeIn == null
+            ? null
+            : (
+                start: worldXFor(fadeIn.$1.toDouble(), pixelsPerMeter),
+                end: worldXFor(fadeIn.$2.toDouble(), pixelsPerMeter),
+              ),
+        fadeOut: fadeOut == null
+            ? null
+            : (
+                start: worldXFor(fadeOut.$1.toDouble(), pixelsPerMeter),
+                end: worldXFor(fadeOut.$2.toDouble(), pixelsPerMeter),
+              ),
       );
+      drew = true;
     }
+    _artPaint.shader = null;
+    return drew;
   }
 
   /// The pre-art placeholder: anonymous silhouette blobs scattered
@@ -443,6 +447,18 @@ class EnvironmentLayer extends PositionComponent {
     }
   }
 }
+
+/// How long, in route meters, a parallax layer's art dissolves from one
+/// biome into the next — the band, ending at the boundary, over which the
+/// new landscape fades in on screen.
+///
+/// Four times the ground's own [biomeTransitionMeters]: the ground has to
+/// change over a short stretch because the traveler walks its relief, but a
+/// distant mountain range dissolving over a band a tenth of a screen wide
+/// reads as a vertical cut through it. 8 km is two fifths of a screen at
+/// `route_scale.dart`'s 20 km per screen. Capped per boundary like every
+/// transition ([biomeFadeInWindow]).
+const int parallaxTransitionMeters = 8000;
 
 /// How tall a parallax layer's tile is drawn, as a multiple of the scene's
 /// height. Taller than the screen so a layer whose baseline sits low still

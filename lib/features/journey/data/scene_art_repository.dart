@@ -79,6 +79,13 @@ class AssetSceneArtRepository implements SceneArtRepository {
   /// the quest's content authors.
   final Map<String, ui.Image?> _props = {};
 
+  /// Relief already extracted, keyed by quest and biome, and never evicted:
+  /// one tile's relief is a few thousand doubles, while extracting it again
+  /// means reading back and scanning a multi-megapixel image on the UI
+  /// thread — a dropped frame, every time panning back and forth brings an
+  /// evicted biome into range again.
+  final Map<String, GroundHeightmap?> _grounds = {};
+
   @override
   Future<BiomeArt?> loadBiome({
     required String journeyId,
@@ -98,9 +105,15 @@ class AssetSceneArtRepository implements SceneArtRepository {
     if (layers.isEmpty) return null;
 
     final groundImage = layers[SceneArtLayer.ground];
+    final groundKey = '$journeyId/$biome';
     final ground = groundImage == null
         ? null
-        : await _extractGround(groundImage, sceneArtTileMeters(journeyId));
+        : _grounds.containsKey(groundKey)
+        ? _grounds[groundKey]
+        : _grounds[groundKey] = await _extractGround(
+            groundImage,
+            sceneArtTileMeters(journeyId),
+          );
 
     return (biome: biome, layers: layers, ground: ground);
   }

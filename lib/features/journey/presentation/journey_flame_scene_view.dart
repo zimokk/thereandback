@@ -327,7 +327,7 @@ class _JourneyFlameSceneViewState extends ConsumerState<JourneyFlameSceneView>
       ..terrainProfile = terrainContent?.profile
       ..sceneProps = terrainContent?.props ?? const []
       ..biomes = terrainContent?.biomes ?? const []
-      ..requestBiomes = _artLoader.ensureFor
+      ..requestBiomeSpans = _artLoader.ensureSpans
       ..propSprite = ref.read(sceneArtRepositoryProvider).propSprite;
 
     // §12: "game loop stops on inactive tab" — a plain field mutation on

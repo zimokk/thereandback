@@ -51,7 +51,7 @@ const int biomeTransitionMeters = 2000;
 /// resolves to the first, past the last to the last, rather than throwing
 /// on a rounding error at point A or B.
 BiomeSpan? biomeAt(List<BiomeSpan> spans, int meters) {
-  final index = _spanIndexAt(spans, meters);
+  final index = biomeSpanIndexAt(spans, meters);
   return index == null ? null : spans[index];
 }
 
@@ -67,27 +67,88 @@ BiomeBlend? biomeBlendAt(
   int meters, {
   int transitionMeters = biomeTransitionMeters,
 }) {
-  final index = _spanIndexAt(spans, meters);
+  final index = biomeSpanIndexAt(spans, meters);
   if (index == null) return null;
 
   final current = spans[index];
   final next = index + 1 < spans.length ? spans[index + 1] : null;
-  if (next == null || next.biome == current.biome) {
+  final window = next == null
+      ? 0
+      : _transitionWindow(current, next, transitionMeters);
+  if (next == null || window <= 0) {
     return (current: current, next: null, blend: 0);
   }
-
-  final window = [
-    transitionMeters,
-    (current.toMeters - current.fromMeters) ~/ 2,
-    (next.toMeters - next.fromMeters) ~/ 2,
-  ].reduce((a, b) => a < b ? a : b);
-  if (window <= 0) return (current: current, next: null, blend: 0);
 
   final start = current.toMeters - window;
   if (meters <= start) return (current: current, next: null, blend: 0);
 
   final blend = (meters - start) / window;
   return (current: current, next: next, blend: blend > 1 ? 1 : blend);
+}
+
+/// The stretch of route, `(startMeters, endMeters)`, over which
+/// `spans[index]` cross-fades in over the span before it — or `null` when
+/// there is nothing to fade from (the first span, or one whose biome is the
+/// same as the previous span's).
+///
+/// It ends exactly at the span's own [BiomeSpan.fromMeters] and is exactly
+/// as long as the window [biomeBlendAt] blends the relief over — the same
+/// stretch of route, from the same formula. Drawn art that cross-faded over
+/// any other stretch would disagree with the line the traveler walks on for
+/// part of every transition: one biome's hills drawn while the other's
+/// relief is already being walked.
+///
+/// [transitionMeters] is a maximum, capped like [biomeBlendAt]'s; a layer
+/// that wants a softer dissolve than the ground's own relief blend (the
+/// parallax art, `environment_layer.dart`) passes a longer one.
+(int, int)? biomeFadeInWindow(
+  List<BiomeSpan> spans,
+  int index, {
+  int transitionMeters = biomeTransitionMeters,
+}) {
+  if (index <= 0 || index >= spans.length) return null;
+  final span = spans[index];
+  final window = _transitionWindow(spans[index - 1], span, transitionMeters);
+  if (window <= 0) return null;
+  return (span.fromMeters - window, span.fromMeters);
+}
+
+/// The stretch of route, `(startMeters, endMeters)`, over which
+/// `spans[index]` dissolves away *after* its own [BiomeSpan.toMeters], under
+/// the span that follows — the mirror of [biomeFadeInWindow] for that next
+/// span, and exactly as long. `null` when nothing follows, or the next span
+/// shares this one's biome (and so its art).
+///
+/// By the time this window starts, the next span is fully opaque, so this
+/// only ever shows where the next span's art draws nothing (the sky above a
+/// lower silhouette) — and there it is the difference between a soft
+/// dissolve and the hard vertical edge of a strip that simply ended.
+(int, int)? biomeFadeOutWindow(
+  List<BiomeSpan> spans,
+  int index, {
+  int transitionMeters = biomeTransitionMeters,
+}) {
+  final next = biomeFadeInWindow(
+    spans,
+    index + 1,
+    transitionMeters: transitionMeters,
+  );
+  if (next == null) return null;
+  final span = spans[index];
+  return (span.toMeters, span.toMeters + (next.$2 - next.$1));
+}
+
+/// Length of the cross-fade between neighbouring spans [current] and
+/// [next] — `0` when they share a biome (and therefore share art), else
+/// [transitionMeters] capped at half of either span, so a short segment can
+/// never be fading in at its start and out at its end at the same time.
+int _transitionWindow(BiomeSpan current, BiomeSpan next, int transitionMeters) {
+  if (next.biome == current.biome) return 0;
+  return [
+    transitionMeters,
+    (current.toMeters - current.fromMeters) ~/ 2,
+    (next.toMeters - next.fromMeters) ~/ 2,
+  ].reduce((a, b) => a < b ? a : b);
 }
 
 /// Index of the span covering [meters] — the one lookup both public
@@ -99,7 +160,10 @@ BiomeBlend? biomeBlendAt(
 /// `journey_terrain_repository.dart` validates when parsing them: with no
 /// gaps, the first span whose [BiomeSpan.toMeters] is past [meters] is the
 /// one containing it.
-int? _spanIndexAt(List<BiomeSpan> spans, int meters) {
+///
+/// Public because the scene also needs the *range* of spans on screen (to
+/// keep their art loaded), not just the one under the view.
+int? biomeSpanIndexAt(List<BiomeSpan> spans, int meters) {
   if (spans.isEmpty) return null;
   for (var i = 0; i < spans.length; i++) {
     if (meters < spans[i].toMeters) return i;

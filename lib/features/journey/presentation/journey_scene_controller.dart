@@ -101,11 +101,12 @@ class JourneySceneController {
   /// frame always draws with whatever is ready.
   Map<String, BiomeArt> biomeArt = const {};
 
-  /// Asks for a biome's art to be loaded. Called from the game loop with
-  /// the biome(s) currently on screen; repeated calls for the same biome are
-  /// cheap and idempotent (`scene_art_loader.dart` dedupes), so the loop
-  /// does not have to track what it already asked for.
-  void Function({required String current, String? next})? requestBiomes;
+  /// Asks for the art of a range of [biomes] to be loaded and for anything
+  /// outside a wider range to be released — `scene_art_loader.dart`'s
+  /// `ensureSpans`, which documents the four indices. Called from the game
+  /// loop every tick; a repeat of the same ranges is free.
+  void Function(int loadFirst, int loadLast, int keepFirst, int keepLast)?
+  requestBiomeSpans;
 
   /// How much route one repetition of a biome tile covers
   /// (`scene_art_catalog.dart`) — one screen width at this quest's own

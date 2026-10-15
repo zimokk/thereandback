@@ -99,4 +99,52 @@ void main() {
       expect(biomeBlendAt(const [], 100), isNull);
     });
   });
+
+  group('biomeFadeInWindow / biomeFadeOutWindow', () {
+    test('a span fades in over the window ending at its own start — the '
+        'same stretch biomeBlendAt blends the relief over', () {
+      expect(biomeFadeInWindow(spans, 1), (18000, 20000));
+      // biomeBlendAt starts blending exactly where the fade starts, and is
+      // fully into the next biome exactly where it ends.
+      expect(biomeBlendAt(spans, 18000)!.blend, 0);
+      expect(biomeBlendAt(spans, 19999)!.blend, closeTo(1, 1e-3));
+    });
+
+    test('nothing to fade in from on the first span, or after a span with the '
+        'same biome', () {
+      expect(biomeFadeInWindow(spans, 0), isNull);
+      expect(biomeFadeInWindow(spans, 2), isNull);
+      expect(biomeFadeInWindow(spans, 3), isNull);
+    });
+
+    test('a longer transition is capped at half of either span', () {
+      expect(biomeFadeInWindow(spans, 1, transitionMeters: 50000), (
+        10000,
+        20000,
+      ));
+    });
+
+    test(
+      'fade-out mirrors the next span\'s fade-in, past this span\'s end',
+      () {
+        expect(biomeFadeOutWindow(spans, 0), (20000, 22000));
+        expect(biomeFadeOutWindow(spans, 0, transitionMeters: 8000), (
+          20000,
+          28000,
+        ));
+        // Nothing follows with different art: no fade-out.
+        expect(biomeFadeOutWindow(spans, 1), isNull);
+        expect(biomeFadeOutWindow(spans, 2), isNull);
+      },
+    );
+  });
+
+  group('biomeSpanIndexAt', () {
+    test('clamps before the first and past the last span', () {
+      expect(biomeSpanIndexAt(spans, -500), 0);
+      expect(biomeSpanIndexAt(spans, 25000), 1);
+      expect(biomeSpanIndexAt(spans, 99999), 2);
+      expect(biomeSpanIndexAt(const [], 0), isNull);
+    });
+  });
 }

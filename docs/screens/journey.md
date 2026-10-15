@@ -261,20 +261,40 @@ segment_biomes.dart`'s `BiomeSpan`s. The spans must tile the route exactly;
 a gap or overlap is a `FormatException`, not a stretch of route with no art.
 
 Over the last `biomeTransitionMeters` (2 000 m) of a segment, the next
-biome's layers cross-fade in *and* its relief blends into the line
-(`blendedGroundHeight`), both on the same `easeGroundBlend` smoothstep — so
-the drawn hills and the line the traveler walks never lead or trail each
-other, and the figure does not step up or down at a segment boundary.
+biome's ground fades in *and* its relief blends into the line
+(`blendedGroundHeight`), both over the very same stretch of route
+(`biomeFadeInWindow` and `biomeBlendAt` share one window formula) and on the
+same `easeGroundBlend` smoothstep — so the drawn hills and the line the
+traveler walks never lead or trail each other, and the figure does not step
+up or down at a segment boundary. Past the boundary the old biome's ground
+dissolves away under the new one (`biomeFadeOutWindow`) instead of ending in
+a vertical edge where the new tile's silhouette is lower.
+
+Every transition is a *place on the route*, never a moment in the scroll:
+the parallax layers (`EnvironmentLayer`) draw each biome over exactly the
+stretch of screen where the ground below is that biome, with the picture
+inside it scrolling at the layer's own speed, and dissolve between biomes
+over a wider `parallaxTransitionMeters` (8 000 m) band ending at the
+boundary. All of it — ground and every parallax layer — is drawn by one
+`drawBiomeStrip` (`presentation/biome_strip.dart`): one textured triangle
+strip per biome with the tile repeating inside its shader, so a tile repeat
+has no edge to show as a seam.
 
 ### Loading
 
-`presentation/scene_art_loader.dart` keeps the biome under the view (and,
-mid-transition, the one being crossed into) loaded, and lets go of the rest;
+`presentation/scene_art_loader.dart` keeps every biome on screen loaded —
+the visible width, plus how far ahead a parallax dissolve starts, plus half
+a screen of prefetch either side — and releases only what has gone half a
+screen further out of range (hysteresis, so panning back and forth near an
+edge never evicts and re-decodes the same biome).
 `data/scene_art_repository.dart` does the decoding and extraction and owns
-the `ui.Image`s. Driven from the game loop, not from `build` — what is on
-screen changes with every drag frame, which is not a Riverpod rebuild. A
-frame never waits on a load: it draws whatever is ready and the placeholder
-for the rest.
+the `ui.Image`s; extracted relief is cached for good (it is small), so a
+re-decoded biome never re-scans its ground tile on the UI thread. Driven
+from the game loop, not from `build` — what is on screen changes with every
+drag frame, which is not a Riverpod rebuild. A frame never waits on a load:
+it draws whatever is ready, and a biome whose art is missing or still
+loading is flat ground (the placeholder wave is only for a quest with no
+biomes at all).
 
 ## Terrain profile & anchored scene props
 
